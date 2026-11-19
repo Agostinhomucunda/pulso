@@ -305,3 +305,8 @@
 /* Avatares de perfil fornecidos pelo utilizador. */
 .profile-avatar,.sidebar-avatar,.profile-showcase-avatar{overflow:hidden;padding:0}.profile-avatar img,.sidebar-avatar img,.profile-showcase-avatar img{width:100%;height:100%;display:block;object-fit:cover;object-position:center;border-radius:inherit}.avatar-choice{display:flex;flex-wrap:wrap;gap:9px;margin:15px 0 4px;padding:0;border:0}.avatar-choice legend{width:100%;margin-bottom:1px;color:#5e6d89;font-size:9px;font-weight:800}.avatar-choice label{display:flex;align-items:center;gap:7px;min-height:50px;padding:5px 9px;border:1px solid #e8edf5;border-radius:10px;background:#fff;color:#687692;font-size:9px;font-weight:700;cursor:pointer;transition:.18s ease}.avatar-choice label:has(input:checked){border-color:#c6d8ff;background:#f1f6ff;color:#164fbf;box-shadow:0 4px 10px #1459d10d}.avatar-choice input{margin:0;accent-color:#145add}.avatar-choice img{width:36px;height:36px;border-radius:50%;object-fit:cover;object-position:center;border:1px solid #e4eaf4}
 @media(max-width:620px){.avatar-choice{gap:6px}.avatar-choice label{min-height:44px;padding:4px 7px;font-size:8px}.avatar-choice img{width:31px;height:31px}}
+
+/* Portátil em movimento integrado no cartão de boas-vindas do dashboard. */
+.dashboard-device-video{right:24px;top:8px;width:255px;height:190px;opacity:.94;z-index:0;filter:drop-shadow(0 16px 22px #00164240)}.dashboard-hero .dash-hero-copy{position:relative;z-index:1}.dashboard-hero .hero-action{position:relative;z-index:1}
+@media(max-width:900px){.dashboard-device-video{right:10px;top:12px;width:210px;height:155px;opacity:.72}}
+@media(max-width:620px){.dashboard-device-video{right:-4px;top:8px;width:170px;height:128px;opacity:.72}.dashboard-hero .dash-hero-copy{max-width:70%}}
