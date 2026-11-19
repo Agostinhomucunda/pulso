@@ -37,7 +37,8 @@ as $$
     select
       o.id,
       o.title,
-      left(coalesce(o.description, ''), 360) as public_summary,
+      case when (select auth.uid()) is not null
+        then left(coalesce(o.description, ''), 360) else null end as public_summary,
       o.category,
       o.sector,
       o.province,
@@ -46,10 +47,10 @@ as $$
       o.application_deadline,
       o.published_at,
       o.source_name,
-      o.source_url,
-      o.application_url,
+      case when (select auth.uid()) is not null then o.source_url else null end as source_url,
+      case when (select auth.uid()) is not null then o.application_url else null end as application_url,
       o.image_url,
-      o.image_source_url,
+      case when (select auth.uid()) is not null then o.image_source_url else null end as image_source_url,
       jsonb_build_object(
         'name', org.name,
         'logo_url', org.logo_url,

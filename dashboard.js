@@ -20,6 +20,7 @@ let savedIds = new Set();
 let alerts = [];
 let notifications = [];
 let notificationIds = null;
+let isAdmin = false;
 let opportunitiesOffset = 0;
 let opportunitiesHaveMore = false;
 let toastTimer;
@@ -90,6 +91,7 @@ function safeCount(value) {
 }
 
 function activateView(view, { updateHash = true } = {}) {
+  if (view === 'admin' && !isAdmin) view = 'overview';
   const panel = $(`[data-panel="${view}"]`);
   if (!panel) view = 'overview';
   $$('.dash-view').forEach(item => { item.hidden = item.dataset.panel !== view; });
@@ -100,6 +102,7 @@ function activateView(view, { updateHash = true } = {}) {
   if (view === 'notifications') void loadNotifications({ poll: true });
   if (view === 'saved') void loadSavedOpportunities();
   if (view === 'alerts') void loadAlerts();
+  if (view === 'admin' && isAdmin) void loadAdminAssets();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -209,6 +212,167 @@ async function loadStats() {
   $('#statTotal').textContent = safeCount(all.count);
   $('#statJobs').textContent = safeCount(jobs.count);
   $('#statScholarships').textContent = safeCount(scholarships.count);
+}
+
+async function loadAdminAccess() {
+  const { data, error } = await supabaseClient.from('admin_users').select('user_id')
+    .eq('user_id', currentUser.id).maybeSingle();
+  if (error || !data) return;
+  isAdmin = true;
+  $('#adminNavLink').hidden = false;
+  await loadAdminAssets();
+}
+
+async function loadAdminAssets() {
+  if (!isAdmin) return;
+  const target = $('#adminAssetList');
+  target.innerHTML = '<div class="empty-state"><b>A verificar cartões…</b></div>';
+  const { data, error } = await supabaseClient.from('opportunities')
+    .select('id,title,category,image_url,organization_id,organization:organizations(id,name,logo_url)')
+    .eq('status', 'published').eq('verification_status', 'verified')
+    .order('published_at', { ascending: false, nullsFirst: false }).limit(150);
+  if (error) {
+    target.innerHTML = '<div class="empty-state" role="alert"><b>Não foi possível carregar a fila.</b>Confirma a migration inicial e as permissões de administrador.</div>';
+    return;
+  }
+  const rows = (data || []).filter(item => !safeUrl(item.image_url) || !safeUrl(item.organization?.logo_url));
+  $('#adminMissingCount').textContent = safeCount(rows.length);
+  $('#adminMissingCount').hidden = !rows.length;
+  $('#adminAssetAlert').hidden = !rows.length;
+  $('#adminAssetAlertText').textContent = rows.length
+    ? `${safeCount(rows.length)} oportunidade(s) sem fotografia do cartão e/ou logótipo oficial. Podes preencher só os links que faltam.`
+    : 'Todos os cartões publicados têm imagem e logótipo definidos.';
+  if (!rows.length) {
+    target.innerHTML = '<div class="empty-state"><b>Sem cartões incompletos.</b>Quando faltar uma imagem ou um logótipo, aparecerá aqui.</div>';
+    return;
+  }
+  target.innerHTML = rows.map(item => `<form class="admin-asset-row" data-admin-asset="${escapeHtml(item.id)}" data-organization-id="${escapeHtml(item.organization_id || '')}">
+    <div class="admin-asset-heading"><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.organization?.name || 'Organização não associada')} · ${escapeHtml(categoryLabel(item.category))}</small></div>
+    <label>Link da imagem<input name="image_url" type="url" placeholder="https://…" value="${escapeHtml(item.image_url || '')}"></label>
+    <label>Link do logótipo<input name="logo_url" type="url" placeholder="https://…" value="${escapeHtml(item.organization?.logo_url || '')}"></label>
+    <button class="btn btn-primary-soft" type="submit">Guardar links</button>
+  </form>`).join('');
+}
+
+function httpsUrl(value, required = false) {
+  if (!value && !required) return null;
+  try { const url = new URL(value); return url.protocol === 'https:' ? url.href : null; }
+  catch { return null; }
+}
+
+async function saveAdminAssets(event) {
+  const form = event.target.closest('[data-admin-asset]');
+  if (!form || !isAdmin) return;
+  event.preventDefault();
+  const submit = form.querySelector('button[type="submit"]');
+  const imageInput = form.elements.image_url;
+  const logoInput = form.elements.logo_url;
+  const image = httpsUrl(imageInput.value);
+  const logo = httpsUrl(logoInput.value);
+  if ((imageInput.value && !image) || (logoInput.value && !logo)) { notify('Usa links HTTPS válidos para a imagem e o logótipo.'); return; }
+  if (!image && !logo) { notify('Indica pelo menos um link para guardar. Os campos vazios não removem links existentes.'); return; }
+  if (logo && !form.dataset.organizationId) { notify('Esta oportunidade não tem uma organização associada para guardar o logótipo.'); return; }
+  submit.disabled = true;
+  let imageSaved = false;
+  let logoSaved = false;
+  try {
+    if (image) {
+      const { error: opportunityError } = await supabaseClient.from('opportunities').update({ image_url: image }).eq('id', form.dataset.adminAsset);
+      if (opportunityError) throw opportunityError;
+      imageSaved = true;
+    }
+    if (logo) {
+      const { error: organizationError } = await supabaseClient.from('organizations').update({ logo_url: logo }).eq('id', form.dataset.organizationId);
+      if (organizationError) throw organizationError;
+      logoSaved = true;
+    }
+    notify('Links do cartão guardados.');
+    await loadAdminAssets();
+  } catch (error) {
+    console.error('PULSO admin asset update failed', error);
+    if (imageSaved || logoSaved) {
+      notify(`Alteração parcial: ${imageSaved ? 'imagem' : 'logótipo'} guardado; o outro link não foi guardado.`);
+      await loadAdminAssets();
+    } else notify(error.message || 'Não foi possível guardar os links.');
+  } finally { submit.disabled = false; }
+}
+
+async function createManualOpportunity(event) {
+  event.preventDefault();
+  if (!isAdmin) return;
+  const form = event.currentTarget;
+  const values = new FormData(form);
+  const feedback = $('#adminFormFeedback');
+  const website = httpsUrl(String(values.get('official_website') || ''), true);
+  const source = httpsUrl(String(values.get('source_url') || ''), true);
+  const application = httpsUrl(String(values.get('application_url') || ''));
+  const image = httpsUrl(String(values.get('image_url') || ''));
+  const logo = httpsUrl(String(values.get('logo_url') || ''));
+  if (!website || !source || (values.get('application_url') && !application)
+      || (values.get('image_url') && !image) || (values.get('logo_url') && !logo)) {
+    setFeedback(feedback, 'Os links devem ser HTTPS válidos e apontar para fontes oficiais.', 'error'); return;
+  }
+  const submit = $('button[type="submit"]', form);
+  submit.disabled = true;
+  let createdOrganizationId = null;
+  let opportunityCreated = false;
+  let existingOrganization = false;
+  try {
+    const organizationNameValue = String(values.get('organization')).trim();
+    let { data: organization, error } = await supabaseClient.from('organizations')
+      .select('id').eq('official_website', website).maybeSingle();
+    if (error) throw error;
+    if (!organization) {
+      const inserted = await supabaseClient.from('organizations').insert({
+        name: organizationNameValue, official_website: website, logo_url: logo,
+        verification_status: 'verified',
+      }).select('id').single();
+      if (inserted.error) throw inserted.error;
+      organization = inserted.data;
+      createdOrganizationId = organization.id;
+    } else existingOrganization = true;
+    const payload = {
+      organization_id: organization.id, title: String(values.get('title')).trim(),
+      description: String(values.get('description')).trim(), category: String(values.get('category')),
+      province: String(values.get('province') || '').trim() || null,
+      municipality: String(values.get('municipality') || '').trim() || null,
+      application_deadline: String(values.get('application_deadline') || '') || null,
+      source_name: organizationNameValue, source_url: source, application_url: application || source,
+      image_url: image, status: 'published', verification_status: 'verified', published_at: new Date().toISOString(),
+    };
+    const { error: opportunityError } = await supabaseClient.from('opportunities').insert(payload);
+    if (opportunityError) throw opportunityError;
+    opportunityCreated = true;
+    form.reset();
+    if (existingOrganization && logo) {
+      const { error: organizationError } = await supabaseClient.from('organizations')
+        .update({ logo_url: logo, verification_status: 'verified' }).eq('id', organization.id);
+      if (organizationError) {
+        setFeedback(feedback, 'A oportunidade foi publicada, mas o logótipo ficou pendente. Completa-o na fila de cartões do painel.', 'error');
+        await Promise.all([loadAdminAssets(), loadOpportunities(), loadStats()]);
+        return;
+      }
+    }
+    setFeedback(feedback, 'Oportunidade guardada e publicada. Confirma sempre a fonte oficial e o prazo.', 'success');
+    await Promise.all([loadAdminAssets(), loadOpportunities(), loadStats()]);
+  } catch (error) {
+    console.error('PULSO manual opportunity creation failed', error);
+    let cleanupNote = '';
+    if (createdOrganizationId && !opportunityCreated) {
+      const { error: cleanupError } = await supabaseClient.from('organizations').delete().eq('id', createdOrganizationId);
+      if (cleanupError) {
+        console.error('PULSO could not clean up an unused organization', cleanupError);
+        cleanupNote = ' A organização ficou criada sem oportunidade; remove-a ou tenta novamente no painel.';
+      } else cleanupNote = ' A organização não utilizada foi removida.';
+    }
+    if (opportunityCreated) {
+      form.reset();
+      setFeedback(feedback, 'A oportunidade foi publicada, mas o logótipo não foi actualizado. Completa-o na fila de cartões do painel.', 'error');
+      await Promise.all([loadAdminAssets(), loadOpportunities(), loadStats()]);
+    } else {
+      setFeedback(feedback, `${error.message || 'Não foi possível guardar a oportunidade. Verifica se a migration de permissões está activa.'}${cleanupNote}`, 'error');
+    }
+  } finally { submit.disabled = false; }
 }
 
 async function loadOpportunities({ append = false } = {}) {
@@ -571,6 +735,9 @@ function bindEvents() {
   $('#signOutButton').addEventListener('click', () => void signOut());
   $('#alertForm').addEventListener('submit', createAlert);
   $('#profileForm').addEventListener('submit', saveProfile);
+  $('#manualOpportunityForm').addEventListener('submit', createManualOpportunity);
+  $('#adminAssetList').addEventListener('submit', saveAdminAssets);
+  $('#refreshAdminAssets').addEventListener('click', () => void loadAdminAssets());
   $('#browserAlertButton').addEventListener('click', () => void enableBrowserAlerts());
   $('#browserAlertInline').addEventListener('click', () => void enableBrowserAlerts());
   $('#refreshNotifications').addEventListener('click', () => void loadNotifications());
@@ -641,7 +808,7 @@ async function initializeDashboard() {
     });
     const hashView = location.hash.slice(1);
     const firstView = $(`[data-panel="${hashView}"]`) ? hashView : 'overview';
-    await Promise.allSettled([loadProfile(), loadStats(), loadOpportunities(), loadSavedOpportunities(), loadAlerts(), loadNotifications()]);
+    await Promise.allSettled([loadProfile(), loadStats(), loadOpportunities(), loadSavedOpportunities(), loadAlerts(), loadNotifications(), loadAdminAccess()]);
     updateIdentity();
     updateBrowserAlertButtons();
     $('#dashboardLoading').hidden = true;
