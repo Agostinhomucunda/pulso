@@ -4,6 +4,7 @@
 
 ### Home pública e contactos
 - [x] Página responsiva, catálogo Supabase real e apenas registos publicados/verificados; sem dados fictícios.
+- [x] Homepage ligada à RPC pública limitada a cinco cartões, sem `select` anónimo directo da tabela completa de oportunidades.
 - [x] Pesquisa, filtros, detalhes, fontes originais e ligações de candidatura.
 - [x] Contactos na navegação e secção pública: `+244 936 975 657`, `+244 955 614 045`, `pulsobussines@gmail.com` e WhatsApp em `wa.me/244955614045`.
 - [x] Ligações `tel:`, `mailto:` e WhatsApp testadas também em ecrã móvel.
@@ -32,6 +33,7 @@
 - [x] Contactos e apoio no dashboard, incluindo telefones, Gmail e botão WhatsApp.
 - [x] Criar migração idempotente que notifica uma vez por utilizador/oportunidade elegível, sem privilégio de escrita público.
 - [ ] O proprietário deve executar no Supabase `supabase/migrations/20261119122700_opportunity_alert_notifications.sql` (ou, se usou setup móvel, `supabase/mobile-setup/07_opportunity_alert_notifications.sql`). Até à execução, as preferências são guardadas, mas a trigger de correspondência automática ainda não corre.
+- [ ] O proprietário deve executar no Supabase `supabase/migrations/20261119140000_public_opportunity_cards.sql` antes de publicar a home actualizada; até à execução, a homepage actualizada ficará sem catálogo porque a RPC ainda não existe.
 
 ## Segurança e trabalho futuro
 - [x] Manter RLS do esquema inicial, chave publishable pública e nenhuma chave privilegiada no browser.
