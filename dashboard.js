@@ -161,6 +161,7 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
   const mark = logo
     ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy">`
     : escapeHtml(initials(org));
+  const image = safeUrl(item.image_url);
   const place = [item.municipality, item.province].filter(Boolean).map(escapeHtml).join(', ') || 'Localização não indicada';
   const deadline = formatDate(item.application_deadline);
   const published = formatDate(item.published_at);
@@ -171,8 +172,8 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
   ].filter(Boolean).join('');
   const saved = savedIds.has(item.id);
   const source = safeUrl(item.source_url);
-  return `<article class="dash-op-card">
-    <span class="dash-op-mark" aria-hidden="true">${mark}</span>
+  return `<article class="dash-op-card" data-opportunity="${id}">
+    <span class="dash-op-visual" aria-hidden="true">${image ? `<img class="dash-op-image" src="${escapeHtml(image)}" alt="" loading="lazy">` : '<span class="dash-op-image dash-op-image-empty">P·</span>'}<span class="dash-op-mark">${mark}</span></span>
     <div class="dash-op-content">
       <h3>${escapeHtml(item.title)} <img class="verified-check-img" src="assets/logos/verified-3d.png" alt="Oportunidade verificada" title="Oportunidade verificada"></h3>
       <span class="dash-op-org">${escapeHtml(org)}</span>
@@ -412,7 +413,7 @@ async function loadOpportunities({ append = false } = {}) {
   const from = append ? opportunitiesOffset : 0;
   const to = from + PAGE_SIZE - 1;
   const { data, error } = await supabaseClient.from('opportunities')
-    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,organization:organizations(name,logo_url)')
+    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(name,logo_url)')
     .eq('status', 'published').eq('verification_status', 'verified')
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false }).range(from, to);
@@ -435,7 +436,7 @@ async function loadSavedOpportunities() {
   const target = $('#savedOpportunityList');
   target.innerHTML = '<div class="empty-state"><b>A carregar oportunidades guardadas…</b></div>';
   const { data, error } = await supabaseClient.from('saved_opportunities')
-    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,organization:organizations(name,logo_url))')
+    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(name,logo_url))')
     .eq('user_id', currentUser.id).order('created_at', { ascending: false });
   if (error) {
     console.error('PULSO dashboard saved items failed', error);
@@ -630,7 +631,7 @@ async function openOpportunity(id) {
   let item = opportunities.find(row => row.id === id) || savedRows.find(row => row.id === id);
   if (!item) {
     const { data, error } = await supabaseClient.from('opportunities')
-      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,organization:organizations(name,logo_url)')
+      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(name,logo_url)')
       .eq('id', id).eq('status', 'published').eq('verification_status', 'verified').maybeSingle();
     if (error || !data) {
       notify('Esta oportunidade já não está disponível.');
@@ -644,10 +645,12 @@ async function openOpportunity(id) {
 function renderOpportunityDetail(item) {
   const source = safeUrl(item.source_url);
   const apply = safeUrl(item.application_url) || source;
+  const image = safeUrl(item.image_url);
   const details = [item.description, item.requirements ? `Requisitos: ${item.requirements}` : '',
     item.education_level ? `Escolaridade: ${item.education_level}` : '', item.experience ? `Experiência: ${item.experience}` : ''].filter(Boolean);
   const place = [item.municipality, item.province].filter(Boolean).join(', ') || 'Localização não indicada';
   $('#opportunityDetail').innerHTML = `<div class="opportunity-detail-inner">
+    ${image ? `<img class="detail-image" src="${escapeHtml(image)}" alt="Imagem de ${escapeHtml(item.title)}" loading="lazy">` : ''}
     <div class="detail-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> OPORTUNIDADE VERIFICADA</div>
     <h2 id="detailTitle">${escapeHtml(item.title)}</h2>
     <p>${escapeHtml(organizationName(item))} · ${escapeHtml(place)}</p>
@@ -793,8 +796,10 @@ function bindEvents() {
     const read = event.target.closest('[data-read-notification]');
     const notificationOpportunity = event.target.closest('[data-notification-opportunity]');
     const retry = event.target.closest('[data-retry-opportunities]');
+    const card = event.target.closest('[data-opportunity]');
     if (save) void toggleSavedOpportunity(save.dataset.saveOpportunity);
     if (detail) void openOpportunity(detail.dataset.detailOpportunity);
+    if (!save && !detail && card) void openOpportunity(card.dataset.opportunity);
     if (read) void markNotificationRead(read.dataset.readNotification);
     if (notificationOpportunity) void openOpportunity(notificationOpportunity.dataset.notificationOpportunity);
     if (retry) void loadOpportunities();

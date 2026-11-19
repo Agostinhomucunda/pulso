@@ -29,3 +29,8 @@
 
 /* Logótipos fornecidos pelo utilizador: sempre contidos e sem deformação. */
 .cat-icon{overflow:hidden;flex:none}.cat-icon img{width:100%;height:100%;display:block;object-fit:contain;object-position:center}.category-3d-img{width:22px;height:22px;display:inline-block;flex:none;object-fit:contain;object-position:center;vertical-align:middle}.premium-op-card .op-caption .category-3d-img{width:22px;height:22px}.verified-check-img{width:19px;height:19px;display:inline-block;object-fit:contain;object-position:center;vertical-align:-4px;margin-left:4px}.stat-icon img{width:100%;height:100%;display:block;object-fit:contain;object-position:center}
+
+/* Detalhe simples e ampliado da oportunidade, sem sair do contexto da lista. */
+.modal:has(.opportunity-detail-inner){width:min(92vw,620px);max-height:88vh;overflow:auto}.detail-image{width:100%;height:190px;display:block;margin:0 0 18px;border-radius:14px;background:#edf3ff;object-fit:cover;object-position:center}.opportunity-detail-inner .detail-description{margin:14px 0;padding:14px;border-radius:12px;background:#f7f9fd;color:#596a86;font-size:11px;line-height:1.75;white-space:pre-wrap}.opportunity-detail-inner .detail-description:empty{display:none}
+@media(max-width:520px){.detail-image{height:145px;margin-bottom:14px}.opportunity-detail-inner .detail-description{font-size:10px;padding:12px}}
+.premium-op-card{cursor:pointer}.premium-op-card button{position:relative;z-index:1}
