@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-19T13:23:17.172862+00:00",
+  "generated_at": "2026-11-19T13:24:26.868841+00:00",
   "items": [
     {
       "id": "auto-eff3c897c327d6d2a0ca",
@@ -28,22 +28,17 @@
     {
       "source_id": "angop",
       "url": "https://angop.ao/noticias/sociedade/",
-      "error": "Remote end closed connection without response"
+      "error": "[Errno 104] Connection reset by peer"
     },
     {
       "source_id": "angop",
       "url": "https://angop.ao/sitemap_news.xml/",
-      "error": "Remote end closed connection without response"
+      "error": "[Errno 104] Connection reset by peer"
     },
     {
       "source_id": "angop",
       "url": "https://angop.ao/sitemap.xml/",
-      "error": "Remote end closed connection without response"
-    },
-    {
-      "source_id": "verangola-empregos",
-      "url": "https://empregos.verangola.net/search/relation,HIRE",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "[Errno 104] Connection reset by peer"
     },
     {
       "source_id": "us-embassy-luanda",
@@ -63,7 +58,7 @@
     {
       "source_id": "angola-government",
       "url": "https://governo.gov.ao/noticias/",
-      "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'governo.gov.ao'. (_ssl.c:1000)>"
+      "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'governo.gov.ao'. (_ssl.c:1081)>"
     }
   ]
 }
