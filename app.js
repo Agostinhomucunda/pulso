@@ -1,76 +1,77 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, AUTH_REDIRECT_URL } from './supabase-config.js';
 
-const entries = [
-  {id:'demo-01',title:'Assistente de Operações',org:'Organização de demonstração',initials:'OD',category:'Empregos',place:'Luanda',date:'Exemplo',kind:'Publicação de exemplo',tone:'',status:'Demonstração',summary:'Cartão ilustrativo para demonstrar como uma oportunidade poderá ser apresentada quando houver uma fonte oficial validada.'},
-  {id:'demo-02',title:'Bolsa de Estudos — Ciências e Tecnologia',org:'Programa de demonstração',initials:'PD',category:'Bolsas',place:'Angola · Internacional',date:'Exemplo',kind:'Programa ilustrativo',tone:'gold',status:'Demonstração',summary:'Exemplo visual de bolsa. Não representa uma candidatura aberta nem um programa actualmente disponível.'},
-  {id:'demo-03',title:'Concurso Público — Perfil Administrativo',org:'Instituição de demonstração',initials:'ID',category:'Concursos',place:'Luanda',date:'Exemplo',kind:'Concurso ilustrativo',tone:'rose',status:'Demonstração',summary:'Exemplo de como um concurso público será identificado. Não há anúncio oficial associado a este cartão.'},
-  {id:'demo-04',title:'Estágio Profissional em Contabilidade',org:'Entidade de demonstração',initials:'ED',category:'Estágios',place:'Benguela',date:'Exemplo',kind:'Estágio ilustrativo',tone:'green',status:'Demonstração',summary:'Cartão de demonstração. Os dados de localização e área são apenas ilustrativos.'},
-  {id:'demo-05',title:'Formação introdutória em competências digitais',org:'Centro de demonstração',initials:'CD',category:'Formação',place:'Online',date:'Exemplo',kind:'Formação ilustrativa',tone:'',status:'Demonstração',summary:'Exemplo de apresentação de formação. Não é uma inscrição ou oferta real.'},
-  {id:'demo-06',title:'Analista de Dados — Oportunidade ilustrativa',org:'Empresa de demonstração',initials:'EM',category:'Empregos',place:'Luanda',date:'Exemplo',kind:'Vaga ilustrativa',tone:'gold',status:'Demonstração',summary:'Vaga inteiramente demonstrativa, sem empresa, requisitos ou processo de candidatura reais.'}
-];
-const organizations = [
-  {name:'Instituição de exemplo',type:'Sector público · demonstração',initials:'IE',tone:''},
-  {name:'Empresa ilustrativa',type:'Tecnologia · demonstração',initials:'EI',tone:'c2'},
-  {name:'Programa de exemplo',type:'Educação · demonstração',initials:'PE',tone:'c3'},
-  {name:'Organização ilustrativa',type:'Serviços · demonstração',initials:'OI',tone:'c4'}
-];
+const PAGE_SIZE=20;
+const categoryLabels={employment:'Empregos',scholarship:'Bolsas',public_competition:'Concursos',internship:'Estágios',training:'Formação',recruitment_program:'Programas'};
 let selectedCategory='Todas';
 let searchTerm='';
-let showAll=false;
+let entries=[];
+let organizations=[];
+let entriesLoaded=false;
+let entriesError=false;
+let companiesLoaded=false;
+let companiesError=false;
+let entriesHasMore=false;
+let entriesOffset=0;
 let toastTimer;
 let supabaseClient=null;
 let currentUser=null;
+let savedIds=new Set();
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
-const saved=()=>{try{return JSON.parse(localStorage.getItem('pulso-saved')||'[]')}catch{return []}};
+const modal=$('#appModal');
+
 function notify(message){const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3000)}
-function esc(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function formMessage(form,message,kind='info'){
-  const box=$('.form-feedback',form);
-  if(!box)return;
-  box.textContent=message;
-  box.dataset.kind=kind;
-  box.hidden=!message;
-}
-function setFormBusy(form,busy,label='Aguarda…'){
-  const button=$('button[type="submit"]',form);
-  if(!button)return;
-  if(busy){button.dataset.originalLabel=button.textContent;button.disabled=true;button.textContent=label}
-  else{button.disabled=false;if(button.dataset.originalLabel)button.textContent=button.dataset.originalLabel;delete button.dataset.originalLabel}
-}
-function updateAuthControls(user){
-  currentUser=user||null;
-  $$('[data-auth-state="signed-out"]').forEach(el=>{el.hidden=Boolean(currentUser)});
-  $$('[data-auth-state="signed-in"]').forEach(el=>{el.hidden=!currentUser});
-}
+function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function safeUrl(value){try{const url=new URL(value);return ['https:','http:'].includes(url.protocol)?url.href:''}catch{return ''}}
+function initials(value){return String(value||'P').trim().split(/\s+/).slice(0,2).map(part=>part[0]||'').join('').toLocaleUpperCase('pt-AO')||'P'}
+function storedSaved(){try{return JSON.parse(localStorage.getItem('pulso-saved')||'[]').filter(id=>typeof id==='string')}catch{return []}}
+function formMessage(form,message,kind='info'){const box=$('.form-feedback',form);if(!box)return;box.textContent=message;box.dataset.kind=kind;box.hidden=!message}
+function setFormBusy(form,busy,label='Aguarda…'){const button=$('button[type="submit"]',form);if(!button)return;if(busy){button.dataset.originalLabel=button.textContent;button.disabled=true;button.textContent=label}else{button.disabled=false;if(button.dataset.originalLabel)button.textContent=button.dataset.originalLabel;delete button.dataset.originalLabel}}
+function updateAuthControls(user){currentUser=user||null;$$('[data-auth-state="signed-out"]').forEach(el=>{el.hidden=Boolean(currentUser)});$$('[data-auth-state="signed-in"]').forEach(el=>{el.hidden=!currentUser});void syncSavedItems()}
+function dateLabel(value){if(!value)return '';const date=new Date(`${value}T00:00:00`);if(Number.isNaN(date.valueOf()))return '';return new Intl.DateTimeFormat('pt-AO',{dateStyle:'medium'}).format(date)}
+function placeLabel(item){return [item.municipality,item.province].filter(Boolean).join(', ')||'Localização não indicada'}
+function categoryLabel(item){return categoryLabels[item.category]||'Oportunidade'}
+function organizationName(item){return item.organization?.name||item.source_name||'Entidade anunciante'}
+function entryMatches(item){const category=selectedCategory==='Todas'||categoryLabel(item)===selectedCategory;const haystack=[item.title,organizationName(item),item.category,item.sector,item.province,item.municipality,item.description,item.requirements].filter(Boolean).join(' ').toLocaleLowerCase('pt-AO');return category&&haystack.includes(searchTerm.toLocaleLowerCase('pt-AO'))}
 function renderEntries(){
-  const filtered=entries.filter(item=>{
-    const byCategory=selectedCategory==='Todas'||item.category===selectedCategory;
-    const haystack=[item.title,item.org,item.category,item.place,item.kind].join(' ').toLocaleLowerCase('pt');
-    return byCategory&&haystack.includes(searchTerm.toLocaleLowerCase('pt'));
-  });
-  const shown=showAll?filtered:filtered.slice(0,4);
-  $('#opportunityList').innerHTML=shown.length?shown.map(item=>{
-    const isSaved=saved().includes(item.id);
-    return `<article class="op-card"><div class="org-mark ${esc(item.tone)}" aria-hidden="true">${esc(item.initials)}</div><div class="op-copy"><h3>${esc(item.title)}</h3><span class="org-name">${esc(item.org)}</span><div class="op-meta"><span>⌖ ${esc(item.place)}</span><span>◷ ${esc(item.kind)}</span></div></div><span class="op-badge demo">${esc(item.status)}</span><button class="detail-btn" data-detail="${esc(item.id)}" aria-label="Ver detalhe de ${esc(item.title)}">↗</button><button class="save-btn ${isSaved?'saved':''}" data-save="${esc(item.id)}" aria-label="${isSaved?'Remover dos guardados':'Guardar'} ${esc(item.title)}">${isSaved?'♥':'♡'}</button></article>`;
-  }).join(''):'<div class="empty-state"><b>Não encontrámos resultados.</b>Experimenta outra pesquisa ou categoria.</div>';
-  $('#resultsNote').textContent=searchTerm?`${filtered.length} resultado(s) para “${searchTerm}” · exemplos demonstrativos`:'';
-  $('#loadMore').hidden=filtered.length<=4||showAll;
+  const list=$('#opportunityList');const filtered=entries.filter(entryMatches);$('#loadMore').hidden=!entriesHasMore||entriesError||!entriesLoaded;
+  list.setAttribute('aria-busy',String(!entriesLoaded));
+  if(!entriesLoaded){list.innerHTML='<div class="empty-state" role="status"><b>A carregar oportunidades…</b>Estamos a consultar as publicações verificadas.</div>';$('#resultsNote').textContent='';return}
+  if(entriesError){list.innerHTML='<div class="empty-state" role="alert"><b>Não foi possível carregar as oportunidades.</b>Verifica a ligação e tenta novamente.<button class="btn btn-outline-blue retry-button" type="button" data-retry-entries>Tentar novamente</button></div>';$('#resultsNote').textContent='';return}
+  if(!filtered.length){const title=entries.length?'Não encontrámos oportunidades com estes critérios.':'Ainda não há oportunidades publicadas.';const detail=entries.length?'Experimenta outra pesquisa ou categoria.':'As oportunidades aparecerão aqui depois de serem verificadas e publicadas.';list.innerHTML=`<div class="empty-state"><b>${esc(title)}</b>${esc(detail)}</div>`;$('#resultsNote').textContent=searchTerm?`0 resultados para “${esc(searchTerm)}”`:'';return}
+  list.innerHTML=filtered.map(item=>{
+    const org=organizationName(item);const mark=item.organization?.logo_url?`<img src="${esc(safeUrl(item.organization.logo_url))}" alt="" loading="lazy">`:esc(initials(org));
+    const deadline=dateLabel(item.application_deadline);const published=dateLabel(item.published_at);
+    const metadata=[deadline?`Candidaturas até ${esc(deadline)}`:null,published?`Publicado ${esc(published)}`:null].filter(Boolean);
+    return `<article class="op-card"><div class="org-mark" aria-hidden="true">${mark}</div><div class="op-copy"><h3>${esc(item.title)}</h3><span class="org-name">${esc(org)}</span><div class="op-meta"><span>⌖ ${esc(placeLabel(item))}</span><span>▤ ${esc(categoryLabel(item))}</span>${metadata.map(text=>`<span>◷ ${text}</span>`).join('')}</div></div><span class="op-badge">Verificada</span><button class="detail-btn" data-detail="${esc(item.id)}" aria-label="Ver detalhe de ${esc(item.title)}">↗</button><button class="save-btn ${savedIds.has(item.id)?'saved':''}" data-save="${esc(item.id)}" aria-label="${savedIds.has(item.id)?'Remover dos guardados':'Guardar'} ${esc(item.title)}">${savedIds.has(item.id)?'♥':'♡'}</button></article>`;
+  }).join('');
+  if(searchTerm)$('#resultsNote').textContent=`${filtered.length} resultado(s) entre ${entries.length} oportunidades carregadas.`;else $('#resultsNote').textContent=`${entries.length} oportunidade(s) verificadas carregadas.`;
 }
 function renderCompanies(){
-  $('#companyGrid').innerHTML=organizations.map(org=>`<article class="company-card"><span class="company-logo ${org.tone}">${org.initials}</span><span><b>${org.name}</b><small>${org.type}</small></span><span class="company-arrow">↗</span></article>`).join('');
+  const grid=$('#companyGrid');
+  grid.setAttribute('aria-busy',String(!companiesLoaded));
+  if(!companiesLoaded){grid.innerHTML='<div class="empty-state" role="status"><b>A carregar organizações…</b></div>';return}
+  if(companiesError){grid.innerHTML='<div class="empty-state" role="alert"><b>Não foi possível carregar as organizações.</b><button class="btn btn-outline-blue retry-button" type="button" data-retry-companies>Tentar novamente</button></div>';return}
+  if(!organizations.length){grid.innerHTML='<div class="empty-state"><b>Ainda não há organizações verificadas.</b>As entidades serão apresentadas após a validação da informação.</div>';return}
+  grid.innerHTML=organizations.map(org=>{
+    const website=safeUrl(org.official_website);const name=esc(org.name);const logo=safeUrl(org.logo_url);const mark=logo?`<img src="${esc(logo)}" alt="" loading="lazy">`:esc(initials(org.name));const subtitle=[org.sector,org.municipality,org.province].filter(Boolean).map(esc).join(' · ')||'Organização verificada';
+    const card=`<span class="company-logo">${mark}</span><span><b>${name}</b><small>${subtitle}</small></span>${website?'<span class="company-arrow" aria-hidden="true">↗</span>':''}`;
+    return website?`<a class="company-card" href="${esc(website)}" target="_blank" rel="noopener noreferrer">${card}</a>`:`<article class="company-card">${card}</article>`;
+  }).join('');
 }
-const modal=$('#appModal');
 function openModal(type,id){
   const body=$('#modalBody');
   if(type==='detail'){
-    const item=entries.find(x=>x.id===id);if(!item)return;
-    body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> OPORTUNIDADE · EXEMPLO</div><h2 id="modalTitle">${esc(item.title)}</h2><p>${esc(item.org)} · ${esc(item.place)}</p><div class="modal-meta"><span class="modal-pill">${esc(item.category)}</span><span class="modal-pill">Demonstração</span></div><p>${esc(item.summary)}</p><div class="source-box"><b>Origem:</b> item fictício para demonstração visual. Não existe publicação original nem link de candidatura associado. O PULSO não o apresenta como confirmado.</div><button class="btn btn-outline-blue" data-modal-save="${esc(item.id)}">${saved().includes(item.id)?'Remover dos guardados':'Guardar exemplo'}</button></div>`;
+    const item=entries.find(row=>row.id===id);if(!item)return;
+    const org=organizationName(item);const source=safeUrl(item.source_url);const apply=safeUrl(item.application_url)||source;const deadline=dateLabel(item.application_deadline);const details=[item.description,item.requirements?`Requisitos: ${item.requirements}`:null,item.education_level?`Nível de escolaridade: ${item.education_level}`:null,item.experience?`Experiência: ${item.experience}`:null].filter(Boolean);
+    const sourceLink=source?`<a class="btn btn-outline-blue" href="${esc(source)}" target="_blank" rel="noopener noreferrer">Ver publicação original ↗</a>`:'';const applyLink=apply?`<a class="btn btn-yellow" href="${esc(apply)}" target="_blank" rel="noopener noreferrer">Aceder à candidatura ↗</a>`:'';
+    body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> OPORTUNIDADE VERIFICADA</div><h2 id="modalTitle">${esc(item.title)}</h2><p>${esc(org)} · ${esc(placeLabel(item))}</p><div class="modal-meta"><span class="modal-pill">${esc(categoryLabel(item))}</span>${deadline?`<span class="modal-pill">Prazo: ${esc(deadline)}</span>`:''}</div>${details.map(text=>`<p>${esc(text)}</p>`).join('')}<div class="source-box"><b>Fonte:</b> ${esc(item.source_name||org)}${source?` · <a href="${esc(source)}" target="_blank" rel="noopener noreferrer">Abrir fonte</a>`:''}</div><div class="modal-actions">${applyLink}${sourceLink}</div><button class="btn btn-outline-blue" data-modal-save="${esc(item.id)}">${savedIds.has(item.id)?'Remover dos guardados':'Guardar oportunidade'}</button></div>`;
   }else if(type==='login'){
-    body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO</div><h2 id="modalTitle">Que bom ter-te de volta.</h2><p>Entra na tua conta PULSO com o e-mail e a palavra-passe.</p><form class="form-stack" id="authLoginForm"><label>E-mail<input type="email" name="email" autocomplete="email" placeholder="nome@exemplo.com" required></label><label>Palavra-passe<input type="password" name="password" autocomplete="current-password" placeholder="A tua palavra-passe" required></label><div class="form-feedback" role="status" aria-live="polite" hidden></div><button class="btn btn-yellow" type="submit">Entrar <span>→</span></button><button class="auth-link" type="button" data-open="recover">Esqueceste a palavra-passe?</button></form><div class="modal-note">O acesso usa autenticação Supabase. As oportunidades visíveis continuam a ser exemplos de demonstração.</div></div>`;
+    body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO</div><h2 id="modalTitle">Que bom ter-te de volta.</h2><p>Entra na tua conta PULSO com o e-mail e a palavra-passe.</p><form class="form-stack" id="authLoginForm"><label>E-mail<input type="email" name="email" autocomplete="email" placeholder="nome@exemplo.com" required></label><label>Palavra-passe<input type="password" name="password" autocomplete="current-password" required></label><div class="form-feedback" role="status" aria-live="polite" hidden></div><button class="btn btn-yellow" type="submit">Entrar <span>→</span></button><button class="auth-link" type="button" data-open="recover">Esqueceste a palavra-passe?</button><button class="auth-link" type="button" data-open="register">Ainda não tens conta? Criar conta</button></form></div>`;
     $('#authLoginForm').addEventListener('submit',handleLogin);
   }else if(type==='register'){
-    body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO</div><h2 id="modalTitle">Registo público em preparação</h2><p>Estamos a preparar a política de privacidade e os termos antes de começar a receber dados de novas contas.</p><div class="modal-note">Por enquanto, não introduzas aqui o teu e-mail nem a tua palavra-passe. O registo público será activado depois de os documentos de privacidade estarem definidos.</div><button class="btn btn-outline-blue" type="button" data-open="login">Já tenho conta</button></div>`;
+    body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO</div><h2 id="modalTitle">Criar conta</h2><p>Cria o teu acesso para acompanhar oportunidades e guardar as que te interessam.</p><form class="form-stack" id="authRegisterForm"><label>Nome<input type="text" name="full_name" autocomplete="name" maxlength="120" required></label><label>E-mail<input type="email" name="email" autocomplete="email" placeholder="nome@exemplo.com" required></label><label>Palavra-passe<input type="password" name="password" autocomplete="new-password" minlength="8" required></label><label>Confirmar palavra-passe<input type="password" name="password_confirmation" autocomplete="new-password" minlength="8" required></label><label class="consent-label"><input type="checkbox" name="consent" required><span>Li e aceito a <a href="#privacidade" data-open="privacy">Política de Privacidade</a> e os <a href="#termos" data-open="terms">Termos de Utilização</a>.</span></label><div class="form-feedback" role="status" aria-live="polite" hidden></div><button class="btn btn-yellow" type="submit">Criar conta <span>→</span></button><button class="auth-link" type="button" data-open="login">Já tenho conta? Entrar</button></form><p class="auth-caption">Será enviado um e-mail para confirmares o endereço e activares a conta.</p></div>`;
+    $('#authRegisterForm').addEventListener('submit',handleRegistration);
   }else if(type==='recover'){
     body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO</div><h2 id="modalTitle">Recuperar palavra-passe</h2><p>Indica o e-mail da tua conta. Se estiver registado, enviaremos uma ligação para definires uma nova palavra-passe.</p><form class="form-stack" id="authRecoverForm"><label>E-mail<input type="email" name="email" autocomplete="email" placeholder="nome@exemplo.com" required></label><div class="form-feedback" role="status" aria-live="polite" hidden></div><button class="btn btn-yellow" type="submit">Enviar ligação <span>→</span></button><button class="auth-link" type="button" data-open="login">Voltar ao acesso</button></form></div>`;
     $('#authRecoverForm').addEventListener('submit',handleRecovery);
@@ -79,101 +80,46 @@ function openModal(type,id){
     $('#authSetPasswordForm').addEventListener('submit',handlePasswordUpdate);
   }else if(type==='account'){
     const name=currentUser?.user_metadata?.full_name||'Conta PULSO';
-    body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> A MINHA CONTA</div><h2 id="modalTitle">Olá, ${esc(name)}.</h2><p>${esc(currentUser?.email||'')}</p><div class="modal-note">A autenticação está ligada. Os favoritos e alertas ainda são demonstrações guardadas neste navegador.</div><button class="btn btn-outline-blue" type="button" data-auth-signout>Terminar sessão</button></div>`;
+    body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> A MINHA CONTA</div><h2 id="modalTitle">Olá, ${esc(name)}.</h2><p>${esc(currentUser?.email||'')}</p><p>Os favoritos da tua conta ficam associados ao teu acesso.</p><button class="btn btn-outline-blue" type="button" data-auth-signout>Terminar sessão</button></div>`;
   }else if(type==='company'){
-    body.innerHTML='<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO PARA ORGANIZAÇÕES</div><h2 id="modalTitle">Cadastro empresarial em breve!</h2><p>Estamos a preparar um processo de verificação para garantir que apenas empresas e instituições legítimas possam publicar oportunidades no PULSO.</p><p>Em breve disponibilizaremos esta funcionalidade. Nesta fase não são criadas contas empresariais nem aceites publicações.</p><button class="btn btn-yellow" id="companyOk">Entendido</button></div>';
-    $('#companyOk').addEventListener('click',()=>modal.close());
+    body.innerHTML='<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO PARA ORGANIZAÇÕES</div><h2 id="modalTitle">Publicação para organizações</h2><p>As organizações e oportunidades passam por verificação antes de aparecerem no catálogo.</p><p>O processo de publicação empresarial ainda não está disponível. As oportunidades podem ser consultadas na publicação da fonte oficial.</p></div>';
   }else if(type==='contact'){
-    body.innerHTML='<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO</div><h2 id="modalTitle">Contacto em preparação</h2><p>Os canais oficiais de contacto serão anunciados quando estiverem definidos. Não apresentamos um endereço de demonstração como se fosse real.</p></div>';
+    body.innerHTML='<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO</div><h2 id="modalTitle">Contacto</h2><p>Os canais oficiais de contacto serão publicados nesta secção quando estiverem definidos.</p></div>';
   }else if(type==='privacy'){
-    body.innerHTML='<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO</div><h2 id="modalTitle">Privacidade em preparação</h2><p>A política de privacidade do PULSO ainda está a ser preparada. Até ser publicada, o registo público permanece fechado. A autenticação é destinada apenas a contas criadas ou convidadas pelo proprietário.</p></div>';
+    body.innerHTML='<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PRIVACIDADE</div><h2 id="modalTitle">Política de Privacidade</h2><p>Para criar e autenticar uma conta, o PULSO utiliza o teu nome e endereço de e-mail. A palavra-passe é gerida pelo serviço de autenticação Supabase; não é apresentada à equipa do PULSO.</p><p>O perfil é guardado na base de dados do PULSO. Os dados da conta servem para disponibilizar o acesso e funcionalidades associadas, como guardar oportunidades. Não introduzas informação sensível no perfil.</p><p>Para questões sobre os teus dados, contacta a equipa do PULSO através do canal oficial quando este for publicado. Esta informação será actualizada à medida que os canais e procedimentos de privacidade forem formalizados.</p></div>';
   }else if(type==='terms'){
-    body.innerHTML='<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> PULSO</div><h2 id="modalTitle">Termos em preparação</h2><p>Os termos de utilização ainda não foram publicados. O PULSO continua em fase de preparação e as oportunidades visíveis são exemplos de demonstração.</p></div>';
+    body.innerHTML='<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> TERMOS DE UTILIZAÇÃO</div><h2 id="modalTitle">Termos de Utilização</h2><p>O PULSO organiza oportunidades e liga cada anúncio à fonte indicada. Confirma sempre os requisitos, prazos e condições na publicação original da entidade anunciante.</p><p>A decisão de candidatura, a comunicação e o processo de selecção pertencem à entidade responsável pelo anúncio. O PULSO não garante a disponibilidade ou o resultado de uma candidatura.</p><p>As contas destinam-se à utilização individual do serviço. Não partilhes a tua palavra-passe nem uses a plataforma para publicar informação falsa ou não autorizada.</p></div>';
   }else if(type==='notifications'){
-    body.innerHTML='<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> CENTRO DE NOTIFICAÇÕES</div><h2 id="modalTitle">Novidades do PULSO</h2><div class="modal-item"><b>Pesquisa e favoritos já disponíveis</b><small>As interacções desta versão ficam guardadas apenas no teu navegador.</small></div><div class="modal-item"><b>Radar PULSO AI em preparação</b><small>Esta demonstração não monitoriza fontes nem emite previsões reais.</small></div><div class="modal-note">Notificações por e-mail e alertas reais serão activados com o backend.</div></div>';
+    body.innerHTML=`<div class="modal-inner"><div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> NOTIFICAÇÕES</div><h2 id="modalTitle">As tuas notificações</h2><div id="notificationList"><div class="empty-state" role="status">A carregar notificações…</div></div></div>`;void loadNotifications();
   }
   if(!modal.open)modal.showModal();
 }
-function authNotReady(form){formMessage(form,'O serviço de autenticação não carregou. Verifica a ligação à Internet e tenta novamente.','error')}
-async function handleLogin(event){
-  event.preventDefault();
-  const form=event.currentTarget;formMessage(form,'');
-  if(!supabaseClient){authNotReady(form);return}
-  const values=new FormData(form);setFormBusy(form,true,'A entrar…');
-  const {error}=await supabaseClient.auth.signInWithPassword({email:String(values.get('email')).trim(),password:String(values.get('password'))});
-  setFormBusy(form,false);
-  if(error){formMessage(form,'Não foi possível entrar. Confirma o e-mail e a palavra-passe e tenta novamente.','error');return}
-  modal.close();notify('Sessão iniciada.');
-}
-async function handleRecovery(event){
-  event.preventDefault();
-  const form=event.currentTarget;formMessage(form,'');
-  if(!supabaseClient){authNotReady(form);return}
-  const values=new FormData(form);setFormBusy(form,true,'A enviar…');
-  const {error}=await supabaseClient.auth.resetPasswordForEmail(String(values.get('email')).trim(),{redirectTo:AUTH_REDIRECT_URL});
-  setFormBusy(form,false);
-  if(error){formMessage(form,'Não foi possível enviar a ligação. Tenta novamente mais tarde.','error');return}
-  formMessage(form,'Se a conta existir, receberás uma ligação de recuperação no e-mail indicado.','success');
-}
-async function handlePasswordUpdate(event){
-  event.preventDefault();
-  const form=event.currentTarget;formMessage(form,'');
-  if(!supabaseClient){authNotReady(form);return}
-  const values=new FormData(form);const password=String(values.get('password'));const confirmation=String(values.get('password_confirmation'));
-  if(password.length<8){formMessage(form,'A palavra-passe deve ter pelo menos 8 caracteres.','error');return}
-  if(password!==confirmation){formMessage(form,'As palavras-passe não coincidem.','error');return}
-  setFormBusy(form,true,'A guardar…');
-  const {error}=await supabaseClient.auth.updateUser({password});
-  setFormBusy(form,false);
-  if(error){formMessage(form,'Não foi possível actualizar a palavra-passe. Pede uma nova ligação de recuperação.','error');return}
-  modal.close();notify('Palavra-passe actualizada.');
-}
-async function signOut(){
-  if(!supabaseClient){notify('O serviço de autenticação não está disponível.');return}
-  const {error}=await supabaseClient.auth.signOut();
-  if(error){notify('Não foi possível terminar a sessão. Tenta novamente.');return}
-  modal.close();notify('Sessão terminada.');
-}
-async function initializeAuth(){
-  try{
-    const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
-    supabaseClient=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true,flowType:'pkce'}});
-    supabaseClient.auth.onAuthStateChange((event,session)=>{
-      updateAuthControls(session?.user||null);
-      if(event==='PASSWORD_RECOVERY')openModal('setPassword');
-    });
-    const {data,error}=await supabaseClient.auth.getSession();
-    if(error)throw error;
-    updateAuthControls(data.session?.user||null);
-  }catch(error){
-    console.error('Supabase Auth could not be initialized.',error);
-    updateAuthControls(null);
-  }
-}
+function authNotReady(form){formMessage(form,'O serviço de autenticação não está disponível. Verifica a ligação e tenta novamente.','error')}
+async function handleLogin(event){event.preventDefault();const form=event.currentTarget;formMessage(form,'');if(!supabaseClient){authNotReady(form);return}const values=new FormData(form);setFormBusy(form,true,'A entrar…');try{const {error}=await supabaseClient.auth.signInWithPassword({email:String(values.get('email')).trim(),password:String(values.get('password'))});if(error)throw error;modal.close();notify('Sessão iniciada.')}catch(error){console.error('PULSO sign-in failed',error);formMessage(form,'Não foi possível entrar. Confirma o e-mail e a palavra-passe e tenta novamente.','error')}finally{setFormBusy(form,false)}}
+async function handleRegistration(event){event.preventDefault();const form=event.currentTarget;formMessage(form,'');if(!supabaseClient){authNotReady(form);return}const values=new FormData(form);const password=String(values.get('password'));if(password.length<8){formMessage(form,'A palavra-passe deve ter pelo menos 8 caracteres.','error');return}if(password!==String(values.get('password_confirmation'))){formMessage(form,'As palavras-passe não coincidem.','error');return}if(!values.get('consent')){formMessage(form,'Confirma que leste e aceitas a Política de Privacidade e os Termos de Utilização.','error');return}setFormBusy(form,true,'A criar conta…');try{const {data,error}=await supabaseClient.auth.signUp({email:String(values.get('email')).trim(),password,options:{emailRedirectTo:AUTH_REDIRECT_URL,data:{full_name:String(values.get('full_name')).trim()}}});if(error)throw error;if(data.session){modal.close();notify('Conta criada e sessão iniciada.');return}formMessage(form,'Conta criada. Abre o e-mail de confirmação para activar o acesso.','success');form.reset()}catch(error){console.error('PULSO sign-up failed',error);const message=error?.message?.toLowerCase().includes('signup')||error?.message?.toLowerCase().includes('sign up')?'O registo está desactivado nas definições de autenticação do Supabase. Contacta o administrador do projecto.':'Não foi possível criar a conta. Confirma os dados e tenta novamente.';formMessage(form,message,'error')}finally{setFormBusy(form,false)}}
+async function handleRecovery(event){event.preventDefault();const form=event.currentTarget;formMessage(form,'');if(!supabaseClient){authNotReady(form);return}const values=new FormData(form);setFormBusy(form,true,'A enviar…');try{const {error}=await supabaseClient.auth.resetPasswordForEmail(String(values.get('email')).trim(),{redirectTo:AUTH_REDIRECT_URL});if(error)throw error;formMessage(form,'Se a conta existir, receberás uma ligação de recuperação no e-mail indicado.','success')}catch(error){console.error('PULSO password recovery failed',error);formMessage(form,'Não foi possível enviar a ligação. Tenta novamente mais tarde.','error')}finally{setFormBusy(form,false)}}
+async function handlePasswordUpdate(event){event.preventDefault();const form=event.currentTarget;formMessage(form,'');if(!supabaseClient){authNotReady(form);return}const values=new FormData(form);const password=String(values.get('password'));if(password.length<8){formMessage(form,'A palavra-passe deve ter pelo menos 8 caracteres.','error');return}if(password!==String(values.get('password_confirmation'))){formMessage(form,'As palavras-passe não coincidem.','error');return}setFormBusy(form,true,'A guardar…');try{const {error}=await supabaseClient.auth.updateUser({password});if(error)throw error;modal.close();notify('Palavra-passe actualizada.')}catch(error){console.error('PULSO password update failed',error);formMessage(form,'Não foi possível actualizar a palavra-passe. Pede uma nova ligação de recuperação.','error')}finally{setFormBusy(form,false)}}
+async function signOut(){if(!supabaseClient){notify('O serviço de autenticação não está disponível.');return}const {error}=await supabaseClient.auth.signOut();if(error){notify('Não foi possível terminar a sessão. Tenta novamente.');return}modal.close();notify('Sessão terminada.')}
+async function syncSavedItems(){if(!currentUser||!supabaseClient){savedIds=new Set(storedSaved());renderEntries();return}const {data,error}=await supabaseClient.from('saved_opportunities').select('opportunity_id').eq('user_id',currentUser.id);if(error){console.error('PULSO saved opportunities could not be loaded',error);savedIds=new Set();renderEntries();return}savedIds=new Set((data||[]).map(row=>row.opportunity_id));renderEntries()}
+async function toggleSaved(id){if(!entries.some(row=>row.id===id))return;if(currentUser&&supabaseClient){const exists=savedIds.has(id);const result=exists?await supabaseClient.from('saved_opportunities').delete().eq('user_id',currentUser.id).eq('opportunity_id',id):await supabaseClient.from('saved_opportunities').insert({user_id:currentUser.id,opportunity_id:id});if(result.error){notify('Não foi possível actualizar os guardados.');return}if(exists)savedIds.delete(id);else savedIds.add(id);notify(exists?'Oportunidade removida dos guardados.':'Oportunidade guardada na tua conta.')}else{const ids=new Set(storedSaved());const exists=ids.has(id);if(exists)ids.delete(id);else ids.add(id);localStorage.setItem('pulso-saved',JSON.stringify([...ids]));savedIds=ids;notify(exists?'Oportunidade removida dos guardados.':'Oportunidade guardada neste dispositivo.')}renderEntries()}
+async function loadOpportunities({append=false}={}){if(!supabaseClient){entriesLoaded=true;entriesError=true;renderEntries();return}if(!append){entriesLoaded=false;entriesError=false;entriesOffset=0;entries=[];renderEntries()}try{const from=append?entriesOffset:0;const to=from+PAGE_SIZE-1;const {data,error}=await supabaseClient.from('opportunities').select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,organization:organizations(name,logo_url,official_website,sector)').eq('status','published').eq('verification_status','verified').order('published_at',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false}).range(from,to);if(error)throw error;const rows=data||[];entries=append?[...entries,...rows]:rows;entriesOffset=entries.length;entriesHasMore=rows.length===PAGE_SIZE;entriesLoaded=true;entriesError=false}catch(error){console.error('PULSO opportunities could not be loaded',error);entriesLoaded=true;entriesError=true;entriesHasMore=false}renderEntries()}
+async function loadCompanies(){if(!supabaseClient){companiesLoaded=true;companiesError=true;renderCompanies();return}companiesLoaded=false;companiesError=false;renderCompanies();try{const {data,error}=await supabaseClient.from('organizations').select('id,name,sector,province,municipality,official_website,logo_url').eq('verification_status','verified').order('name',{ascending:true}).limit(12);if(error)throw error;organizations=data||[];companiesLoaded=true;companiesError=false}catch(error){console.error('PULSO organizations could not be loaded',error);companiesLoaded=true;companiesError=true}renderCompanies()}
+async function loadNotifications(){const target=$('#notificationList');if(!target)return;if(!currentUser){target.innerHTML='<div class="empty-state"><b>Inicia sessão para consultar as notificações da tua conta.</b></div>';return}const {data,error}=await supabaseClient.from('notifications').select('id,title,message,read_at,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(30);if(error){target.innerHTML='<div class="empty-state" role="alert"><b>Não foi possível carregar as notificações.</b></div>';return}if(!data?.length){target.innerHTML='<div class="empty-state"><b>Não tens notificações.</b>As actualizações da tua conta aparecerão aqui.</div>';return}target.innerHTML=data.map(item=>`<article class="modal-item ${item.read_at?'notification-read':''}"><b>${esc(item.title)}</b><small>${esc(item.message)} · ${esc(dateLabel(item.created_at?.slice(0,10)))}</small>${!item.read_at?`<button class="auth-link" type="button" data-notification-read="${esc(item.id)}">Marcar como lida</button>`:''}</article>`).join('')}
+async function markNotificationRead(id){if(!currentUser||!supabaseClient)return;const {error}=await supabaseClient.from('notifications').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);if(error){notify('Não foi possível actualizar a notificação.');return}await loadNotifications()}
+async function initializeApp(){try{const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');supabaseClient=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true,flowType:'pkce'}});supabaseClient.auth.onAuthStateChange((event,session)=>{updateAuthControls(session?.user||null);if(event==='PASSWORD_RECOVERY')openModal('setPassword')});const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;updateAuthControls(data.session?.user||null);await Promise.all([loadOpportunities(),loadCompanies()])}catch(error){console.error('PULSO services could not be initialized',error);entriesLoaded=true;entriesError=true;companiesLoaded=true;companiesError=true;renderEntries();renderCompanies();updateAuthControls(null)}}
 
-$('#menuToggle').addEventListener('click',()=>{const open=$('#mainNav').classList.toggle('open');$('#menuToggle').setAttribute('aria-expanded',String(open));});
-$$('.nav-link').forEach(link=>link.addEventListener('click',()=>{$('#mainNav').classList.remove('open');$('#menuToggle').setAttribute('aria-expanded','false');}));
-$$('[data-filter]').forEach(button=>button.addEventListener('click',()=>{selectedCategory=button.dataset.filter;$$('[data-filter]').forEach(item=>{const active=item===button;item.classList.toggle('selected',active);item.setAttribute('aria-selected',String(active));});showAll=false;renderEntries();}));
-$$('[data-category]').forEach(link=>link.addEventListener('click',()=>{selectedCategory=link.dataset.category;$$('[data-filter]').forEach(item=>{const active=item.dataset.filter===selectedCategory;item.classList.toggle('selected',active);item.setAttribute('aria-selected',String(active));});renderEntries();}));
-$('#heroSearch').addEventListener('submit',event=>{event.preventDefault();searchTerm=$('#heroQuery').value.trim();selectedCategory='Todas';$$('[data-filter]').forEach(item=>{const active=item.dataset.filter==='Todas';item.classList.toggle('selected',active);item.setAttribute('aria-selected',String(active));});renderEntries();$('#oportunidades').scrollIntoView({behavior:'smooth'});});
-$('#loadMore').addEventListener('click',()=>{showAll=true;renderEntries();});
-$('#opportunityList').addEventListener('click',event=>{
-  const detail=event.target.closest('[data-detail]');const save=event.target.closest('[data-save]');
-  if(detail)openModal('detail',detail.dataset.detail);
-  if(save){const items=saved();const id=save.dataset.save;const updated=items.includes(id)?items.filter(x=>x!==id):[...items,id];localStorage.setItem('pulso-saved',JSON.stringify(updated));renderEntries();notify(updated.includes(id)?'Exemplo guardado neste navegador.':'Exemplo removido dos guardados.');}
-});
-$('#modalBody').addEventListener('click',event=>{
-  const open=event.target.closest('[data-open]');
-  if(open){event.preventDefault();openModal(open.dataset.open);return}
-  const button=event.target.closest('[data-modal-save]');if(!button)return;
-  const id=button.dataset.modalSave;const items=saved();localStorage.setItem('pulso-saved',JSON.stringify(items.includes(id)?items.filter(x=>x!==id):[...items,id]));modal.close();renderEntries();notify('Guardados actualizados neste navegador.');
-});
-document.addEventListener('click',event=>{
-  const open=event.target.closest('[data-open]');if(open&&!$('#modalBody').contains(open)){event.preventDefault();openModal(open.dataset.open);return}
-  if(event.target.closest('[data-auth-signout]'))signOut();
-});
+$('#menuToggle').addEventListener('click',()=>{const open=$('#mainNav').classList.toggle('open');$('#menuToggle').setAttribute('aria-expanded',String(open))});
+$$('.nav-link').forEach(link=>link.addEventListener('click',()=>{$('#mainNav').classList.remove('open');$('#menuToggle').setAttribute('aria-expanded','false')}));
+$$('[data-filter]').forEach(button=>button.addEventListener('click',()=>{selectedCategory=button.dataset.filter;$$('[data-filter]').forEach(item=>{const active=item===button;item.classList.toggle('selected',active);item.setAttribute('aria-selected',String(active))});renderEntries()}));
+$$('[data-category]').forEach(link=>link.addEventListener('click',()=>{selectedCategory=link.dataset.category;$$('[data-filter]').forEach(item=>{const active=item.dataset.filter===selectedCategory;item.classList.toggle('selected',active);item.setAttribute('aria-selected',String(active))});renderEntries()}));
+$('#heroSearch').addEventListener('submit',event=>{event.preventDefault();searchTerm=$('#heroQuery').value.trim();selectedCategory='Todas';$$('[data-filter]').forEach(item=>{const active=item.dataset.filter==='Todas';item.classList.toggle('selected',active);item.setAttribute('aria-selected',String(active))});renderEntries();$('#oportunidades').scrollIntoView({behavior:'smooth'})});
+$('#opportunityList').addEventListener('click',event=>{if(event.target.closest('[data-retry-entries]')){void loadOpportunities();return}const detail=event.target.closest('[data-detail]');const save=event.target.closest('[data-save]');if(detail)openModal('detail',detail.dataset.detail);if(save)void toggleSaved(save.dataset.save)});
+$('#companyGrid').addEventListener('click',event=>{if(event.target.closest('[data-retry-companies]'))void loadCompanies()});
+$('#loadMore').addEventListener('click',()=>void loadOpportunities({append:true}));
+$('#modalBody').addEventListener('click',event=>{const open=event.target.closest('[data-open]');if(open){event.preventDefault();openModal(open.dataset.open);return}const save=event.target.closest('[data-modal-save]');if(save){const id=save.dataset.modalSave;modal.close();void toggleSaved(id);return}const read=event.target.closest('[data-notification-read]');if(read)void markNotificationRead(read.dataset.notificationRead)});
+document.addEventListener('click',event=>{const open=event.target.closest('[data-open]');if(open&&!$('#modalBody').contains(open)){event.preventDefault();openModal(open.dataset.open);return}if(event.target.closest('[data-auth-signout]'))void signOut()});
 $('#modalClose').addEventListener('click',()=>modal.close());
-modal.addEventListener('click',event=>{if(event.target===modal)modal.close();});
-$('#radarLink').addEventListener('click',event=>{event.preventDefault();$('#radar-detalhe').scrollIntoView({behavior:'smooth'});});
+modal.addEventListener('click',event=>{if(event.target===modal)modal.close()});
+$('#radarLink').addEventListener('click',event=>{event.preventDefault();$('#radar-detalhe').scrollIntoView({behavior:'smooth'})});
 $('#year').textContent=new Date().getFullYear();
-renderEntries();renderCompanies();updateAuthControls(null);initializeAuth();
+savedIds=new Set(storedSaved());renderEntries();renderCompanies();updateAuthControls(null);void initializeApp();

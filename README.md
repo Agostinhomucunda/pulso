@@ -1,54 +1,50 @@
 # PULSO — Oportunidades em movimento
 
-Primeira versão do website do PULSO, uma plataforma de oportunidades pensada para Angola, com design responsivo inspirado na imagem criada pelo fundador e símbolo de marca 3D original.
+Site público do PULSO para oportunidades de emprego, bolsas, concursos, estágios, formação e programas em Angola. O código está preparado para GitHub Pages e usa o Supabase para autenticação e leitura do catálogo publicado.
 
-## Ver o site com GitHub Pages
+## Site e repositório
 
-1. Abre **Settings → Pages** no repositório `Agostinhomucunda/pulso`.
-2. Em **Build and deployment**, escolhe **Deploy from a branch**.
-3. Seleciona a branch `main`, a pasta `/ (root)` e clica **Save**.
-4. Aguarda a publicação e abre o endereço que o GitHub Pages apresentar (normalmente `https://agostinhomucunda.github.io/pulso/`).
+- Site: <https://agostinhomucunda.github.io/pulso/>
+- Repositório: <https://github.com/Agostinhomucunda/pulso>
+- Publicação: GitHub Pages a partir da branch `main`.
 
-O projecto usa HTML, CSS e JavaScript estáticos, sem compilação. Os caminhos dos recursos são relativos para funcionar sob o subcaminho `/pulso/`.
+## Funcionalidades actuais
 
-## O que funciona nesta versão
+- Interface responsiva, pesquisa e filtros por categoria.
+- Catálogo carregado do Supabase: só são pedidas oportunidades com `status = published` e `verification_status = verified`; as políticas RLS continuam a ser a camada de segurança.
+- Detalhes com a entidade, fonte original e ligação de candidatura quando disponíveis.
+- Organizações apresentadas apenas quando têm estado de verificação `verified`.
+- Estado vazio explícito quando ainda não há publicações verificadas; não são carregados registos inventados.
+- Criar conta com confirmação por e-mail, entrar, terminar sessão e recuperar/actualizar a palavra-passe através do Supabase Auth.
+- Favoritos persistidos na tabela `saved_opportunities` para utilizadores com sessão iniciada; sem sessão, ficam guardados apenas neste dispositivo.
+- Centro de notificações ligado à tabela `notifications` para a conta autenticada.
 
-- Navegação adaptada a ecrãs pequenos e grandes.
-- Pesquisa textual e filtros de categoria para a lista de demonstração.
-- Cartões com detalhe, fonte e estado informativo.
-- Guardar/remover favoritos no armazenamento local do navegador.
-- Painel de notificações de exemplo, login e criação de conta apenas demonstrativos.
-- Mensagem de cadastro empresarial indisponível nesta fase.
-- Acessibilidade básica, metadados, identidade visual e adaptação a movimento reduzido.
+A interface não cria oportunidades ou organizações e não monitoriza fontes automaticamente. A publicação e verificação de conteúdo são tarefas administrativas que ainda precisam de um fluxo próprio. O Radar tem apresentação informativa; a recolha e análise automatizadas ainda não estão ligadas.
 
-**Aviso:** as publicações e organizações visíveis são dados de demonstração, não anúncios oficiais. O protótipo não envia candidaturas, não cria contas reais nem autentica utilizadores.
+## Configuração do Supabase
 
-## Limites do GitHub Pages
+O ficheiro `supabase-config.js` contém o URL e a publishable key do projecto, concebidos para uso no browser. Não adicionar `sb_secret_`, `service_role`, palavras-passe ou tokens ao repositório.
 
-GitHub Pages aloja ficheiros estáticos. Não executa API, base de dados, login seguro, tarefas de varredura, IA no servidor nem notificações por e-mail/WhatsApp. Essas capacidades do produto requerem um backend e serviços externos autorizados, que devem ser configurados numa etapa posterior; não se deve guardar segredos no repositório público.
+A autenticação usa a configuração de redireccionamento para `https://agostinhomucunda.github.io/pulso/`. Para aceitar novas contas, o fornecedor de e-mail e a opção **Allow new users to sign up** têm de estar activos em **Authentication → Settings**; mantém a confirmação de e-mail activa. O formulário mostra uma mensagem se o serviço recusar inscrições.
 
-## Desenvolvimento local
+A migração inicial está em `supabase/migrations/20261119103000_initial_pulso_schema.sql`. Para configuração num dispositivo móvel, existem seis blocos menores em `supabase/mobile-setup/`, numerados de `01` a `06`. A migração cria as tabelas e políticas RLS, mas não insere dados de oportunidades nem organizações. As tabelas públicas só devem expor itens verificados e publicados.
 
-Abre `index.html` directamente no navegador ou inicia um servidor estático, por exemplo:
+## Desenvolvimento e verificação
+
+O site não tem passo de compilação nem dependências npm locais. Para o servir localmente, executa na raiz do repositório:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Depois visita `http://localhost:8000`.
+Abre `http://localhost:8000/` quando o servidor é iniciado a partir da raiz do projecto. Para testar a autenticação, usa uma conta autorizada e um endereço de e-mail ao qual tenhas acesso; a aplicação envia uma mensagem de confirmação.
 
+## Âmbito ainda pendente
 
-## Próximo passo: preparar a base de dados Supabase
+- Fluxo administrativo protegido para rever, aprovar, publicar e gerir organizações e oportunidades.
+- Ingestão autorizada de fontes, deduplicação, histórico e revisão humana.
+- Implementação operacional do Radar e dos alertas.
+- Completar e validar a informação legal e os contactos oficiais de privacidade antes de depender do registo público em produção.
+- Testes de ponta a ponta com uma conta de utilizador real e a configuração de e-mail do proprietário.
 
-A migração completa está em `supabase/migrations/20261119103000_initial_pulso_schema.sql`. Se estiveres num telemóvel e a colagem longa bloquear o editor, usa as seis consultas menores em `supabase/mobile-setup/`, na ordem `01` a `06`. Para cada ficheiro, abre **SQL Editor → New query**, cola apenas esse bloco, executa e espera a mensagem de sucesso antes de passar ao seguinte. As operações de criação e políticas permitem repetição; se uma parte apresentar erro, pára e partilha apenas o texto do erro. A estrutura não insere oportunidades nem contas de demonstração.
-
-A política pública só permite ler oportunidades publicadas e verificadas e organizações verificadas. Contas comuns só podem aceder aos seus próprios perfis, favoritos, alertas e notificações. A lista de administradores não é editável pelo browser. Depois de criar a primeira conta de utilizador do PULSO, o primeiro administrador terá de ser concedido no SQL Editor, nunca a partir do site público.
-
-Não coles chaves `sb_secret_`, `service_role`, palavras-passe ou tokens no SQL Editor desta migração, no chat ou no GitHub. Se o Supabase mostrar um erro, partilha apenas a mensagem de erro, removendo qualquer valor secreto.
-
-
-## Autenticação por e-mail
-
-O website usa o cliente JavaScript Supabase no browser. `supabase-config.js` contém apenas o URL do projecto e a publishable key, que é pública por desenho; a protecção dos dados depende das políticas RLS. Nunca colocar `sb_secret_`, `service_role`, palavras-passe ou tokens no repositório.
-
-O acesso por e-mail e palavra-passe e a recuperação estão ligados ao Supabase. O formulário de registo público fica fechado até serem aprovados e publicados a política de privacidade e os termos. Para fechar também a API de registo do lado do Supabase, desactiva **Allow new users to sign up** nas definições de Authentication. As oportunidades, empresas, favoritos e alertas da interface ainda não estão ligados a dados reais.
+O GitHub Pages só serve os ficheiros estáticos; não executa rotinas de backend. A segurança dos dados depende das políticas RLS do Supabase, e as candidaturas decorrem no serviço ou site da entidade anunciante.

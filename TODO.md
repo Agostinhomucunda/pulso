@@ -1,34 +1,43 @@
 # TODO — PULSO
 
-## Etapa 1 — Website público estático
-- [x] Entregar a página inicial com logótipo PULSO, menu, texto principal “Descubra as melhores oportunidades em Angola”, subtexto, pesquisa, categorias, oportunidades de exemplo, Radar, Entrar, Criar conta e Cadastro empresarial indisponível.
-- [x] Implementar experiência responsiva real para telemóveis, tablets e computadores, sem reduzir simplesmente o desktop.
-- [x] Implementar pesquisa textual, filtros por categoria, acesso a detalhe, favoritos persistentes no navegador e navegação acessível.
-- [x] Identificar os dados visíveis como exemplos de demonstração; não os apresentar como vagas reais ou verificadas.
-- [x] Explicar no site/documentação que GitHub Pages não executa backend e que formulários da versão estática não criam contas nem enviam dados.
-- [x] Documentar como o proprietário activa GitHub Pages no repositório público.
+## Etapa 1 — Website público
+- [x] Página responsiva com identidade PULSO, navegação, pesquisa, categorias e estados acessíveis.
+- [x] Remover registos, organizações, notificações e avisos fictícios do site.
+- [x] Ler oportunidades publicadas e verificadas no Supabase; mostrar estado vazio quando não há registos.
+- [x] Ler e apresentar apenas organizações verificadas.
+- [x] Mostrar detalhes, fonte original e ligação de candidatura quando disponíveis.
+- [x] Activar filtros, pesquisa, detalhes e favoritos (na conta ou neste dispositivo).
 
-## Etapa 2 — Especificação e backend de produção
-- [ ] Seleccionar arquitetura modular, alojamento de servidor e base de dados compatíveis com o orçamento; estruturar utilizadores, empresas, oportunidades, fontes, notícias, sinais, alertas, notificações e registos administrativos.
-- [ ] Definir política de privacidade, termos, retenção de dados, segurança, backups, permissões e tratamento de erros antes de recolher dados pessoais.
+## Etapa 2 — Base de dados e segurança
+- [x] Criar o esquema relacional inicial e políticas RLS para perfis, organizações, fontes, oportunidades, Radar e dados pessoais.
+- [x] Separar contas comuns da lista administrativa; impedir promoção de privilégios pelo browser.
+- [x] Ligar o website ao projecto Supabase com URL e publishable key pública, sem segredos no repositório.
+- [ ] Rever a informação de privacidade, o responsável pelo tratamento e os contactos oficiais antes de depender de inscrições públicas em produção.
 
-## Etapa 3 — Contas, empresas e administração
-- [x] Ligar login por e-mail/palavra-passe e recuperação de palavra-passe ao Supabase Auth, com redireccionamento para GitHub Pages.
-- [ ] Activar registo público e validação de e-mail apenas depois de aprovar/publicar privacidade e termos; até lá, manter o formulário fechado e permitir apenas contas criadas/convidadas pelo proprietário.
-- [ ] Completar edição de perfis e atribuição segura do primeiro administrador; contas comuns não podem atribuir privilégios.
-- [ ] Verificar documentação e autorização do SENGA e Google antes de activar qualquer autenticação; não simular integração.
-- [ ] Manter cadastro/publicação empresarial bloqueados até existir verificação de legitimidade.
-- [ ] Implementar painel administrativo protegido, auditoria, revisão/edição e gestão de denúncias.
+## Etapa 3 — Contas
+- [x] Login, criação de conta por e-mail, confirmação, recuperação e actualização da palavra-passe via Supabase Auth.
+- [x] Guardar favoritos autenticados na tabela `saved_opportunities`.
+- [x] Ler notificações autenticadas da tabela `notifications` e permitir marcá-las como lidas.
+- [ ] Testar todo o percurso com uma conta real e confirmar entrega de e-mails no projecto do proprietário.
+- [ ] Completar edição de perfis e atribuição segura do primeiro administrador.
+- [ ] Implementar painel administrativo protegido, auditoria e revisão de conteúdo.
+- [ ] Activar cadastro e publicação empresarial após definir o fluxo de verificação.
 
 ## Etapa 4 — Oportunidades verificadas
-- [ ] Modelar oportunidades com título, instituição, categoria, localização, requisitos/datas/salário apenas quando disponíveis, fonte e link oficial.
-- [ ] Permitir combinação de filtros e detalhes com chamada “ACEDER À PUBLICAÇÃO ORIGINAL”.
-- [ ] Exibir claramente estados confirmada, não verificada, em observação e sinal de possível recrutamento.
-- [ ] Não inventar números de vagas, salários, requisitos, datas, fontes, logótipos ou verificação.
+- [x] Filtrar no cliente/API apenas oportunidades `published` e `verified`; usar RLS como controlo de acesso.
+- [x] Exigir fonte e link original no esquema e apresentá-los nos detalhes.
+- [ ] Criar o fluxo administrativo de submissão, revisão, aprovação, actualização e expiração.
+- [ ] Alimentar as primeiras oportunidades reais e verificar apresentação no site.
+- [ ] Completar filtros, quando existirem dados, por localização, prazo e outros campos disponíveis.
 
 ## Etapa 5 — Fontes, Radar e notificações
-- [ ] Verificar termos/robots/RSS/API e autorização de cada fonte antes da monitorização; não contornar login, paywall ou restrições.
-- [ ] Criar tarefas agendadas, histórico, erros, deduplicação, avaliação de confiança e fila de revisão.
-- [ ] Implementar Radar PULSO AI sem transformar inferências em vagas confirmadas.
-- [ ] Implementar alertas e notificações no produto/e-mail e considerar WhatsApp apenas por API oficial, com consentimento e configuração segura.
-- [ ] Registar origem e licença de imagens, priorizando fonte oficial e omitindo a imagem quando não houver uma adequada/confiável.
+- [ ] Verificar termos, robots, RSS/API e autorização de cada fonte antes da monitorização.
+- [ ] Implementar ingestão autorizada, deduplicação, histórico e fila de revisão humana.
+- [ ] Ligar o Radar a sinais reais aprovados, sem apresentar inferências como vagas.
+- [ ] Criar alertas e notificações operacionais por e-mail/produto; WhatsApp apenas através da API oficial e com consentimento.
+- [ ] Registar origem e licença de imagens externas.
+
+## Verificações da sessão de 19-11-2026
+- [x] A API pública do Supabase responde para `opportunities` e `organizations`; ambos os conjuntos estão actualmente vazios.
+- [x] O endpoint de Auth indica e-mail activo e novas inscrições permitidas.
+- [ ] Teste final do formulário de inscrição e confirmação de e-mail com uma conta controlada pelo proprietário.
