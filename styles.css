@@ -9,3 +9,5 @@
 .org-mark img,.company-logo img{width:100%;height:100%;object-fit:contain;border-radius:inherit}.company-grid .empty-state{grid-column:1/-1}.retry-button{margin-top:14px}.modal-actions{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0}.modal-actions .btn{min-height:40px}.source-box a{color:var(--blue);font-weight:800;text-decoration:underline;text-underline-offset:2px}.form-stack .consent-label{display:flex;align-items:flex-start;gap:9px;font-size:10px;line-height:1.5;font-weight:500}.form-stack .consent-label input{flex:none;width:16px;height:16px;margin:1px 0 0;accent-color:var(--royal)}.consent-label a{color:var(--blue);font-weight:800;text-decoration:underline;text-underline-offset:2px}.auth-caption{font-size:10px!important;color:#78849b!important;margin-top:12px!important}.notification-read{opacity:.72}.radar-live{font-size:10px;font-weight:800;color:#dbe8ff}.op-card .op-badge{background:#edf8f3;color:#16855f}.empty-state .btn{display:inline-flex}.company-card{color:inherit}
 
 .opportunity-main{min-width:0}.filter-row{max-width:100%}
+
+[hidden]{display:none!important}
