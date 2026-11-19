@@ -1,6 +1,6 @@
 # PULSO — Oportunidades em movimento
 
-Primeira versão do website do PULSO, uma plataforma de oportunidades pensada para Angola, com design responsivo inspirado na imagem criada pelo fundador.
+Primeira versão do website do PULSO, uma plataforma de oportunidades pensada para Angola, com design responsivo inspirado na imagem criada pelo fundador e símbolo de marca 3D original.
 
 ## Ver o site com GitHub Pages
 

@@ -16,7 +16,7 @@ Criar uma plataforma profissional de oportunidades para Angola, com expansão af
 - Tipografia: Manrope para títulos/marca e DM Sans para interface e texto.
 - Essência: informação de oportunidades para pessoas em Angola, distinguida por transparência de fonte e contexto; próxima, credível e clara.
 - Voz: directa e encorajadora, sem prometer empregos. Exemplos: “Descubra as melhores oportunidades em Angola.” “Uma previsão é uma análise, nunca uma vaga confirmada.”
-- Logótipo: símbolo circular P/onda e wordmark PULSO; cor própria azul royal.
+- Logótipo: símbolo P/onda tridimensional em azul royal com acento amarelo, acompanhado pelo wordmark PULSO; aparência própria e legível em tamanhos pequenos.
 
 ## Implementação e estrutura
 
