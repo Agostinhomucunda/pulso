@@ -7,9 +7,9 @@
   <meta name="description" content="O teu painel PULSO para acompanhar oportunidades, guardados e alertas em Angola.">
   <title>O teu painel — PULSO</title>
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=20261119-5">
-  <link rel="stylesheet" href="dashboard.css?v=20261119-5">
-  <script type="module" src="dashboard.js?v=20261119-6"></script>
+  <link rel="stylesheet" href="styles.css?v=20261119-7">
+  <link rel="stylesheet" href="dashboard.css?v=20261119-7">
+  <script type="module" src="dashboard.js?v=20261119-7"></script>
 </head>
 <body class="dashboard-body">
   <header class="dash-topbar">
@@ -116,7 +116,7 @@
           <form class="dash-panel alert-form" id="alertForm">
             <div class="panel-heading"><div><span class="section-kicker">NOVO ALERTA</span><h2>O que queres acompanhar?</h2></div><span class="panel-icon">⌁</span></div>
             <label>Nome do alerta<input name="name" maxlength="80" placeholder="Ex.: Empregos em Luanda" required></label>
-            <fieldset class="category-choice"><legend>Categorias</legend><div class="category-checkbox-grid"><label><input type="checkbox" name="category" value="employment"> Empregos</label><label><input type="checkbox" name="category" value="scholarship"> Bolsas</label><label><input type="checkbox" name="category" value="public_competition"> Concursos</label><label><input type="checkbox" name="category" value="internship"> Estágios</label><label><input type="checkbox" name="category" value="training"> Formação</label><label><input type="checkbox" name="category" value="recruitment_program"> Programas</label></div></fieldset>
+            <fieldset class="category-choice"><legend>Categorias</legend><div class="category-checkbox-grid"><label><input type="checkbox" name="category" value="employment"><i class="category-3d-icon category-employment" aria-hidden="true">▰</i> Empregos</label><label><input type="checkbox" name="category" value="scholarship"><i class="category-3d-icon category-scholarship" aria-hidden="true">◇</i> Bolsas</label><label><input type="checkbox" name="category" value="public_competition"><i class="category-3d-icon category-public_competition" aria-hidden="true">✦</i> Concursos</label><label><input type="checkbox" name="category" value="internship"><i class="category-3d-icon category-internship" aria-hidden="true">↗</i> Estágios</label><label><input type="checkbox" name="category" value="training"><i class="category-3d-icon category-training" aria-hidden="true">▤</i> Formação</label><label><input type="checkbox" name="category" value="recruitment_program"><i class="category-3d-icon category-recruitment_program" aria-hidden="true">✧</i> Programas</label></div></fieldset>
             <label>Província<input name="province" list="provinceOptions" placeholder="Ex.: Luanda"></label>
             <label>Palavras-chave<input name="keywords" placeholder="Ex.: contabilidade, estágio"></label>
             <small class="form-hint">Podes combinar os filtros. Dentro de cada campo, basta corresponder a uma opção.</small>

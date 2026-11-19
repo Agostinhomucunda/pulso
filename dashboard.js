@@ -9,6 +9,14 @@ const CATEGORY_LABELS = {
   training: 'Formação',
   recruitment_program: 'Programas',
 };
+const CATEGORY_ICONS = {
+  employment: '▰',
+  scholarship: '◇',
+  public_competition: '✦',
+  internship: '↗',
+  training: '▤',
+  recruitment_program: '✧',
+};
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 let supabaseClient = null;
@@ -52,6 +60,10 @@ function userName() {
 
 function categoryLabel(category) {
   return CATEGORY_LABELS[category] || 'Oportunidade';
+}
+
+function categoryIcon(category) {
+  return CATEGORY_ICONS[category] || '✦';
 }
 
 function organizationName(item) {
@@ -146,14 +158,16 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
     published ? `<span>Publicado ${escapeHtml(published)}</span>` : '',
   ].filter(Boolean).join('');
   const saved = savedIds.has(item.id);
+  const source = safeUrl(item.source_url);
   return `<article class="dash-op-card">
     <span class="dash-op-mark" aria-hidden="true">${mark}</span>
     <div class="dash-op-content">
-      <h3>${escapeHtml(item.title)}</h3>
+      <h3>${escapeHtml(item.title)} <span class="verified-check" title="Oportunidade verificada" aria-label="Oportunidade verificada">✓</span></h3>
       <span class="dash-op-org">${escapeHtml(org)}</span>
-      <div class="dash-op-meta"><span class="dash-op-category">${escapeHtml(categoryLabel(item.category))}</span>${meta}<span class="verified-badge"><i></i> Verificada</span></div>
+      <div class="dash-op-meta"><span class="dash-op-category"><i class="category-3d-icon category-${escapeHtml(item.category || 'other')}" aria-hidden="true">${escapeHtml(categoryIcon(item.category))}</i>${escapeHtml(categoryLabel(item.category))}</span>${meta}</div>
     </div>
     <div class="dash-op-actions">
+      ${source ? `<button class="source-3d-btn dash-source-3d-btn" type="button" data-detail-opportunity="${id}">Fonte oficial <span>↗</span></button>` : ''}
       <button class="dash-op-save ${saved ? 'saved' : ''}" type="button" data-save-opportunity="${id}" aria-label="${saved ? 'Remover dos guardados' : 'Guardar'}: ${escapeHtml(item.title)}">${saved ? '♥' : '♡'}</button>
       ${savedPage ? '' : `<button class="dash-op-detail" type="button" data-detail-opportunity="${id}" aria-label="Ver detalhe: ${escapeHtml(item.title)}">↗</button>`}
     </div>

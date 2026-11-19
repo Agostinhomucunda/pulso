@@ -2,6 +2,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, AUTH_REDIRECT_URL } from './sup
 
 const PAGE_SIZE=20;
 const categoryLabels={employment:'Empregos',scholarship:'Bolsas',public_competition:'Concursos',internship:'Estágios',training:'Formação',recruitment_program:'Programas'};
+const categoryIcons={employment:'▰',scholarship:'◇',public_competition:'✦',internship:'↗',training:'▤',recruitment_program:'✧'};
 const categoryValues=Object.fromEntries(Object.entries(categoryLabels).map(([value,label])=>[label,value]));
 let selectedCategory='Todas';
 let searchTerm='';
@@ -33,6 +34,7 @@ function updateAuthControls(user){currentUser=user||null;$$('[data-auth-state="s
 function dateLabel(value){if(!value)return '';const date=new Date(`${value}T00:00:00`);if(Number.isNaN(date.valueOf()))return '';return new Intl.DateTimeFormat('pt-AO',{dateStyle:'medium'}).format(date)}
 function placeLabel(item){return [item.municipality,item.province].filter(Boolean).join(', ')||'Localização não indicada'}
 function categoryLabel(item){return categoryLabels[item.category]||'Oportunidade'}
+function categoryIcon(item){return categoryIcons[item.category]||'✦'}
 function organizationName(item){return item.organization?.name||item.source_name||'Entidade anunciante'}
 function entryMatches(item){const category=selectedCategory==='Todas'||categoryLabel(item)===selectedCategory;const haystack=[item.title,organizationName(item),item.category,item.sector,item.province,item.municipality,item.public_summary].filter(Boolean).join(' ').toLocaleLowerCase('pt-AO');return category&&haystack.includes(searchTerm.toLocaleLowerCase('pt-AO'))}
 function renderEntries(){
@@ -46,7 +48,7 @@ function renderEntries(){
     const deadline=dateLabel(item.application_deadline);const published=dateLabel(item.published_at);
     const metadata=[deadline?`Candidaturas até ${esc(deadline)}`:null,published?`Publicado ${esc(published)}`:null].filter(Boolean);
     const source=safeUrl(item.source_url);
-    return `<article class="op-card premium-op-card">${image?`<img class="op-image" src="${esc(image)}" alt="Imagem de ${esc(item.title)}" loading="lazy">`:'<div class="op-image op-image-empty" aria-hidden="true"><span>P·</span></div>'}<div class="org-mark" aria-hidden="true">${mark}</div><div class="op-copy"><span class="op-caption">${esc(categoryLabel(item))} · Angola</span><h3>${esc(item.title)}</h3><span class="org-name">${esc(org)}</span><div class="op-meta"><span>⌖ ${esc(placeLabel(item))}</span>${metadata.map(text=>`<span>◷ ${text}</span>`).join('')}</div></div><span class="op-badge"><i></i> Verificada</span><div class="op-card-actions">${source?`<button class="source-3d-btn" type="button" data-detail="${esc(item.id)}">Fonte oficial <span>↗</span></button>`:`<button class="source-3d-btn" type="button" data-detail="${esc(item.id)}">Ver oportunidade <span>↗</span></button>`}<button class="save-btn ${savedIds.has(item.id)?'saved':''}" data-save="${esc(item.id)}" aria-label="${savedIds.has(item.id)?'Remover dos guardados':'Guardar'} ${esc(item.title)}">${savedIds.has(item.id)?'♥':'♡'}</button></div></article>`;
+    return `<article class="op-card premium-op-card">${image?`<img class="op-image" src="${esc(image)}" alt="Imagem de ${esc(item.title)}" loading="lazy">`:'<div class="op-image op-image-empty" aria-hidden="true"><span>P·</span></div>'}<div class="org-mark" aria-hidden="true">${mark}</div><div class="op-copy"><span class="op-caption"><span class="category-3d-icon category-${esc(item.category||'other')}" aria-hidden="true">${esc(categoryIcon(item))}</span>${esc(categoryLabel(item))} · Angola</span><h3>${esc(item.title)} <span class="verified-check" title="Oportunidade verificada" aria-label="Oportunidade verificada">✓</span></h3><span class="org-name">${esc(org)}</span><div class="op-meta"><span>⌖ ${esc(placeLabel(item))}</span>${metadata.map(text=>`<span>◷ ${text}</span>`).join('')}</div></div><div class="op-card-actions">${source?`<button class="source-3d-btn" type="button" data-detail="${esc(item.id)}">Fonte oficial <span>↗</span></button>`:`<button class="source-3d-btn" type="button" data-detail="${esc(item.id)}">Ver oportunidade <span>↗</span></button>`}<button class="save-btn ${savedIds.has(item.id)?'saved':''}" data-save="${esc(item.id)}" aria-label="${savedIds.has(item.id)?'Remover dos guardados':'Guardar'} ${esc(item.title)}">${savedIds.has(item.id)?'♥':'♡'}</button></div></article>`;
   }).join('');
   if(searchTerm)$('#resultsNote').textContent=`${filtered.length} resultado(s) entre ${entries.length} oportunidades carregadas.`;else $('#resultsNote').textContent=`${entries.length} oportunidade(s) verificadas carregadas.`;
 }
