@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-AO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0739a8">
+  <meta name="description" content="Descubra empregos, bolsas, concursos, estágios e formação em Angola. Oportunidades em movimento.">
+  <meta property="og:title" content="PULSO — Oportunidades em movimento">
+  <meta property="og:description" content="Empregos, bolsas, concursos, estágios e muito mais, com inteligência e em tempo real.">
+  <meta property="og:type" content="website">
+  <title>PULSO — Oportunidades em movimento</title>
+  <link rel="icon" href="assets/pulso-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="demo-banner"><span class="demo-dot"></span> Versão inicial · Oportunidades de exemplo identificadas como demonstração</div>
+  <header class="site-header">
+    <a class="brand" href="#inicio" aria-label="PULSO — início">
+      <img src="assets/pulso-mark.svg" alt="" width="42" height="42">
+      <span class="brand-copy"><strong>PULSO</strong><small>Oportunidades em movimento.</small></span>
+    </a>
+    <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <nav class="main-nav" id="mainNav" aria-label="Navegação principal">
+      <a class="nav-link active" href="#inicio">Início</a>
+      <a class="nav-link" href="#oportunidades">Oportunidades <span class="chevron">⌄</span></a>
+      <a class="nav-link" href="#empresas">Empresas</a>
+      <a class="nav-link" href="#radar">Previsões</a>
+      <a class="nav-link" href="#bolsas">Bolsas</a>
+      <a class="nav-link" href="#sobre">Sobre</a>
+      <div class="nav-mobile-actions"><button class="btn btn-ghost" data-open="login">Entrar</button><button class="btn btn-yellow" data-open="register">Criar conta</button></div>
+    </nav>
+    <div class="header-actions"><button class="icon-btn notification-trigger" aria-label="Notificações" data-open="notifications"><span class="bell-icon">♧</span><i></i></button><button class="btn btn-outline-light" data-open="login">Entrar</button><button class="btn btn-yellow" data-open="register">Criar conta</button></div>
+  </header>
+
+  <main>
+    <section class="hero" id="inicio">
+      <div class="hero-image" aria-hidden="true"></div><div class="hero-shade"></div>
+      <div class="hero-content">
+        <div class="eyebrow"><span class="sparkle">✦</span> Oportunidades em Angola</div>
+        <h1>Descubra as<br><em>melhores oportunidades</em><br>em Angola.</h1>
+        <p>Empregos, bolsas, concursos, estágios e muito mais,<br class="desktop-break"> com inteligência e em tempo real.</p>
+        <form class="search-box" id="heroSearch"><label class="sr-only" for="heroQuery">Pesquisar oportunidades</label><span class="search-icon">⌕</span><input id="heroQuery" type="search" placeholder="Pesquisar por cargo, empresa ou área..." autocomplete="off"><button type="submit">Pesquisar <span>→</span></button></form>
+        <div class="hero-proof"><span class="proof-avatars"><b>A</b><b>K</b><b>M</b></span><span>Uma forma mais inteligente de encontrar o próximo passo.</span></div>
+      </div>
+      <div class="hero-stamp"><span class="stamp-small">O teu próximo passo</span><strong>começa<br><em>aqui.</em></strong><span class="stamp-arrow">↗</span></div>
+      <div class="hero-bottom">
+        <a class="quick-category" href="#oportunidades" data-category="Empregos"><span class="cat-icon">▣</span><span><b>Empregos</b><small>Explorar oportunidades</small></span><span class="cat-arrow">↗</span></a>
+        <a class="quick-category" href="#oportunidades" data-category="Bolsas"><span class="cat-icon">◇</span><span><b>Bolsas</b><small>Estudar mais longe</small></span><span class="cat-arrow">↗</span></a>
+        <a class="quick-category" href="#oportunidades" data-category="Concursos"><span class="cat-icon">✳</span><span><b>Concursos</b><small>Novas possibilidades</small></span><span class="cat-arrow">↗</span></a>
+        <a class="quick-category" href="#oportunidades" data-category="Estágios"><span class="cat-icon">⌁</span><span><b>Estágios</b><small>Começa a tua carreira</small></span><span class="cat-arrow">↗</span></a>
+        <a class="quick-category" href="#oportunidades" data-category="Formação"><span class="cat-icon">▤</span><span><b>Formação</b><small>Aprender e crescer</small></span><span class="cat-arrow">↗</span></a>
+      </div>
+      <div class="hero-index"><span>01</span><span class="index-line"></span><span>05</span></div>
+    </section>
+
+    <section class="trust-strip" aria-label="Compromissos PULSO"><span><i>✓</i> Fontes identificadas</span><span><i>✓</i> Informação transparente</span><span><i>✓</i> Feito para Angola</span><span class="trust-note">Sem promessas inventadas. Só oportunidades com contexto.</span></section>
+
+    <section class="section opportunity-section" id="oportunidades">
+      <div class="section-heading"><div><div class="section-kicker">O que está a acontecer</div><h2>Oportunidades <span>em movimento.</span></h2><p>Encontra o que procuras. Guarda o que te interessa.</p></div><a class="text-link" href="#oportunidades">Explorar todas <span>↗</span></a></div>
+      <div class="opportunity-layout">
+        <div class="opportunity-main">
+          <div class="filter-row" role="tablist" aria-label="Filtrar por categoria"><button class="filter-chip selected" data-filter="Todas" role="tab" aria-selected="true">Todas <span>06</span></button><button class="filter-chip" data-filter="Empregos" role="tab">Empregos</button><button class="filter-chip" data-filter="Bolsas" role="tab">Bolsas</button><button class="filter-chip" data-filter="Concursos" role="tab">Concursos</button><button class="filter-chip" data-filter="Estágios" role="tab">Estágios</button><button class="filter-chip" data-filter="Formação" role="tab">Formação</button></div>
+          <div class="search-results-note" id="resultsNote" aria-live="polite"></div>
+          <div class="opportunity-list" id="opportunityList"></div>
+          <button class="load-more" id="loadMore">Ver mais oportunidades <span>↓</span></button>
+        </div>
+        <aside class="radar-card" id="radar">
+          <div class="radar-top"><span class="radar-live"><i></i> Radar PULSO AI</span><span class="radar-orbit">✳</span></div>
+          <div class="radar-visual"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div><div class="radar-core">P<span>·</span></div><span class="radar-node node-a">↗</span><span class="radar-node node-b">✦</span><span class="radar-node node-c">⌁</span></div>
+          <div class="radar-copy"><span class="section-kicker">Sinais, não certezas</span><h3>Antecipar também é uma oportunidade.</h3><p>O Radar analisa notícias e acontecimentos públicos para identificar possíveis sinais de mudança no mercado de trabalho.</p></div>
+          <div class="radar-disclaimer"><span>i</span> Uma previsão é uma análise, nunca uma vaga confirmada.</div><a href="#radar-detalhe" class="radar-link" id="radarLink">Conhecer o Radar <span>→</span></a>
+        </aside>
+      </div>
+    </section>
+
+    <section class="insight-band" id="radar-detalhe"><div class="insight-mark">P<span>·</span></div><div class="insight-content"><div class="section-kicker">Inteligência com responsabilidade</div><h2>Mais contexto.<br><em>Melhores decisões.</em></h2><p>O PULSO distingue vagas confirmadas de sinais em observação. A origem e o nível de confiança acompanham cada informação.</p></div><div class="insight-steps"><div><span>01</span><b>Monitorizar</b><small>Fontes públicas e autorizadas</small></div><div><span>02</span><b>Analisar</b><small>Contexto, origem e confiança</small></div><div><span>03</span><b>Informar</b><small>Com transparência, sem promessas</small></div></div></section>
+
+    <section class="section companies-section" id="empresas"><div class="section-heading"><div><div class="section-kicker">Organizações em destaque</div><h2>Quem está a <span>criar movimento.</span></h2><p>Instituições e empregadores associados às oportunidades.</p></div><button class="btn btn-outline-blue" data-open="company">Cadastrar empresa <span>↗</span></button></div><div class="company-grid" id="companyGrid"></div><p class="data-disclaimer">Os nomes e oportunidades apresentados nesta versão são exemplos de demonstração, não representam anúncios oficiais.</p></section>
+
+    <section class="cta-section" id="bolsas"><div class="cta-orb"></div><div class="cta-copy"><span class="section-kicker">O próximo passo é teu</span><h2>O teu futuro<br>não fica à espera.</h2><p>Cria o teu perfil e começa a acompanhar oportunidades ao teu ritmo.</p></div><div class="cta-actions"><button class="btn btn-yellow btn-large" data-open="register">Criar conta grátis <span>→</span></button><button class="btn btn-outline-light" data-open="login">Já tenho conta</button><small>Registo demonstrativo nesta versão inicial.</small></div><div class="cta-star">✳</div></section>
+
+    <section class="about-section" id="sobre"><div class="about-label"><span class="section-kicker">Sobre o PULSO</span><span class="about-number">ANGOLA · 01</span></div><div class="about-body"><h2>Não é só procurar.<br>É saber <em>onde olhar.</em></h2><p>O PULSO está a ser construído para reunir oportunidades, organizar informação e ajudar pessoas em Angola a encontrar caminhos de estudo e carreira — com fontes claras e tecnologia responsável.</p><a href="mailto:ola@pulso.ao" class="text-link">Fala connosco <span>↗</span></a></div><div class="about-logo">PULSO<span>®</span></div></section>
+  </main>
+
+  <footer class="site-footer"><a class="brand footer-brand" href="#inicio"><img src="assets/pulso-mark.svg" alt="" width="34" height="34"><span class="brand-copy"><strong>PULSO</strong><small>Oportunidades em movimento.</small></span></a><span>© <span id="year"></span> PULSO. Feito com propósito em Angola.</span><div><a href="#sobre">Privacidade</a><a href="#sobre">Termos</a><a href="mailto:ola@pulso.ao">Contacto</a></div></footer>
+
+  <dialog class="modal" id="appModal" aria-labelledby="modalTitle"><button class="modal-close" id="modalClose" aria-label="Fechar">×</button><div id="modalBody"></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
