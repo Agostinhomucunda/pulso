@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "policy": {
+    "user_agent": "PULSO-opportunity-collector/1.0 (+https://agostinhomucunda.github.io/pulso/)",
+    "max_items_per_source": 40,
+    "request_timeout_seconds": 20,
+    "auto_publish_requires_https": true,
+    "review_news_publishers": true
+  },
+  "sources": [
+    {
+      "id": "sepe",
+      "name": "SEPE — Serviços Públicos Electrónicos",
+      "kind": "official",
+      "auto_publish": true,
+      "urls": ["https://sepe.gov.ao/emprego"]
+    },
+    {
+      "id": "enapp",
+      "name": "ENAPP — Escola Nacional de Administração e Políticas Públicas",
+      "kind": "official",
+      "auto_publish": true,
+      "urls": ["https://enapp.gov.ao/publico", "https://enapp.gov.ao/feed", "https://enapp.gov.ao/wp-sitemap.xml"]
+    },
+    {
+      "id": "angop",
+      "name": "ANGOP — Agência Angola Press",
+      "kind": "news",
+      "auto_publish": false,
+      "urls": ["https://angop.ao/noticias/sociedade/", "https://angop.ao/sitemap_news.xml/", "https://angop.ao/sitemap.xml/"]
+    },
+    {
+      "id": "jornal-de-angola",
+      "name": "Jornal de Angola",
+      "kind": "news",
+      "auto_publish": false,
+      "urls": ["https://jornaldeangola.ao/pesquisar/?q=emprego", "https://jornaldeangola.ao/pesquisar/?q=concurso%20p%C3%BAblico", "https://jornaldeangola.ao/noticias/3/sociedade"]
+    },
+    {
+      "id": "novo-jornal",
+      "name": "Novo Jornal",
+      "kind": "news",
+      "auto_publish": false,
+      "urls": ["https://novojornal.co.ao/google_news.ashx"]
+    },
+    {
+      "id": "expansao",
+      "name": "Expansão",
+      "kind": "news",
+      "auto_publish": false,
+      "urls": ["https://www.expansao.co.ao/tag/emprego.html", "https://expansao.co.ao/google_news.ashx", "https://www.expansao.co.ao/sitemap.xml"]
+    },
+    {
+      "id": "verangola-empregos",
+      "name": "VerAngola Empregos",
+      "kind": "public_jobs",
+      "auto_publish": true,
+      "urls": ["https://empregos.verangola.net/search/relation,HIRE"]
+    },
+    {
+      "id": "us-embassy-luanda",
+      "name": "Embaixada dos Estados Unidos em Angola",
+      "kind": "official",
+      "auto_publish": true,
+      "urls": ["https://ao.usembassy.gov/pt/job-opportunities-pt/", "https://ao.usembassy.gov/pt/education-pt/oportunidades-de-financiamento/", "https://ao.usembassy.gov/feed/"]
+    },
+    {
+      "id": "german-embassy-luanda",
+      "name": "Embaixada da Alemanha em Luanda",
+      "kind": "official",
+      "auto_publish": true,
+      "urls": ["https://luanda.diplo.de/ao-pt/ueber-uns/jobs", "https://luanda.diplo.de/ao-pt/ueber-uns/seite-stellenangebote-877978"]
+    },
+    {
+      "id": "universidades-ao",
+      "name": "Universidades.ao",
+      "kind": "public_education",
+      "auto_publish": false,
+      "urls": ["https://universidades.ao/eventos/", "https://universidades.ao/eventos/noticias/"]
+    },
+    {
+      "id": "angola-government",
+      "name": "Portal Oficial do Governo de Angola",
+      "kind": "official",
+      "auto_publish": true,
+      "urls": ["https://governo.gov.ao/", "https://governo.gov.ao/noticias/"]
+    }
+  ]
+}

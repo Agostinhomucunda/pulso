@@ -34,6 +34,8 @@
 - [x] Criar migração idempotente que notifica uma vez por utilizador/oportunidade elegível, sem privilégio de escrita público.
 - [ ] O proprietário deve executar no Supabase `supabase/migrations/20261119122700_opportunity_alert_notifications.sql` (ou, se usou setup móvel, `supabase/mobile-setup/07_opportunity_alert_notifications.sql`). Até à execução, as preferências são guardadas, mas a trigger de correspondência automática ainda não corre.
 - [ ] O proprietário deve executar no Supabase `supabase/migrations/20261119140000_public_opportunity_cards.sql` antes de publicar a home actualizada; até à execução, a homepage actualizada ficará sem catálogo porque a RPC ainda não existe.
+- [x] Worker automático em GitHub Actions com recolha periódica de fontes HTTPS públicas, deduplicação, validação de links, publicação estática e fila de revisão para fontes noticiosas ou restritas.
+- [ ] Ampliar o catálogo de fontes apenas depois de confirmar URL canónico, robots.txt, termos de utilização e um canal público estável para cada nova instituição.
 
 ## Segurança e trabalho futuro
 - [x] Manter RLS do esquema inicial, chave publishable pública e nenhuma chave privilegiada no browser.

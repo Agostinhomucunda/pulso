@@ -1,0 +1,69 @@
+{
+  "generated_at": "2026-11-19T13:23:17.172862+00:00",
+  "items": [
+    {
+      "id": "auto-eff3c897c327d6d2a0ca",
+      "title": "Cursos de STEM representam menos de 30% da oferta formativa",
+      "public_summary": "Cursos de STEM representam menos de 30% da oferta formativa",
+      "category": "training",
+      "sector": "",
+      "province": "Angola",
+      "municipality": "",
+      "vacancies": null,
+      "application_deadline": null,
+      "published_at": null,
+      "source_name": "Expansão",
+      "source_url": "https://expansao.co.ao/google_news.ashx",
+      "application_url": "https://expansao.co.ao/google_news.ashx",
+      "organization": {
+        "name": "Expansão",
+        "official_website": "https://expansao.co.ao"
+      },
+      "source_id": "expansao",
+      "collection_method": "automatic",
+      "verification_status": "pending_review"
+    }
+  ],
+  "errors": [
+    {
+      "source_id": "angop",
+      "url": "https://angop.ao/noticias/sociedade/",
+      "error": "Remote end closed connection without response"
+    },
+    {
+      "source_id": "angop",
+      "url": "https://angop.ao/sitemap_news.xml/",
+      "error": "Remote end closed connection without response"
+    },
+    {
+      "source_id": "angop",
+      "url": "https://angop.ao/sitemap.xml/",
+      "error": "Remote end closed connection without response"
+    },
+    {
+      "source_id": "verangola-empregos",
+      "url": "https://empregos.verangola.net/search/relation,HIRE",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "source_id": "us-embassy-luanda",
+      "url": "https://ao.usembassy.gov/pt/job-opportunities-pt/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "source_id": "us-embassy-luanda",
+      "url": "https://ao.usembassy.gov/pt/education-pt/oportunidades-de-financiamento/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "source_id": "us-embassy-luanda",
+      "url": "https://ao.usembassy.gov/feed/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "source_id": "angola-government",
+      "url": "https://governo.gov.ao/noticias/",
+      "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'governo.gov.ao'. (_ssl.c:1000)>"
+    }
+  ]
+}

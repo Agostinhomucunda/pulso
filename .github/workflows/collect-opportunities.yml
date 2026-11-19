@@ -1,0 +1,38 @@
+name: Collect PULSO opportunities
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pulso-opportunity-collector
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Collect public opportunities
+        run: python3 scripts/collect_opportunities.py
+
+      - name: Commit updated catalogue
+        run: |
+          git config user.name "PULSO automatic collector"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/opportunities.json data/review-queue.json data/organizations.json
+          if git diff --cached --quiet; then
+            echo "No catalogue changes."
+            exit 0
+          fi
+          git commit -m "chore: refresh automatic opportunity catalogue"
+          git push origin HEAD:main
