@@ -22,18 +22,20 @@ Criar uma plataforma profissional de oportunidades para Angola, com expansão af
 
 - `index.html`: página única sem framework, sem build step, compatível com GitHub Pages em `/pulso/`.
 - `styles.css`: design responsivo, acessibilidade e estados de interface.
-- `app.js`: catálogo demonstrativo e interacções exclusivamente cliente.
+- `app.js`: catálogo demonstrativo, interacções de interface, login Supabase e recuperação de palavra-passe.
+- `supabase-config.js`: URL, publishable key pública e redirect URL do projecto; nunca guardar chaves privilegiadas no cliente.
+- `supabase/`: migração inicial e políticas RLS; o projecto Supabase PULSO está na região eu-west-1.
 - `assets/`: marca SVG e recorte da imagem de referência fornecida.
 - `README.md`: instruções para activar Pages e explicar limites.
 - `plan.md` e `TODO.md`: decisões e progresso.
 
-Na fase inicial não se inclui backend, autenticação real, base de dados ou crawling. Antes de os adicionar, escolher alojamento/serviços adequados e solicitar credenciais apenas quando necessárias; nunca colocar segredos no repositório público.
+O GitHub Pages continua a servir a interface estática; o Supabase fornece autenticação e base de dados externa. O login e a recuperação de palavra-passe usam a publishable key com RLS. O registo público fica fechado até à aprovação/publicação de privacidade e termos. Não há chaves secretas no cliente.
 
 ## Etapas do produto
 
 1. Interface pública responsiva e navegação/demonstração funcional no browser; activar Pages pelo proprietário.
-2. Definir arquitectura de produção, modelo de dados, política editorial/verificação e backend.
-3. Autenticação, perfis, favoritos/alertas duráveis, notificações e funções administrativas.
+2. Seleccionar o Supabase como backend inicial e criar tabelas com políticas RLS; manter GitHub Pages para a interface.
+3. Activar login e recuperação por e-mail; manter o registo público fechado até publicar privacidade e termos. Perfis, favoritos/alertas duráveis, notificações e funções administrativas continuam por ligar.
 4. Ingestão de fontes públicas/autorizadas com histórico, deduplicação, revisão e links para origem.
 5. Radar PULSO AI claramente separado de vagas confirmadas.
 6. Integrações externas (SENGA/Google/e-mail/WhatsApp) apenas após verificar API, permissão, custos e credenciais.

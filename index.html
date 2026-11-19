@@ -11,7 +11,7 @@
   <title>PULSO — Oportunidades em movimento</title>
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
-  <script src="app.js" defer></script>
+  <script type="module" src="app.js"></script>
 </head>
 <body>
   <div class="demo-banner"><span class="demo-dot"></span> Versão inicial · Oportunidades de exemplo identificadas como demonstração</div>
@@ -28,9 +28,9 @@
       <a class="nav-link" href="#radar">Previsões</a>
       <a class="nav-link" href="#bolsas">Bolsas</a>
       <a class="nav-link" href="#sobre">Sobre</a>
-      <div class="nav-mobile-actions"><button class="btn btn-ghost" data-open="login">Entrar</button><button class="btn btn-yellow" data-open="register">Criar conta</button></div>
+      <div class="nav-mobile-actions"><button class="btn btn-ghost" data-open="login" data-auth-state="signed-out">Entrar</button><button class="btn btn-yellow" data-open="register" data-auth-state="signed-out">Criar conta</button><button class="btn btn-ghost" data-open="account" data-auth-state="signed-in" hidden>A minha conta</button><button class="btn btn-outline-light" data-auth-signout data-auth-state="signed-in" hidden>Sair</button></div>
     </nav>
-    <div class="header-actions"><button class="icon-btn notification-trigger" aria-label="Notificações" data-open="notifications"><span class="bell-icon">♧</span><i></i></button><button class="btn btn-outline-light" data-open="login">Entrar</button><button class="btn btn-yellow" data-open="register">Criar conta</button></div>
+    <div class="header-actions"><button class="icon-btn notification-trigger" aria-label="Notificações" data-open="notifications"><span class="bell-icon">♧</span><i></i></button><button class="btn btn-outline-light" data-open="login" data-auth-state="signed-out">Entrar</button><button class="btn btn-yellow" data-open="register" data-auth-state="signed-out">Criar conta</button><button class="btn btn-outline-light" data-open="account" data-auth-state="signed-in" hidden>A minha conta</button><button class="btn btn-outline-light" data-auth-signout data-auth-state="signed-in" hidden>Sair</button></div>
   </header>
 
   <main>
@@ -78,12 +78,12 @@
 
     <section class="section companies-section" id="empresas"><div class="section-heading"><div><div class="section-kicker">Organizações em destaque</div><h2>Quem está a <span>criar movimento.</span></h2><p>Instituições e empregadores associados às oportunidades.</p></div><button class="btn btn-outline-blue" data-open="company">Cadastrar empresa <span>↗</span></button></div><div class="company-grid" id="companyGrid"></div><p class="data-disclaimer">Os nomes e oportunidades apresentados nesta versão são exemplos de demonstração, não representam anúncios oficiais.</p></section>
 
-    <section class="cta-section" id="bolsas"><div class="cta-orb"></div><div class="cta-copy"><span class="section-kicker">O próximo passo é teu</span><h2>O teu futuro<br>não fica à espera.</h2><p>Cria o teu perfil e começa a acompanhar oportunidades ao teu ritmo.</p></div><div class="cta-actions"><button class="btn btn-yellow btn-large" data-open="register">Criar conta grátis <span>→</span></button><button class="btn btn-outline-light" data-open="login">Já tenho conta</button><small>Registo demonstrativo nesta versão inicial.</small></div><div class="cta-star">✳</div></section>
+    <section class="cta-section" id="bolsas"><div class="cta-orb"></div><div class="cta-copy"><span class="section-kicker">O próximo passo é teu</span><h2>O teu futuro<br>não fica à espera.</h2><p>Cria o teu perfil e começa a acompanhar oportunidades ao teu ritmo.</p></div><div class="cta-actions"><button class="btn btn-yellow btn-large" data-open="register">Criar conta grátis <span>→</span></button><button class="btn btn-outline-light" data-open="login">Já tenho conta</button><small>O registo público será aberto após a publicação da informação de privacidade.</small></div><div class="cta-star">✳</div></section>
 
     <section class="about-section" id="sobre"><div class="about-label"><span class="section-kicker">Sobre o PULSO</span><span class="about-number">ANGOLA · 01</span></div><div class="about-body"><h2>Não é só procurar.<br>É saber <em>onde olhar.</em></h2><p>O PULSO está a ser construído para reunir oportunidades, organizar informação e ajudar pessoas em Angola a encontrar caminhos de estudo e carreira — com fontes claras e tecnologia responsável.</p><a href="#contacto" data-open="contact" class="text-link">Fala connosco <span>↗</span></a></div><div class="about-logo">PULSO<span>®</span></div></section>
   </main>
 
-  <footer class="site-footer"><a class="brand footer-brand" href="#inicio"><img src="assets/pulso-mark-3d-small.png" alt="" width="34" height="34"><span class="brand-copy"><strong>PULSO</strong><small>Oportunidades em movimento.</small></span></a><span>© <span id="year"></span> PULSO. Feito com propósito em Angola.</span><div><a href="#sobre">Privacidade</a><a href="#sobre">Termos</a><a href="#contacto" data-open="contact">Contacto</a></div></footer>
+  <footer class="site-footer"><a class="brand footer-brand" href="#inicio"><img src="assets/pulso-mark-3d-small.png" alt="" width="34" height="34"><span class="brand-copy"><strong>PULSO</strong><small>Oportunidades em movimento.</small></span></a><span>© <span id="year"></span> PULSO. Feito com propósito em Angola.</span><div><a href="#privacidade" data-open="privacy">Privacidade</a><a href="#termos" data-open="terms">Termos</a><a href="#contacto" data-open="contact">Contacto</a></div></footer>
 
   <dialog class="modal" id="appModal" aria-labelledby="modalTitle"><button class="modal-close" id="modalClose" aria-label="Fechar">×</button><div id="modalBody"></div></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

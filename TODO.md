@@ -13,7 +13,9 @@
 - [ ] Definir política de privacidade, termos, retenção de dados, segurança, backups, permissões e tratamento de erros antes de recolher dados pessoais.
 
 ## Etapa 3 — Contas, empresas e administração
-- [ ] Implementar login, registo, recuperação e perfis com autenticação real e validação de e-mail.
+- [x] Ligar login por e-mail/palavra-passe e recuperação de palavra-passe ao Supabase Auth, com redireccionamento para GitHub Pages.
+- [ ] Activar registo público e validação de e-mail apenas depois de aprovar/publicar privacidade e termos; até lá, manter o formulário fechado e permitir apenas contas criadas/convidadas pelo proprietário.
+- [ ] Completar edição de perfis e atribuição segura do primeiro administrador; contas comuns não podem atribuir privilégios.
 - [ ] Verificar documentação e autorização do SENGA e Google antes de activar qualquer autenticação; não simular integração.
 - [ ] Manter cadastro/publicação empresarial bloqueados até existir verificação de legitimidade.
 - [ ] Implementar painel administrativo protegido, auditoria, revisão/edição e gestão de denúncias.

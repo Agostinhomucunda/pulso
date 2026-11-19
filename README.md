@@ -45,3 +45,10 @@ A migração completa está em `supabase/migrations/20261119103000_initial_pulso
 A política pública só permite ler oportunidades publicadas e verificadas e organizações verificadas. Contas comuns só podem aceder aos seus próprios perfis, favoritos, alertas e notificações. A lista de administradores não é editável pelo browser. Depois de criar a primeira conta de utilizador do PULSO, o primeiro administrador terá de ser concedido no SQL Editor, nunca a partir do site público.
 
 Não coles chaves `sb_secret_`, `service_role`, palavras-passe ou tokens no SQL Editor desta migração, no chat ou no GitHub. Se o Supabase mostrar um erro, partilha apenas a mensagem de erro, removendo qualquer valor secreto.
+
+
+## Autenticação por e-mail
+
+O website usa o cliente JavaScript Supabase no browser. `supabase-config.js` contém apenas o URL do projecto e a publishable key, que é pública por desenho; a protecção dos dados depende das políticas RLS. Nunca colocar `sb_secret_`, `service_role`, palavras-passe ou tokens no repositório.
+
+O acesso por e-mail e palavra-passe e a recuperação estão ligados ao Supabase. O formulário de registo público fica fechado até serem aprovados e publicados a política de privacidade e os termos. Para fechar também a API de registo do lado do Supabase, desactiva **Allow new users to sign up** nas definições de Authentication. As oportunidades, empresas, favoritos e alertas da interface ainda não estão ligados a dados reais.
