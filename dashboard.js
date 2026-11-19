@@ -25,6 +25,10 @@ const CATEGORY_ASSETS = {
   training: 'assets/logos/training-3d.png',
   recruitment_program: 'assets/logos/opportunities-3d.png',
 };
+const AVATAR_ASSETS = {
+  male: 'assets/profile/avatar-male.jpg',
+  female: 'assets/profile/avatar-female.jpg',
+};
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 let supabaseClient = null;
@@ -37,6 +41,7 @@ let alerts = [];
 let notifications = [];
 let notificationIds = null;
 let isAdmin = false;
+let selectedAvatar = 'male';
 let opportunitiesOffset = 0;
 let opportunitiesHaveMore = false;
 let toastTimer;
@@ -64,6 +69,21 @@ function initials(value) {
 function userName() {
   return String(profile.full_name || currentUser?.user_metadata?.full_name || '').trim()
     || currentUser?.email?.split('@')[0] || 'Utilizador PULSO';
+}
+
+function avatarKey(value) {
+  return value === 'female' ? 'female' : 'male';
+}
+
+function renderAvatarTargets() {
+  const key = avatarKey(selectedAvatar);
+  const src = AVATAR_ASSETS[key];
+  $$('[data-avatar-target]').forEach(target => {
+    target.innerHTML = `<img src="${src}" alt="Avatar ${key === 'female' ? 'feminino' : 'masculino'}">`;
+  });
+  $$('[data-avatar-choice]').forEach(input => {
+    input.checked = input.value === key;
+  });
 }
 
 function categoryLabel(category) {
@@ -132,16 +152,13 @@ function activateView(view, { updateHash = true } = {}) {
 
 function updateIdentity() {
   const name = userName();
-  const monogram = initials(name);
   const email = currentUser?.email || '';
   $('#profileNameTop').textContent = name;
   $('#profileEmailTop').textContent = email || 'Conta PULSO';
-  $('#profileAvatar').textContent = monogram;
+  renderAvatarTargets();
   $('#sidebarName').textContent = name.split(/\s+/)[0] || name;
-  $('#sidebarAvatar').textContent = monogram;
   $('#profileMenuName').textContent = name;
   $('#profileMenuEmail').textContent = email;
-  $('#profileAvatarLarge').textContent = monogram;
   $('#profileShowcaseName').textContent = name;
   $('#profileShowcaseEmail').textContent = email;
   $('#profileEmailField').value = email;
@@ -226,6 +243,7 @@ async function loadProfile() {
     .eq('id', currentUser.id).maybeSingle();
   if (error) throw error;
   profile = data || {};
+  selectedAvatar = avatarKey(profile.preferences?.avatar);
   updateIdentity();
 }
 
@@ -682,6 +700,7 @@ async function saveProfile(event) {
       municipality: String(values.get('municipality') || '').trim() || null,
       professional_area: String(values.get('professional_area') || '').trim() || null,
       education_level: String(values.get('education_level') || '').trim() || null,
+      preferences: { ...(profile.preferences || {}), avatar: avatarKey(values.get('avatar')) },
     };
     const { data, error } = await supabaseClient.from('profiles').update(changes)
       .eq('id', currentUser.id).select('id,full_name,province,municipality,professional_area,education_level,preferences').single();
@@ -764,6 +783,10 @@ function bindEvents() {
   $('#signOutButton').addEventListener('click', () => void signOut());
   $('#alertForm').addEventListener('submit', createAlert);
   $('#profileForm').addEventListener('submit', saveProfile);
+  $$('[data-avatar-choice]').forEach(input => input.addEventListener('change', () => {
+    selectedAvatar = avatarKey(input.value);
+    renderAvatarTargets();
+  }));
   $('#manualOpportunityForm').addEventListener('submit', createManualOpportunity);
   $('#adminAssetList').addEventListener('submit', saveAdminAssets);
   $('#refreshAdminAssets').addEventListener('click', () => void loadAdminAssets());
