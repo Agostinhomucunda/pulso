@@ -288,3 +288,7 @@
 /* Última alteração PULSO: categorias e fonte oficial com acabamento 3D. */
 .dash-op-content h3{display:block;line-height:1.35}.dash-op-category{gap:7px!important}.dash-op-category .category-3d-icon{width:18px;height:18px;border-radius:6px;font-size:9px;box-shadow:inset 0 1px #ffffffa8,0 2px 0 #072d7e,0 3px 7px #063b9b30}.dash-source-3d-btn{min-height:33px;padding:0 10px;border-radius:9px;font-size:8px}.dash-source-3d-btn span{font-size:12px}.dash-op-actions{flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:700px){.dash-source-3d-btn{font-size:7px;padding:0 8px}.dash-op-actions{gap:5px}.dash-op-actions .dash-op-save,.dash-op-actions .dash-op-detail{width:30px;height:30px}}
+
+/* Logótipos fornecidos pelo utilizador: escala contida e alinhamento central. */
+.stat-icon{overflow:hidden}.stat-icon img{width:100%;height:100%;display:block;object-fit:contain;object-position:center}.category-checkbox-grid label{align-items:center}.category-checkbox-grid .category-3d-img{width:24px;height:24px}.dash-op-category{align-items:center}.dash-op-category .category-3d-img{width:24px;height:24px}.dash-op-content h3{display:flex;align-items:center;gap:2px}.dash-op-content .verified-check-img{width:19px;height:19px;object-fit:contain;flex:none;vertical-align:middle}.premium-op-card .op-caption{align-items:center}
+@media(max-width:520px){.category-checkbox-grid .category-3d-img{width:21px;height:21px}.dash-op-category .category-3d-img{width:20px;height:20px}.dash-op-content .verified-check-img{width:17px;height:17px}}

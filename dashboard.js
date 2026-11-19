@@ -17,6 +17,14 @@ const CATEGORY_ICONS = {
   training: '▤',
   recruitment_program: '✧',
 };
+const CATEGORY_ASSETS = {
+  employment: 'assets/logos/employment-3d.png',
+  scholarship: 'assets/logos/scholarship-3d.png',
+  public_competition: 'assets/logos/checklist-3d.png',
+  internship: 'assets/logos/checklist-3d.png',
+  training: 'assets/logos/training-3d.png',
+  recruitment_program: 'assets/logos/opportunities-3d.png',
+};
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 let supabaseClient = null;
@@ -64,6 +72,10 @@ function categoryLabel(category) {
 
 function categoryIcon(category) {
   return CATEGORY_ICONS[category] || '✦';
+}
+
+function categoryAsset(category) {
+  return CATEGORY_ASSETS[category] || CATEGORY_ASSETS.recruitment_program;
 }
 
 function organizationName(item) {
@@ -162,9 +174,9 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
   return `<article class="dash-op-card">
     <span class="dash-op-mark" aria-hidden="true">${mark}</span>
     <div class="dash-op-content">
-      <h3>${escapeHtml(item.title)} <span class="verified-check" title="Oportunidade verificada" aria-label="Oportunidade verificada">✓</span></h3>
+      <h3>${escapeHtml(item.title)} <img class="verified-check-img" src="assets/logos/verified-3d.png" alt="Oportunidade verificada" title="Oportunidade verificada"></h3>
       <span class="dash-op-org">${escapeHtml(org)}</span>
-      <div class="dash-op-meta"><span class="dash-op-category"><i class="category-3d-icon category-${escapeHtml(item.category || 'other')}" aria-hidden="true">${escapeHtml(categoryIcon(item.category))}</i>${escapeHtml(categoryLabel(item.category))}</span>${meta}</div>
+      <div class="dash-op-meta"><span class="dash-op-category"><img class="category-3d-img" src="${categoryAsset(item.category)}" alt="" aria-hidden="true">${escapeHtml(categoryLabel(item.category))}</span>${meta}</div>
     </div>
     <div class="dash-op-actions">
       ${source ? `<button class="source-3d-btn dash-source-3d-btn" type="button" data-detail-opportunity="${id}">Fonte oficial <span>↗</span></button>` : ''}
