@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-AO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0739a8">
+  <meta name="description" content="O teu painel PULSO para acompanhar oportunidades, guardados e alertas em Angola.">
+  <title>O teu painel — PULSO</title>
+  <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=20261119-4">
+  <link rel="stylesheet" href="dashboard.css?v=20261119-4">
+  <script type="module" src="dashboard.js?v=20261119-4"></script>
+</head>
+<body class="dashboard-body">
+  <header class="dash-topbar">
+    <a class="dash-brand" href="./index.html" aria-label="PULSO — página inicial">
+      <img src="assets/pulso-mark-3d-small.png" alt="" width="42" height="42">
+      <span><strong>PULSO</strong><small>Oportunidades em movimento.</small></span>
+    </a>
+    <div class="dash-top-context"><span class="dash-live-dot"></span> O teu espaço de oportunidades</div>
+    <div class="dash-top-actions">
+      <button class="browser-alert-btn" id="browserAlertButton" type="button" aria-label="Activar avisos neste navegador"><svg class="browser-alert-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span id="browserAlertLabel">Activar avisos</span></button>
+      <button class="dash-bell" id="notificationBell" type="button" aria-label="Abrir notificações">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+        <span class="notification-count" id="notificationCount" hidden>0</span>
+      </button>
+      <div class="profile-anchor">
+        <button class="profile-trigger" id="profileMenuButton" type="button" aria-haspopup="true" aria-expanded="false">
+          <span class="profile-avatar" id="profileAvatar">P</span>
+          <span class="profile-trigger-copy"><b id="profileNameTop">A carregar…</b><small id="profileEmailTop">Conta PULSO</small></span>
+          <span class="profile-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="profile-menu" id="profileMenu" hidden>
+          <div class="profile-menu-heading"><b id="profileMenuName">A tua conta</b><small id="profileMenuEmail"></small></div>
+          <button type="button" data-view="profile">Editar perfil</button>
+          <button type="button" data-view="support">Ajuda e contactos</button>
+          <button type="button" class="profile-signout" id="signOutButton">Terminar sessão</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="dash-layout">
+    <aside class="dash-sidebar" aria-label="Navegação do dashboard">
+      <div class="sidebar-profile-mini"><span class="sidebar-avatar" id="sidebarAvatar">P</span><span><b id="sidebarName">O teu painel</b><small>Angola · PULSO</small></span></div>
+      <nav class="dash-navigation">
+        <button class="dash-nav-link active" type="button" data-view="overview"><span>⌂</span> Painel inicial</button>
+        <button class="dash-nav-link" type="button" data-view="opportunities"><span>▤</span> Oportunidades</button>
+        <button class="dash-nav-link" type="button" data-view="saved"><span>♡</span> Guardadas <span class="nav-count" id="savedNavCount">0</span></button>
+        <button class="dash-nav-link" type="button" data-view="alerts"><span>⌁</span> Os meus alertas</button>
+        <button class="dash-nav-link" type="button" data-view="notifications"><span>♧</span> Notificações <span class="nav-count nav-alert-count" id="notificationNavCount" hidden>0</span></button>
+        <button class="dash-nav-link" type="button" data-view="profile"><span>◉</span> Meu perfil</button>
+      </nav>
+      <div class="sidebar-alert-card">
+        <span class="sidebar-alert-icon">✦</span>
+        <b>Oportunidades ao teu ritmo.</b>
+        <p>Define o que procuras e acompanha novas publicações verificadas.</p>
+        <button type="button" data-view="alerts">Configurar alertas <span>→</span></button>
+      </div>
+      <div class="sidebar-contact-mini">
+        <span class="section-kicker">PULSO · SUPORTE</span>
+        <a href="https://wa.me/244955614045" target="_blank" rel="noopener noreferrer">WhatsApp <span>↗</span></a>
+        <a href="mailto:pulsobussines@gmail.com">Enviar e-mail <span>↗</span></a>
+      </div>
+      <a class="back-home-link" href="./index.html">← Voltar à página inicial</a>
+    </aside>
+
+    <main class="dash-main" id="dashboardMain">
+      <div class="dashboard-loading" id="dashboardLoading" role="status"><span class="loading-orbit"></span><b>A preparar o teu painel…</b><small>A ligar à tua conta e às oportunidades verificadas.</small></div>
+
+      <section class="dash-view" data-panel="overview" hidden>
+        <div class="dashboard-hero">
+          <div class="dashboard-hero-glow"></div><div class="dashboard-hero-orbit orbit-a"></div><div class="dashboard-hero-orbit orbit-b"></div>
+          <div class="dash-hero-copy"><span class="hero-overline"><span class="dash-live-dot"></span> O TEU PAINEL PULSO</span><h1 id="welcomeHeading">Olá. O teu próximo passo começa aqui.</h1><p>Acompanha oportunidades confirmadas, organiza a tua procura e recebe alertas que fazem sentido para ti.</p><button class="hero-action" type="button" data-view="opportunities">Explorar oportunidades <span>→</span></button></div>
+          <div class="hero-depth-card hero-depth-front"><span>O teu caminho</span><b>Mais foco.<br><em>Mais possibilidades.</em></b><small>Informação com fonte e contexto.</small></div>
+          <div class="hero-depth-card hero-depth-back" aria-hidden="true"><span>P·</span></div>
+          <div class="hero-hero-mark" aria-hidden="true">P<span>·</span></div>
+        </div>
+
+        <div class="section-title-row"><div><span class="section-kicker">ACTIVIDADE REAL</span><h2>O teu espaço de procura.</h2><p>Os indicadores reflectem apenas publicações verificadas disponíveis agora.</p></div><span class="data-source-pill"><i></i> Ligado ao Supabase</span></div>
+        <div class="dashboard-stats">
+          <article class="stat-card stat-main"><span class="stat-icon">▤</span><span class="stat-label">Oportunidades disponíveis</span><b id="statTotal">—</b><small>Publicadas e verificadas</small><span class="stat-bottom-line"></span></article>
+          <article class="stat-card"><span class="stat-icon stat-blue">⌂</span><span class="stat-label">Empregos</span><b id="statJobs">—</b><small>Vagas confirmadas</small></article>
+          <article class="stat-card"><span class="stat-icon stat-gold">◇</span><span class="stat-label">Bolsas</span><b id="statScholarships">—</b><small>Oportunidades de estudo</small></article>
+          <article class="stat-card"><span class="stat-icon stat-saved">♡</span><span class="stat-label">Guardadas</span><b id="statSaved">—</b><small>Na tua conta</small></article>
+        </div>
+
+        <section class="dash-panel featured-panel">
+          <div class="panel-heading"><div><span class="section-kicker">SELECÇÃO ACTUAL</span><h2>Oportunidades recentes.</h2></div><button class="panel-link" type="button" data-view="opportunities">Ver todas <span>→</span></button></div>
+          <div class="dashboard-opportunity-list compact-list" id="featuredOpportunityList"><div class="empty-state"><b>A carregar oportunidades…</b></div></div>
+        </section>
+
+        <div class="overview-bottom-grid">
+          <section class="dash-panel overview-alert-panel"><div class="panel-heading"><div><span class="section-kicker">PERSONALIZA A PROCURA</span><h2>Um alerta mais teu.</h2></div><span class="panel-icon">⌁</span></div><p>Escolhe categoria, província ou palavras-chave e o PULSO prepara um alerta para ti.</p><button class="btn btn-primary-soft" type="button" data-view="alerts">Configurar um alerta <span>→</span></button></section>
+          <section class="contact-3d-card"><div class="contact-3d-top"><span>✦</span><small>SUPORTE PULSO</small></div><h3>Estamos por perto.</h3><p>Fala connosco pelo WhatsApp ou e-mail.</p><a href="https://wa.me/244955614045" target="_blank" rel="noopener noreferrer" class="whatsapp-button"><span class="whatsapp-glyph">◉</span> Abrir WhatsApp <span>↗</span></a></section>
+        </div>
+      </section>
+
+      <section class="dash-view" data-panel="opportunities" hidden>
+        <div class="page-intro"><span class="section-kicker">CATÁLOGO VERIFICADO</span><h1>Oportunidades em movimento.</h1><p>Pesquisa e filtra oportunidades publicadas pelas entidades de origem.</p></div>
+        <div class="dash-panel opportunity-tools"><label class="dash-search"><span>⌕</span><input id="opportunitySearch" type="search" placeholder="Pesquisar cargo, entidade ou área…" autocomplete="off"></label><label><span>Categoria</span><select id="opportunityCategory"><option value="">Todas</option><option value="employment">Empregos</option><option value="scholarship">Bolsas</option><option value="public_competition">Concursos</option><option value="internship">Estágios</option><option value="training">Formação</option><option value="recruitment_program">Programas</option></select></label><label><span>Província</span><input id="opportunityProvince" list="provinceOptions" placeholder="Todas as províncias"><datalist id="provinceOptions"></datalist></label><button class="filter-reset" type="button" id="clearOpportunityFilters">Limpar filtros</button></div>
+        <div class="results-heading"><span id="opportunityResultsNote">A carregar…</span><span class="verified-key"><i></i> Apenas verificadas</span></div>
+        <div class="dashboard-opportunity-list" id="dashboardOpportunityList"><div class="empty-state"><b>A carregar oportunidades…</b></div></div>
+        <button class="load-more dash-load-more" id="loadMoreOpportunities" type="button" hidden>Carregar mais <span>↓</span></button>
+      </section>
+
+      <section class="dash-view" data-panel="saved" hidden>
+        <div class="page-intro"><span class="section-kicker">A TUA LISTA PESSOAL</span><h1>Oportunidades guardadas.</h1><p>Os teus favoritos ficam associados à conta e disponíveis quando voltares.</p></div>
+        <div class="dashboard-opportunity-list" id="savedOpportunityList"><div class="empty-state"><b>A carregar guardadas…</b></div></div>
+      </section>
+
+      <section class="dash-view" data-panel="alerts" hidden>
+        <div class="page-intro"><span class="section-kicker">À TUA MEDIDA</span><h1>Os teus alertas.</h1><p>Guarda critérios para acompanhar novas oportunidades verificadas. As correspondências automáticas aparecem aqui quando o serviço de alertas do PULSO está activo.</p></div>
+        <div class="alert-layout">
+          <form class="dash-panel alert-form" id="alertForm">
+            <div class="panel-heading"><div><span class="section-kicker">NOVO ALERTA</span><h2>O que queres acompanhar?</h2></div><span class="panel-icon">⌁</span></div>
+            <label>Nome do alerta<input name="name" maxlength="80" placeholder="Ex.: Empregos em Luanda" required></label>
+            <fieldset class="category-choice"><legend>Categorias</legend><div class="category-checkbox-grid"><label><input type="checkbox" name="category" value="employment"> Empregos</label><label><input type="checkbox" name="category" value="scholarship"> Bolsas</label><label><input type="checkbox" name="category" value="public_competition"> Concursos</label><label><input type="checkbox" name="category" value="internship"> Estágios</label><label><input type="checkbox" name="category" value="training"> Formação</label><label><input type="checkbox" name="category" value="recruitment_program"> Programas</label></div></fieldset>
+            <label>Província<input name="province" list="provinceOptions" placeholder="Ex.: Luanda"></label>
+            <label>Palavras-chave<input name="keywords" placeholder="Ex.: contabilidade, estágio"></label>
+            <small class="form-hint">Podes combinar os filtros. Dentro de cada campo, basta corresponder a uma opção.</small>
+            <div class="dashboard-feedback" id="alertFeedback" role="status" aria-live="polite" hidden></div>
+            <button class="btn btn-primary" type="submit">Guardar alerta <span>→</span></button>
+          </form>
+          <section class="dash-panel alert-list-panel"><div class="panel-heading"><div><span class="section-kicker">AS TUAS PREFERÊNCIAS</span><h2>Alertas configurados.</h2></div><span class="alert-total" id="alertTotal">0</span></div><div id="alertList"><div class="empty-state"><b>A carregar alertas…</b></div></div><div class="browser-notice-card"><span class="notice-bell">♧</span><div><b>Notificações neste navegador</b><small>Activar avisos enquanto o dashboard estiver aberto.</small></div><button id="browserAlertInline" type="button">Activar</button></div></section>
+        </div>
+      </section>
+
+      <section class="dash-view" data-panel="notifications" hidden>
+        <div class="page-intro notification-intro"><div><span class="section-kicker">ACTUALIZAÇÕES DA TUA CONTA</span><h1>Notificações.</h1><p>Alertas de oportunidades e actividade recente da tua conta.</p></div><button class="filter-reset" type="button" id="refreshNotifications">Actualizar <span>↻</span></button></div>
+        <div class="dash-panel notifications-panel"><div class="notification-tabs"><span class="active">Todas</span><span>Não lidas <b id="unreadInlineCount">0</b></span></div><div id="notificationList"><div class="empty-state"><b>A carregar notificações…</b></div></div></div>
+      </section>
+
+      <section class="dash-view" data-panel="profile" hidden>
+        <div class="page-intro"><span class="section-kicker">A TUA IDENTIDADE PULSO</span><h1>O teu perfil.</h1><p>Mantém os teus dados actualizados para personalizar a procura.</p></div>
+        <div class="profile-layout">
+          <section class="profile-showcase"><span class="profile-showcase-avatar" id="profileAvatarLarge">P</span><span class="section-kicker">PERFIL DE UTILIZADOR</span><h2 id="profileShowcaseName">A carregar…</h2><p id="profileShowcaseEmail"></p><span class="member-chip"><i></i> Conta activa</span></section>
+          <form class="dash-panel profile-form" id="profileForm"><div class="panel-heading"><div><span class="section-kicker">INFORMAÇÃO PESSOAL</span><h2>Editar perfil.</h2></div></div><label>Nome completo<input name="full_name" maxlength="120" required></label><div class="profile-fields-two"><label>Província<input name="province" list="provinceOptions" placeholder="Ex.: Luanda"></label><label>Município<input name="municipality" placeholder="Ex.: Maianga"></label></div><div class="profile-fields-two"><label>Área profissional<input name="professional_area" maxlength="120" placeholder="Ex.: Administração"></label><label>Nível de escolaridade<input name="education_level" maxlength="120" placeholder="Ex.: Licenciatura"></label></div><label class="readonly-field">E-mail da conta<input id="profileEmailField" type="email" readonly></label><div class="dashboard-feedback" id="profileFeedback" role="status" aria-live="polite" hidden></div><button class="btn btn-primary" type="submit">Guardar alterações <span>→</span></button></form>
+        </div>
+      </section>
+
+      <section class="dash-view" data-panel="support" hidden>
+        <div class="page-intro"><span class="section-kicker">SUPORTE PULSO</span><h1>Estamos por perto.</h1><p>Escolhe o canal mais conveniente para falar connosco.</p></div>
+        <div class="support-contact-grid">
+          <a class="support-contact-card" href="tel:+244936975657"><span class="support-icon phone-icon">☎</span><span><small>TELEFONE</small><b>+244 936 975 657</b><em>Ligar para o PULSO</em></span><span class="support-arrow">↗</span></a>
+          <a class="support-contact-card" href="tel:+244955614045"><span class="support-icon phone-icon">☎</span><span><small>TELEFONE</small><b>+244 955 614 045</b><em>Ligar para o PULSO</em></span><span class="support-arrow">↗</span></a>
+          <a class="support-contact-card" href="mailto:pulsobussines@gmail.com"><span class="support-icon gmail-icon" aria-hidden="true">M</span><span><small>E-MAIL</small><b>pulsobussines@gmail.com</b><em>Enviar mensagem</em></span><span class="support-arrow">↗</span></a>
+          <a class="support-contact-card support-whatsapp-card" href="https://wa.me/244955614045" target="_blank" rel="noopener noreferrer"><span class="support-icon whatsapp-icon" aria-hidden="true">◉</span><span><small>WHATSAPP</small><b>Fala connosco</b><em>Abre uma conversa segura</em></span><span class="support-arrow">↗</span></a>
+        </div>
+        <p class="support-footnote">O WhatsApp abre uma conversa com o número +244 955 614 045. A candidatura a oportunidades decorre sempre na página oficial da entidade anunciante.</p>
+      </section>
+
+      <footer class="dash-footer"><a href="./index.html">PULSO · Oportunidades em movimento.</a><span>Fontes claras. Próximos passos com contexto.</span><button type="button" data-view="support">Ajuda e contactos</button></footer>
+    </main>
+  </div>
+
+  <dialog class="opportunity-dialog" id="opportunityDialog" aria-labelledby="detailTitle"><button class="detail-close" id="detailClose" type="button" aria-label="Fechar detalhe">×</button><div id="opportunityDetail"></div></dialog>
+  <div class="dash-toast" id="dashboardToast" role="status" aria-live="polite"></div>
+</body>
+</html>

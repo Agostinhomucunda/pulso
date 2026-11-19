@@ -1,50 +1,47 @@
 # PULSO — Oportunidades em movimento
 
-Site público do PULSO para oportunidades de emprego, bolsas, concursos, estágios, formação e programas em Angola. O código está preparado para GitHub Pages e usa o Supabase para autenticação e leitura do catálogo publicado.
+Site público de oportunidades em Angola, com uma área autenticada separada para cada utilizador. A interface está em GitHub Pages; autenticação, catálogo e dados pessoais usam Supabase.
 
 ## Site e repositório
 
 - Site: <https://agostinhomucunda.github.io/pulso/>
 - Repositório: <https://github.com/Agostinhomucunda/pulso>
+- Dashboard: <https://agostinhomucunda.github.io/pulso/dashboard.html>
 - Publicação: GitHub Pages a partir da branch `main`.
 
-## Funcionalidades actuais
+## Funcionalidades
 
-- Interface responsiva, pesquisa e filtros por categoria.
-- Catálogo carregado do Supabase: só são pedidas oportunidades com `status = published` e `verification_status = verified`; as políticas RLS continuam a ser a camada de segurança.
-- Detalhes com a entidade, fonte original e ligação de candidatura quando disponíveis.
-- Organizações apresentadas apenas quando têm estado de verificação `verified`.
-- Estado vazio explícito quando ainda não há publicações verificadas; não são carregados registos inventados.
-- Criar conta com confirmação por e-mail, entrar, terminar sessão e recuperar/actualizar a palavra-passe através do Supabase Auth.
-- Favoritos persistidos na tabela `saved_opportunities` para utilizadores com sessão iniciada; sem sessão, ficam guardados apenas neste dispositivo.
-- Centro de notificações ligado à tabela `notifications` para a conta autenticada.
+A home pública tem pesquisa, filtros e catálogo alimentado pelo Supabase. Só mostra oportunidades publicadas e verificadas e organizações verificadas; não usa anúncios nem estatísticas fictícias. Os detalhes preservam a entidade anunciante, fonte original e ligação de candidatura quando disponíveis.
 
-A interface não cria oportunidades ou organizações e não monitoriza fontes automaticamente. A publicação e verificação de conteúdo são tarefas administrativas que ainda precisam de um fluxo próprio. O Radar tem apresentação informativa; a recolha e análise automatizadas ainda não estão ligadas.
+O registo usa confirmação por e-mail. Depois da inscrição, a interface mostra em destaque a instrução “Verifica o teu Gmail para activares a conta”, permite reenviar a confirmação e explica onde procurar. Depois de iniciar sessão ou confirmar o e-mail, o utilizador entra num dashboard próprio, diferente da home, com avatar/nome, edição de perfil, contagens reais, pesquisa/filtros, guardados, alertas, notificações e contactos.
+
+Favoritos usam `saved_opportunities`; campos do perfil usam a própria linha de `profiles`; preferências de alerta usam `user_alerts`; notificações persistidas usam `notifications`. As consultas e alterações de dados privados dependem das políticas RLS e da identidade autenticada.
+
+Os alertas podem filtrar por categoria, província e palavras-chave. O dashboard consulta notificações periodicamente enquanto está aberto; o sininho continua disponível no painel. Se o utilizador autorizar explicitamente, o navegador também pode mostrar notificações enquanto o dashboard está aberto. Não há serviço de Web Push em segundo plano.
+
+## Contactos publicados
+
+- Telefone: [+244 936 975 657](tel:+244936975657)
+- Telefone: [+244 955 614 045](tel:+244955614045)
+- WhatsApp: [abrir conversa](https://wa.me/244955614045)
+- E-mail: [pulsobussines@gmail.com](mailto:pulsobussines@gmail.com)
+
+O endereço de e-mail acima mantém a grafia fornecida pelo proprietário. A informação legal, o responsável pelo tratamento e os procedimentos de privacidade ainda devem ser revistos pelo proprietário antes de depender de inscrições públicas em produção.
 
 ## Configuração do Supabase
 
-O ficheiro `supabase-config.js` contém o URL e a publishable key do projecto, concebidos para uso no browser. Não adicionar `sb_secret_`, `service_role`, palavras-passe ou tokens ao repositório.
+`supabase-config.js` contém apenas o URL e a publishable key do projecto para uso no browser. Nunca adicionar `sb_secret_`, `service_role`, palavras-passe ou tokens ao repositório.
 
-A autenticação usa a configuração de redireccionamento para `https://agostinhomucunda.github.io/pulso/`. Para aceitar novas contas, o fornecedor de e-mail e a opção **Allow new users to sign up** têm de estar activos em **Authentication → Settings**; mantém a confirmação de e-mail activa. O formulário mostra uma mensagem se o serviço recusar inscrições.
+Em **Authentication → Settings**, permitir novas inscrições e manter a confirmação de e-mail activa. Configurar o fornecedor de e-mail e permitir redireccionamento para `https://agostinhomucunda.github.io/pulso/`.
 
-A migração inicial está em `supabase/migrations/20261119103000_initial_pulso_schema.sql`. Para configuração num dispositivo móvel, existem seis blocos menores em `supabase/mobile-setup/`, numerados de `01` a `06`. A migração cria as tabelas e políticas RLS, mas não insere dados de oportunidades nem organizações. As tabelas públicas só devem expor itens verificados e publicados.
+O esquema inicial encontra-se em `supabase/migrations/20261119103000_initial_pulso_schema.sql`. Para alertas que geram notificações automaticamente, executar uma vez `supabase/migrations/20261119122700_opportunity_alert_notifications.sql` em **Supabase Dashboard → SQL Editor**. Essa trigger só cria uma notificação quando uma oportunidade passa a `published` e `verified` e coincide com pelo menos um alerta activo. A função não cria vagas de exemplo e foi concebida para evitar duplicados por utilizador/oportunidade.
 
-## Desenvolvimento e verificação
+Se a configuração foi feita pelos seis blocos móveis, executar apenas o novo bloco `supabase/mobile-setup/07_opportunity_alert_notifications.sql` depois dos blocos `01`–`06`. Não é necessário executar as duas cópias; a migration e o bloco móvel contêm a mesma alteração e são idempotentes.
 
-O site não tem passo de compilação nem dependências npm locais. Para o servir localmente, executa na raiz do repositório:
+A chave pública do browser não pode executar DDL nem instalar esta trigger; a aplicação da migration requer o proprietário do projecto. Até esta etapa ser executada, o dashboard consegue guardar as preferências de alertas, mas a base de dados não cria automaticamente notificações correspondentes a novas oportunidades.
 
-```bash
-python3 -m http.server 8000
-```
+## Desenvolvimento e limites
 
-Abre `http://localhost:8000/` quando o servidor é iniciado a partir da raiz do projecto. Para testar a autenticação, usa uma conta autorizada e um endereço de e-mail ao qual tenhas acesso; a aplicação envia uma mensagem de confirmação.
+Não há compilação nem dependências npm locais. Na raiz do repositório, iniciar `python3 -m http.server 8000` e abrir `http://localhost:8000/`.
 
-## Âmbito ainda pendente
-
-- Fluxo administrativo protegido para rever, aprovar, publicar e gerir organizações e oportunidades.
-- Ingestão autorizada de fontes, deduplicação, histórico e revisão humana.
-- Implementação operacional do Radar e dos alertas.
-- Completar e validar a informação legal e os contactos oficiais de privacidade antes de depender do registo público em produção.
-- Testes de ponta a ponta com uma conta de utilizador real e a configuração de e-mail do proprietário.
-
-O GitHub Pages só serve os ficheiros estáticos; não executa rotinas de backend. A segurança dos dados depende das políticas RLS do Supabase, e as candidaturas decorrem no serviço ou site da entidade anunciante.
+O catálogo pode continuar vazio até serem inseridos e aprovados registos reais. O fluxo administrativo de submissão/verificação, a ingestão de fontes e o Radar operacional continuam por construir. Testes completos de inscrição e entrega de e-mail precisam de uma conta e endereço controlados pelo proprietário.

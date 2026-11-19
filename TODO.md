@@ -1,43 +1,42 @@
 # TODO — PULSO
 
-## Etapa 1 — Website público
-- [x] Página responsiva com identidade PULSO, navegação, pesquisa, categorias e estados acessíveis.
-- [x] Remover registos, organizações, notificações e avisos fictícios do site.
-- [x] Ler oportunidades publicadas e verificadas no Supabase; mostrar estado vazio quando não há registos.
-- [x] Ler e apresentar apenas organizações verificadas.
-- [x] Mostrar detalhes, fonte original e ligação de candidatura quando disponíveis.
-- [x] Activar filtros, pesquisa, detalhes e favoritos (na conta ou neste dispositivo).
+## Entregue e validado neste ciclo
 
-## Etapa 2 — Base de dados e segurança
-- [x] Criar o esquema relacional inicial e políticas RLS para perfis, organizações, fontes, oportunidades, Radar e dados pessoais.
-- [x] Separar contas comuns da lista administrativa; impedir promoção de privilégios pelo browser.
-- [x] Ligar o website ao projecto Supabase com URL e publishable key pública, sem segredos no repositório.
-- [ ] Rever a informação de privacidade, o responsável pelo tratamento e os contactos oficiais antes de depender de inscrições públicas em produção.
+### Home pública e contactos
+- [x] Página responsiva, catálogo Supabase real e apenas registos publicados/verificados; sem dados fictícios.
+- [x] Pesquisa, filtros, detalhes, fontes originais e ligações de candidatura.
+- [x] Contactos na navegação e secção pública: `+244 936 975 657`, `+244 955 614 045`, `pulsobussines@gmail.com` e WhatsApp em `wa.me/244955614045`.
+- [x] Ligações `tel:`, `mailto:` e WhatsApp testadas também em ecrã móvel.
 
-## Etapa 3 — Contas
-- [x] Login, criação de conta por e-mail, confirmação, recuperação e actualização da palavra-passe via Supabase Auth.
-- [x] Guardar favoritos autenticados na tabela `saved_opportunities`.
-- [x] Ler notificações autenticadas da tabela `notifications` e permitir marcá-las como lidas.
-- [ ] Testar todo o percurso com uma conta real e confirmar entrega de e-mails no projecto do proprietário.
-- [ ] Completar edição de perfis e atribuição segura do primeiro administrador.
-- [ ] Implementar painel administrativo protegido, auditoria e revisão de conteúdo.
-- [ ] Activar cadastro e publicação empresarial após definir o fluxo de verificação.
+### Conta e autenticação
+- [x] Login, inscrição por e-mail, recuperação e alteração de palavra-passe via Supabase Auth.
+- [x] Após inscrição que exige confirmação, mostrar um painel destacado a pedir que verifique o Gmail, identificar o endereço e orientar sobre Inbox/Spam.
+- [x] Reenviar a mensagem de confirmação a pedido do utilizador.
+- [x] Encaminhar sessão válida — após login, inscrição com sessão ou confirmação de e-mail — para o dashboard.
+- [x] A página do dashboard não carrega dados privados sem uma sessão autenticada.
+- [ ] Testar a entrega real do e-mail e o retorno de sessão com conta/endereço controlados pelo proprietário; os testes desta implementação usaram Auth simulado.
 
-## Etapa 4 — Oportunidades verificadas
-- [x] Filtrar no cliente/API apenas oportunidades `published` e `verified`; usar RLS como controlo de acesso.
-- [x] Exigir fonte e link original no esquema e apresentá-los nos detalhes.
-- [ ] Criar o fluxo administrativo de submissão, revisão, aprovação, actualização e expiração.
-- [ ] Alimentar as primeiras oportunidades reais e verificar apresentação no site.
-- [ ] Completar filtros, quando existirem dados, por localização, prazo e outros campos disponíveis.
+### Dashboard e perfil
+- [x] Página autenticada separada da home, responsiva, com profundidade 3D subtil, animação reduzida respeitada e identidade PULSO.
+- [x] Avatar/iniciais, nome, e-mail e menu de editar perfil, suporte e terminar sessão.
+- [x] Painel inicial, oportunidades, guardados, alertas, notificações, perfil e suporte.
+- [x] Pesquisa por texto, filtro por categoria/província, paginação e estados vazios.
+- [x] Contagens calculadas exclusivamente a partir de oportunidades publicadas e verificadas; sem valores da imagem de referência.
+- [x] Ler e guardar nome, província, município, área profissional e escolaridade na linha própria de `profiles`, respeitando RLS.
+- [x] Listar, abrir, guardar e remover `saved_opportunities` da conta autenticada.
 
-## Etapa 5 — Fontes, Radar e notificações
-- [ ] Verificar termos, robots, RSS/API e autorização de cada fonte antes da monitorização.
-- [ ] Implementar ingestão autorizada, deduplicação, histórico e fila de revisão humana.
-- [ ] Ligar o Radar a sinais reais aprovados, sem apresentar inferências como vagas.
-- [ ] Criar alertas e notificações operacionais por e-mail/produto; WhatsApp apenas através da API oficial e com consentimento.
-- [ ] Registar origem e licença de imagens externas.
+### Alertas, notificações e contactos de suporte
+- [x] Criar, listar, activar, pausar e remover preferências em `user_alerts` por categoria, província e palavras-chave.
+- [x] Sino com contagem não lida; ler notificações persistidas em `notifications` e marcar como lidas.
+- [x] Pedir autorização de notificações do browser só depois de acção explícita; consulta periódica enquanto o dashboard está aberto.
+- [x] Contactos e apoio no dashboard, incluindo telefones, Gmail e botão WhatsApp.
+- [x] Criar migração idempotente que notifica uma vez por utilizador/oportunidade elegível, sem privilégio de escrita público.
+- [ ] O proprietário deve executar no Supabase `supabase/migrations/20261119122700_opportunity_alert_notifications.sql` (ou, se usou setup móvel, `supabase/mobile-setup/07_opportunity_alert_notifications.sql`). Até à execução, as preferências são guardadas, mas a trigger de correspondência automática ainda não corre.
 
-## Verificações da sessão de 19-11-2026
-- [x] A API pública do Supabase responde para `opportunities` e `organizations`; ambos os conjuntos estão actualmente vazios.
-- [x] O endpoint de Auth indica e-mail activo e novas inscrições permitidas.
-- [ ] Teste final do formulário de inscrição e confirmação de e-mail com uma conta controlada pelo proprietário.
+## Segurança e trabalho futuro
+- [x] Manter RLS do esquema inicial, chave publishable pública e nenhuma chave privilegiada no browser.
+- [ ] Rever política de privacidade, responsável pelo tratamento e procedimentos antes de depender de inscrições públicas em produção.
+- [ ] Criar ferramentas administrativas para submissão, revisão, aprovação, actualização e expiração de oportunidades.
+- [ ] Inserir e aprovar primeiras oportunidades reais e validar a apresentação no site.
+- [ ] Verificar autorização, termos, RSS/API e licenças das fontes antes de monitorização/ingestão.
+- [ ] Testar Auth por e-mail e a confirmação num dispositivo/conta controlados pelo proprietário.
