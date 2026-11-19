@@ -40,7 +40,7 @@ Depois visita `http://localhost:8000`.
 
 ## Próximo passo: preparar a base de dados Supabase
 
-A migração inicial está em `supabase/migrations/20261119103000_initial_pulso_schema.sql`. Para a aplicar, abre o projecto PULSO no Supabase, entra em **SQL Editor → New query**, copia o conteúdo completo desse ficheiro, cola-o no editor e executa. A migração cria tabelas e políticas RLS; não insere oportunidades nem contas de demonstração.
+A migração completa está em `supabase/migrations/20261119103000_initial_pulso_schema.sql`. Se estiveres num telemóvel e a colagem longa bloquear o editor, usa as seis consultas menores em `supabase/mobile-setup/`, na ordem `01` a `06`. Para cada ficheiro, abre **SQL Editor → New query**, cola apenas esse bloco, executa e espera a mensagem de sucesso antes de passar ao seguinte. As operações de criação e políticas permitem repetição; se uma parte apresentar erro, pára e partilha apenas o texto do erro. A estrutura não insere oportunidades nem contas de demonstração.
 
 A política pública só permite ler oportunidades publicadas e verificadas e organizações verificadas. Contas comuns só podem aceder aos seus próprios perfis, favoritos, alertas e notificações. A lista de administradores não é editável pelo browser. Depois de criar a primeira conta de utilizador do PULSO, o primeiro administrador terá de ser concedido no SQL Editor, nunca a partir do site público.
 
