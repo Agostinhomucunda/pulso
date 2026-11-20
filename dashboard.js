@@ -110,8 +110,13 @@ function categoryAsset(category) {
   return CATEGORY_ASSETS[category] || CATEGORY_ASSETS.recruitment_program;
 }
 
+function organizationRecord(item) {
+  const value = item?.organization;
+  return Array.isArray(value) ? (value[0] || {}) : (value || {});
+}
+
 function organizationName(item) {
-  return item.organization?.name || item.source_name || 'Entidade anunciante';
+  return organizationRecord(item).name || item.source_name || 'Entidade anunciante';
 }
 
 function formatDate(value) {
@@ -189,7 +194,8 @@ function updateIdentity() {
 function renderOpportunityCard(item, { savedPage = false } = {}) {
   const id = escapeHtml(item.id);
   const org = organizationName(item);
-  const logo = safeUrl(item.organization?.logo_url);
+  const organization = organizationRecord(item);
+  const logo = safeUrl(organization.logo_url || organization.logo_source_url);
   const mark = logo
     ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy">`
     : escapeHtml(initials(org));
@@ -212,6 +218,7 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
       <div class="dash-op-meta"><span class="dash-op-category"><img class="category-3d-img" src="${categoryAsset(item.category)}" alt="" aria-hidden="true">${escapeHtml(categoryLabel(item.category))}</span>${meta}</div>
     </div>
     <div class="dash-op-actions">
+      ${isAdmin ? `<button class="dash-op-delete" type="button" data-delete-opportunity="${id}">Eliminar</button>` : ''}
       ${source ? `<button class="source-3d-btn dash-source-3d-btn" type="button" data-detail-opportunity="${id}">Fonte oficial <span>↗</span></button>` : ''}
       <button class="dash-op-save ${saved ? 'saved' : ''}" type="button" data-save-opportunity="${id}" aria-label="${saved ? 'Remover dos guardados' : 'Guardar'}: ${escapeHtml(item.title)}">${saved ? '♥' : '♡'}</button>
       ${savedPage ? '' : `<button class="dash-op-detail" type="button" data-detail-opportunity="${id}" aria-label="Ver detalhe: ${escapeHtml(item.title)}">↗</button>`}
@@ -280,6 +287,7 @@ async function loadAdminAccess() {
   if (error || !data) return;
   isAdmin = true;
   $('#adminNavLink').hidden = false;
+  renderOpportunityLists();
   await loadAdminAssets();
   await loadAutomationAdmin();
 }
@@ -392,7 +400,10 @@ async function loadAdminAssets() {
     target.innerHTML = '<div class="empty-state" role="alert"><b>Não foi possível carregar a fila.</b>Confirma a migration inicial e as permissões de administrador.</div>';
     return;
   }
-  const rows = (data || []).filter(item => !safeUrl(item.image_url) || !safeUrl(item.organization?.logo_url));
+  const rows = (data || []).filter(item => {
+    const organization = organizationRecord(item);
+    return !safeUrl(item.image_url) || !safeUrl(organization.logo_url || organization.logo_source_url);
+  });
   $('#adminMissingCount').textContent = safeCount(rows.length);
   $('#adminMissingCount').hidden = !rows.length;
   $('#adminAssetAlert').hidden = !rows.length;
@@ -403,13 +414,13 @@ async function loadAdminAssets() {
     target.innerHTML = '<div class="empty-state"><b>Sem cartões incompletos.</b>Quando faltar uma imagem ou um logótipo, aparecerá aqui.</div>';
     return;
   }
-  target.innerHTML = rows.map(item => `<form class="admin-asset-row" data-admin-asset="${escapeHtml(item.id)}" data-organization-id="${escapeHtml(item.organization_id || '')}" data-image-source="${escapeHtml(item.image_source_url || item.candidate_image_source_url || item.source_url || '')}">
-    <div class="admin-asset-heading"><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.organization?.name || 'Organização não associada')} · ${escapeHtml(categoryLabel(item.category))}</small></div>
+  target.innerHTML = rows.map(item => { const organization = organizationRecord(item); return `<form class="admin-asset-row" data-admin-asset="${escapeHtml(item.id)}" data-organization-id="${escapeHtml(item.organization_id || '')}" data-image-source="${escapeHtml(item.image_source_url || item.candidate_image_source_url || item.source_url || '')}">
+    <div class="admin-asset-heading"><b>${escapeHtml(item.title)}</b><small>${escapeHtml(organization.name || 'Organização não associada')} · ${escapeHtml(categoryLabel(item.category))}</small></div>
     <label>Link da imagem<input name="image_url" type="url" placeholder="https://…" value="${escapeHtml(item.image_url || item.candidate_image_url || '')}"></label>
-    <label>Link do logótipo<input name="logo_url" type="url" placeholder="https://…" value="${escapeHtml(item.organization?.logo_url || '')}"></label>
+    <label>Link do logótipo<input name="logo_url" type="url" placeholder="https://…" value="${escapeHtml(organization.logo_url || organization.logo_source_url || '')}"></label>
     <button class="btn btn-primary-soft" type="submit">Guardar links</button>
     <button class="automation-remove admin-delete-btn" type="button" data-delete-opportunity="${escapeHtml(item.id)}">Eliminar publicação</button>
-  </form>`).join('');
+  </form>`; }).join('');
 }
 
 function renderAutomationSources() {
@@ -673,7 +684,8 @@ async function deleteAdminOpportunity(id) {
     const { error } = await supabaseClient.from('opportunities').delete().eq('id', id);
     if (error) throw error;
     notify('Publicação eliminada.');
-    await Promise.all([loadAdminAssets(), loadOpportunities(), loadStats()]);
+    if ($('#opportunityDialog').open) $('#opportunityDialog').close();
+    await Promise.all([loadAdminAssets(), loadOpportunities(), loadSavedOpportunities(), loadStats()]);
   } catch (error) {
     console.error('PULSO admin opportunity deletion failed', error);
     notify(error.message || 'Não foi possível eliminar a publicação.');
@@ -708,6 +720,7 @@ async function createManualOpportunity(event) {
     if (!organization) {
       const inserted = await supabaseClient.from('organizations').insert({
         name: organizationNameValue, official_website: website, logo_url: logo,
+        logo_source_url: logo ? website : null, logo_rights_confirmed: Boolean(logo),
         verification_status: 'verified',
       }).select('id').single();
       if (inserted.error) throw inserted.error;
@@ -729,7 +742,7 @@ async function createManualOpportunity(event) {
     form.reset();
     if (existingOrganization && logo) {
       const { error: organizationError } = await supabaseClient.from('organizations')
-        .update({ logo_url: logo, verification_status: 'verified' }).eq('id', organization.id);
+        .update({ logo_url: logo, logo_source_url: website, logo_rights_confirmed: true, verification_status: 'verified' }).eq('id', organization.id);
       if (organizationError) {
         setFeedback(feedback, 'A oportunidade foi publicada, mas o logótipo ficou pendente. Completa-o na fila de cartões do painel.', 'error');
         await Promise.all([loadAdminAssets(), loadOpportunities(), loadStats()]);
@@ -769,7 +782,7 @@ async function loadOpportunities({ append = false } = {}) {
   const from = append ? opportunitiesOffset : 0;
   const to = from + PAGE_SIZE - 1;
   const { data, error } = await supabaseClient.from('opportunities')
-    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(name,logo_url)')
+    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(id,name,logo_url,logo_source_url)')
     .eq('status', 'published').eq('verification_status', 'verified')
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false }).range(from, to);
@@ -792,7 +805,7 @@ async function loadSavedOpportunities() {
   const target = $('#savedOpportunityList');
   target.innerHTML = '<div class="empty-state"><b>A carregar oportunidades guardadas…</b></div>';
   const { data, error } = await supabaseClient.from('saved_opportunities')
-    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(name,logo_url))')
+    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(id,name,logo_url,logo_source_url))')
     .eq('user_id', currentUser.id).order('created_at', { ascending: false });
   if (error) {
     console.error('PULSO dashboard saved items failed', error);
@@ -987,7 +1000,7 @@ async function openOpportunity(id) {
   let item = opportunities.find(row => row.id === id) || savedRows.find(row => row.id === id);
   if (!item) {
     const { data, error } = await supabaseClient.from('opportunities')
-      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(name,logo_url)')
+      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(id,name,logo_url,logo_source_url)')
       .eq('id', id).eq('status', 'published').eq('verification_status', 'verified').maybeSingle();
     if (error || !data) {
       notify('Esta oportunidade já não está disponível.');
@@ -1169,14 +1182,16 @@ function bindEvents() {
   });
   document.addEventListener('click', event => {
     const save = event.target.closest('[data-save-opportunity]');
+    const remove = event.target.closest('[data-delete-opportunity]');
     const detail = event.target.closest('[data-detail-opportunity]');
     const read = event.target.closest('[data-read-notification]');
     const notificationOpportunity = event.target.closest('[data-notification-opportunity]');
     const retry = event.target.closest('[data-retry-opportunities]');
     const card = event.target.closest('[data-opportunity]');
     if (save) void toggleSavedOpportunity(save.dataset.saveOpportunity);
+    if (remove) void deleteAdminOpportunity(remove.dataset.deleteOpportunity);
     if (detail) void openOpportunity(detail.dataset.detailOpportunity);
-    if (!save && !detail && card) void openOpportunity(card.dataset.opportunity);
+    if (!save && !remove && !detail && card) void openOpportunity(card.dataset.opportunity);
     if (read) void markNotificationRead(read.dataset.readNotification);
     if (notificationOpportunity) void openOpportunity(notificationOpportunity.dataset.notificationOpportunity);
     if (retry) void loadOpportunities();
