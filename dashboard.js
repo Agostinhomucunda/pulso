@@ -334,8 +334,34 @@ async function handleSmartImportFile(file) {
 }
 
 async function ensureSmartImportOrganization(row) {
-  const website = httpsUrl(row.official_website) || null; const result = website ? await supabaseClient.from('organizations').select('id').eq('official_website', website).maybeSingle() : await supabaseClient.from('organizations').select('id').eq('name', row.organization).maybeSingle(); if (result.error) throw result.error; if (result.data) return result.data.id;
-  const created = await supabaseClient.from('organizations').insert({ name: row.organization, official_website: website, logo_url: httpsUrl(row.logo_url), verification_status: 'verified' }).select('id').single(); if (created.error) throw created.error; return created.data.id;
+  const website = httpsUrl(row.official_website) || null;
+  const logo = httpsUrl(row.logo_url);
+  const result = website
+    ? await supabaseClient.from('organizations').select('id').eq('official_website', website).maybeSingle()
+    : await supabaseClient.from('organizations').select('id').eq('name', row.organization).maybeSingle();
+  if (result.error) throw result.error;
+  if (result.data) {
+    if (logo) {
+      const { error } = await supabaseClient.from('organizations').update({
+        logo_url: logo,
+        logo_source_url: row.official_website || row.source_url,
+        logo_rights_confirmed: true,
+        verification_status: 'verified',
+      }).eq('id', result.data.id);
+      if (error) throw error;
+    }
+    return result.data.id;
+  }
+  const created = await supabaseClient.from('organizations').insert({
+    name: row.organization,
+    official_website: website,
+    logo_url: logo,
+    logo_source_url: logo ? (row.official_website || row.source_url) : null,
+    logo_rights_confirmed: Boolean(logo),
+    verification_status: 'verified',
+  }).select('id').single();
+  if (created.error) throw created.error;
+  return created.data.id;
 }
 
 async function ensureSmartImportSource(row) {
@@ -345,7 +371,7 @@ async function ensureSmartImportSource(row) {
 
 async function importSmartRows({ publish }) {
   const rows = smartImportRows.filter(row => row.valid); if (!rows.length) { setFeedback($('#smartImportFeedback'), 'Não há cartões válidos para importar.', 'error'); return; } const button = publish ? $('#smartImportPublishButton') : $('#smartImportReviewButton'); button.disabled = true; let created = 0; const errors = [];
-  try { for (const row of rows) { try { const organizationId = await ensureSmartImportOrganization(row); const sourceId = await ensureSmartImportSource(row); const image = httpsUrl(row.image_url); const payload = { organization_id: organizationId, source_id: sourceId, title: row.title, description: row.description || null, public_summary: row.description || null, category: row.category, province: row.province || null, municipality: row.municipality || null, application_deadline: row.application_deadline || null, source_name: row.source_name || row.organization, source_url: row.source_url, application_url: httpsUrl(row.application_url), candidate_image_url: image, candidate_image_source_url: image ? row.source_url : null, image_url: null, image_source_url: null, image_rights_confirmed: false, collection_method: 'manual', status: 'pending_review', verification_status: 'unverified' }; const inserted = await supabaseClient.from('opportunities').insert(payload).select('id').single(); if (inserted.error) throw inserted.error; if (publish) { const promoted = await supabaseClient.from('opportunities').update({ status: 'published', verification_status: 'verified', published_at: new Date().toISOString() }).eq('id', inserted.data.id); if (promoted.error) throw promoted.error; } created += 1; } catch (error) { errors.push(`${row.title}: ${error.message}`); } }
+  try { for (const row of rows) { try { const organizationId = await ensureSmartImportOrganization(row); const sourceId = await ensureSmartImportSource(row); const image = httpsUrl(row.image_url); const imageSource = image ? row.source_url : null; const payload = { organization_id: organizationId, source_id: sourceId, title: row.title, description: row.description || null, public_summary: row.description || null, category: row.category, province: row.province || null, municipality: row.municipality || null, application_deadline: row.application_deadline || null, source_name: row.source_name || row.organization, source_url: row.source_url, application_url: httpsUrl(row.application_url), candidate_image_url: image, candidate_image_source_url: imageSource, image_url: image, image_source_url: imageSource, image_rights_confirmed: Boolean(image), collection_method: 'manual', status: 'pending_review', verification_status: 'unverified' }; const inserted = await supabaseClient.from('opportunities').insert(payload).select('id').single(); if (inserted.error) throw inserted.error; if (publish) { const promoted = await supabaseClient.from('opportunities').update({ status: 'published', verification_status: 'verified', published_at: new Date().toISOString() }).eq('id', inserted.data.id); if (promoted.error) throw promoted.error; } created += 1; } catch (error) { errors.push(`${row.title}: ${error.message}`); } }
     setFeedback($('#smartImportFeedback'), `${created} cartão(ões) ${publish ? 'importado(s) e publicado(s)' : 'importado(s) para revisão'}.${errors.length ? ` ${errors.length} com erro: ${errors[0]}` : ''}`, errors.length ? 'error' : 'success'); if (created) { smartImportRows = []; renderSmartImportPreview(); $('#smartImportFile').value = ''; await Promise.all([loadOpportunities(), loadStats(), loadAdminAssets()]); }
   } finally { button.disabled = false; }
 }
@@ -359,7 +385,7 @@ async function loadAdminAssets() {
   const target = $('#adminAssetList');
   target.innerHTML = '<div class="empty-state"><b>A verificar cartões…</b></div>';
   const { data, error } = await supabaseClient.from('opportunities')
-    .select('id,title,category,image_url,organization_id,organization:organizations(id,name,logo_url)')
+    .select('id,title,category,image_url,image_source_url,image_rights_confirmed,candidate_image_url,candidate_image_source_url,source_url,organization_id,organization:organizations(id,name,logo_url,logo_source_url)')
     .eq('status', 'published').eq('verification_status', 'verified')
     .order('published_at', { ascending: false, nullsFirst: false }).limit(150);
   if (error) {
@@ -377,11 +403,12 @@ async function loadAdminAssets() {
     target.innerHTML = '<div class="empty-state"><b>Sem cartões incompletos.</b>Quando faltar uma imagem ou um logótipo, aparecerá aqui.</div>';
     return;
   }
-  target.innerHTML = rows.map(item => `<form class="admin-asset-row" data-admin-asset="${escapeHtml(item.id)}" data-organization-id="${escapeHtml(item.organization_id || '')}">
+  target.innerHTML = rows.map(item => `<form class="admin-asset-row" data-admin-asset="${escapeHtml(item.id)}" data-organization-id="${escapeHtml(item.organization_id || '')}" data-image-source="${escapeHtml(item.image_source_url || item.candidate_image_source_url || item.source_url || '')}">
     <div class="admin-asset-heading"><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.organization?.name || 'Organização não associada')} · ${escapeHtml(categoryLabel(item.category))}</small></div>
-    <label>Link da imagem<input name="image_url" type="url" placeholder="https://…" value="${escapeHtml(item.image_url || '')}"></label>
+    <label>Link da imagem<input name="image_url" type="url" placeholder="https://…" value="${escapeHtml(item.image_url || item.candidate_image_url || '')}"></label>
     <label>Link do logótipo<input name="logo_url" type="url" placeholder="https://…" value="${escapeHtml(item.organization?.logo_url || '')}"></label>
     <button class="btn btn-primary-soft" type="submit">Guardar links</button>
+    <button class="automation-remove admin-delete-btn" type="button" data-delete-opportunity="${escapeHtml(item.id)}">Eliminar publicação</button>
   </form>`).join('');
 }
 
@@ -608,12 +635,23 @@ async function saveAdminAssets(event) {
   let logoSaved = false;
   try {
     if (image) {
-      const { error: opportunityError } = await supabaseClient.from('opportunities').update({ image_url: image }).eq('id', form.dataset.adminAsset);
+      const candidateSource = form.dataset.imageSource || '';
+      const { error: opportunityError } = await supabaseClient.from('opportunities').update({
+        image_url: image,
+        image_source_url: httpsUrl(candidateSource) || image,
+        image_rights_confirmed: true,
+        candidate_image_url: image,
+        candidate_image_source_url: httpsUrl(candidateSource) || image,
+      }).eq('id', form.dataset.adminAsset);
       if (opportunityError) throw opportunityError;
       imageSaved = true;
     }
     if (logo) {
-      const { error: organizationError } = await supabaseClient.from('organizations').update({ logo_url: logo }).eq('id', form.dataset.organizationId);
+      const { error: organizationError } = await supabaseClient.from('organizations').update({
+        logo_url: logo,
+        logo_source_url: logo,
+        logo_rights_confirmed: true,
+      }).eq('id', form.dataset.organizationId);
       if (organizationError) throw organizationError;
       logoSaved = true;
     }
@@ -626,6 +664,20 @@ async function saveAdminAssets(event) {
       await loadAdminAssets();
     } else notify(error.message || 'Não foi possível guardar os links.');
   } finally { submit.disabled = false; }
+}
+
+async function deleteAdminOpportunity(id) {
+  if (!isAdmin || !id) return;
+  if (!window.confirm('Eliminar esta publicação definitivamente? A organização e a fonte serão mantidas.')) return;
+  try {
+    const { error } = await supabaseClient.from('opportunities').delete().eq('id', id);
+    if (error) throw error;
+    notify('Publicação eliminada.');
+    await Promise.all([loadAdminAssets(), loadOpportunities(), loadStats()]);
+  } catch (error) {
+    console.error('PULSO admin opportunity deletion failed', error);
+    notify(error.message || 'Não foi possível eliminar a publicação.');
+  }
 }
 
 async function createManualOpportunity(event) {
@@ -1075,6 +1127,10 @@ function bindEvents() {
   }));
   $('#manualOpportunityForm').addEventListener('submit', createManualOpportunity);
   $('#adminAssetList').addEventListener('submit', saveAdminAssets);
+  $('#adminAssetList').addEventListener('click', event => {
+    const remove = event.target.closest('[data-delete-opportunity]');
+    if (remove) void deleteAdminOpportunity(remove.dataset.deleteOpportunity);
+  });
   $('#refreshAdminAssets').addEventListener('click', () => void loadAdminAssets());
   $('#refreshAutomationAdmin').addEventListener('click', () => void loadAutomationAdmin());
   $('#runPulsoCollection').addEventListener('click', () => void runPulsoCollection());
