@@ -168,6 +168,15 @@
           </div>
           <div class="dashboard-feedback" id="adminFormFeedback" role="status" aria-live="polite" hidden></div><button class="btn btn-primary" type="submit">Guardar oportunidade verificada <span>→</span></button>
         </form>
+        <section class="dash-panel smart-import-panel" id="smartImportPanel">
+          <div class="panel-heading"><div><span class="section-kicker">CARREGAMENTO INTELIGENTE</span><h2>Importar vários cartões.</h2><p>Carrega um TXT, CSV, JSON ou ZIP. O PULSO extrai os campos, mostra uma pré-visualização e só publica depois da tua confirmação.</p></div><span class="smart-import-badge">BETA</span></div>
+          <div class="smart-import-dropzone" id="smartImportDropzone"><input id="smartImportFile" type="file" accept=".txt,.md,.csv,.json,.zip,text/plain,text/csv,application/json,application/zip"><div class="smart-import-drop-icon">↑</div><b>Escolher ficheiro ou arrastar para aqui</b><small>Formatos: TXT, CSV, JSON e ZIP até 10 MB. No ZIP, usa um ficheiro de dados no interior.</small></div>
+          <div class="smart-import-format-help"><b>Campos reconhecidos:</b> título, categoria, organização, site oficial, link da fonte, candidatura, província, município, prazo, descrição, imagem e logótipo. No TXT, separa cartões por linhas vazias e usa <code>campo: valor</code>.</div>
+          <div class="smart-import-toolbar" id="smartImportToolbar" hidden><span id="smartImportFileName"></span><span id="smartImportSummary"></span><button class="filter-reset" type="button" id="clearSmartImport">Limpar</button></div>
+          <div class="smart-import-preview" id="smartImportPreview" hidden></div>
+          <div class="dashboard-feedback" id="smartImportFeedback" role="status" aria-live="polite" hidden></div>
+          <div class="smart-import-actions" id="smartImportActions" hidden><button class="btn btn-primary-soft" type="button" id="smartImportReviewButton">Importar para revisão</button><button class="btn btn-primary" type="button" id="smartImportPublishButton">Importar e publicar tudo <span>→</span></button></div>
+        </section>
         <section class="dash-panel pulso-automation-panel" id="adminAutomationPanel">
           <div class="panel-heading automation-heading"><div><span class="section-kicker">RECOLHA AUTOMÁTICA</span><h2>Fontes e publicações automáticas.</h2><p>As fontes começam desactivadas. A recolha publica oportunidades encontradas; revê-as depois e retira qualquer erro.</p></div><div class="automation-header-actions"><button class="btn btn-primary" type="button" id="runPulsoCollection">Recolher agora</button><button class="filter-reset" type="button" id="refreshAutomationAdmin">Actualizar</button></div></div>
           <div class="dashboard-feedback automation-run-status" id="automationRunStatus" role="status" aria-live="polite" hidden></div>

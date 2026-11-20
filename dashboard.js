@@ -52,6 +52,7 @@ let notifications = [];
 let notificationIds = null;
 let isAdmin = false;
 let automationSources = [];
+let smartImportRows = [];
 let selectedAvatar = 'male';
 let opportunitiesOffset = 0;
 let opportunitiesHaveMore = false;
@@ -281,6 +282,76 @@ async function loadAdminAccess() {
   $('#adminNavLink').hidden = false;
   await loadAdminAssets();
   await loadAutomationAdmin();
+}
+
+function importKey(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+const IMPORT_FIELD_ALIASES = {
+  title: ['title', 'titulo', 'nome', 'name', 'oportunidade', 'cargo'], category: ['category', 'categoria', 'tipo'], organization: ['organization', 'organizacao', 'entidade', 'empresa', 'organizationname'], official_website: ['officialwebsite', 'siteoficial', 'website', 'site'], source_url: ['sourceurl', 'linkdafonte', 'fonte', 'link', 'url', 'publicationurl'], application_url: ['applicationurl', 'candidatura', 'linkdacandidatura', 'applyurl'], province: ['province', 'provincia'], municipality: ['municipality', 'municipio'], application_deadline: ['applicationdeadline', 'prazo', 'deadline', 'datalimite'], description: ['description', 'descricao', 'detalhes', 'summary', 'resumo'], image_url: ['imageurl', 'imagem', 'fotografia', 'photo', 'image'], logo_url: ['logourl', 'logotipo', 'logo'], source_name: ['sourcename', 'nomedafonte'],
+};
+const IMPORT_CATEGORY_ALIASES = { emprego: 'employment', empregos: 'employment', job: 'employment', bolsa: 'scholarship', bolsas: 'scholarship', concurso: 'public_competition', concursos: 'public_competition', estagio: 'internship', estagios: 'internship', formacao: 'training', cursos: 'training', programa: 'recruitment_program', programas: 'recruitment_program' };
+
+function normalizeImportRecord(record) {
+  const normalized = {}; const source = record && typeof record === 'object' ? record : {};
+  Object.entries(IMPORT_FIELD_ALIASES).forEach(([field, aliases]) => { const found = Object.entries(source).find(([key]) => aliases.includes(importKey(key))); normalized[field] = String(found?.[1] ?? '').trim(); });
+  const categoryKey = importKey(normalized.category); normalized.category = IMPORT_CATEGORY_ALIASES[categoryKey] || (Object.keys(CATEGORY_LABELS).includes(normalized.category) ? normalized.category : 'employment');
+  normalized.source_name ||= normalized.organization; normalized.application_url ||= normalized.source_url;
+  normalized.valid = Boolean(normalized.title && normalized.organization && /^https:\/\//i.test(normalized.source_url)); normalized.issue = normalized.valid ? '' : 'Falta título, organização ou link HTTPS da fonte.';
+  return normalized;
+}
+
+function parseCsv(text) {
+  const rows = []; let row = []; let cell = ''; let quoted = false;
+  for (let index = 0; index < text.length; index += 1) { const char = text[index]; if (char === '"' && text[index + 1] === '"' && quoted) { cell += '"'; index += 1; } else if (char === '"') quoted = !quoted; else if (char === ',' && !quoted) { row.push(cell.trim()); cell = ''; } else if ((char === '\n' || char === '\r') && !quoted) { if (char === '\r' && text[index + 1] === '\n') index += 1; row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); row = []; cell = ''; } else cell += char; }
+  row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); const headers = rows.shift() || [];
+  return rows.map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] || ''])));
+}
+
+function parseTextRecords(text, filename = '') {
+  const clean = String(text || '').replace(/^\uFEFF/, '').trim(); if (!clean) return [];
+  if (/\.json$/i.test(filename) || /^[\[{]/.test(clean)) { const parsed = JSON.parse(clean); const values = Array.isArray(parsed) ? parsed : (parsed.opportunities || parsed.items || parsed.cards || parsed.data || [parsed]); return values.map(normalizeImportRecord); }
+  if (/\.csv$/i.test(filename) || (clean.includes(',') && clean.split('\n')[0].includes(','))) return parseCsv(clean).map(normalizeImportRecord);
+  return clean.split(/\n\s*\n/).map(block => { const record = {}; block.split('\n').forEach(line => { const match = line.match(/^\s*([^:;=]+?)\s*[:;=]\s*(.*?)\s*$/); if (match) record[match[1]] = match[2]; }); return normalizeImportRecord(record); }).filter(row => row.title || row.description);
+}
+
+async function readZipEntries(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer()); const view = new DataView(bytes.buffer); const decoder = new TextDecoder(); const entries = [];
+  const findSignature = (signature, from) => { for (let index = from; index <= bytes.length - 4; index += 1) if (view.getUint32(index, true) === signature) return index; return -1; };
+  let offset = 0;
+  while ((offset = findSignature(0x04034b50, offset)) >= 0) { const method = view.getUint16(offset + 8, true); const compressedSize = view.getUint32(offset + 18, true); const nameLength = view.getUint16(offset + 26, true); const extraLength = view.getUint16(offset + 28, true); const name = decoder.decode(bytes.slice(offset + 30, offset + 30 + nameLength)); const start = offset + 30 + nameLength + extraLength; const payload = bytes.slice(start, start + compressedSize); offset = start + compressedSize; if (!/\.(txt|md|csv|json)$/i.test(name)) continue; let content; if (method === 0) content = decoder.decode(payload); else if (method === 8 && 'DecompressionStream' in window) content = decoder.decode(await new Response(new Blob([payload]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()); else throw new Error('Este ZIP usa uma compressão não suportada neste navegador.'); entries.push({ name, content }); }
+  return entries;
+}
+
+function renderSmartImportPreview() {
+  const preview = $('#smartImportPreview'); const valid = smartImportRows.filter(row => row.valid).length; $('#smartImportToolbar').hidden = !smartImportRows.length; $('#smartImportActions').hidden = !smartImportRows.length; $('#smartImportSummary').textContent = `${smartImportRows.length} cartão(ões) · ${valid} pronto(s) · ${smartImportRows.length - valid} com avisos`; preview.hidden = !smartImportRows.length; preview.innerHTML = smartImportRows.map((row, index) => `<article class="smart-import-row ${row.valid ? '' : 'has-issue'}"><span class="smart-import-index">${index + 1}</span><div><b>${escapeHtml(row.title || 'Sem título')}</b><small>${escapeHtml(row.organization || 'Sem organização')} · ${escapeHtml(categoryLabel(row.category))}</small><p>${escapeHtml(row.description || row.source_url || 'Sem descrição')}</p></div><span class="smart-import-state">${row.valid ? 'Pronto' : escapeHtml(row.issue)}</span></article>`).join('');
+}
+
+async function handleSmartImportFile(file) {
+  if (!file) return; if (file.size > 10 * 1024 * 1024) { setFeedback($('#smartImportFeedback'), 'O ficheiro excede o limite de 10 MB.', 'error'); return; }
+  try { let records = []; if (/\.zip$/i.test(file.name) || file.type === 'application/zip') { const entries = await readZipEntries(file); records = entries.flatMap(entry => parseTextRecords(entry.content, entry.name)); } else records = parseTextRecords(await file.text(), file.name); smartImportRows = records.slice(0, 200); $('#smartImportFileName').textContent = file.name; renderSmartImportPreview(); setFeedback($('#smartImportFeedback'), smartImportRows.length ? 'Pré-visualização pronta. Revê os avisos antes de importar.' : 'Não encontrei cartões com campos reconhecíveis.', smartImportRows.length ? 'success' : 'error'); } catch (error) { smartImportRows = []; renderSmartImportPreview(); setFeedback($('#smartImportFeedback'), `Não foi possível ler o ficheiro: ${error.message}`, 'error'); }
+}
+
+async function ensureSmartImportOrganization(row) {
+  const website = httpsUrl(row.official_website) || null; const result = website ? await supabaseClient.from('organizations').select('id').eq('official_website', website).maybeSingle() : await supabaseClient.from('organizations').select('id').eq('name', row.organization).maybeSingle(); if (result.error) throw result.error; if (result.data) return result.data.id;
+  const created = await supabaseClient.from('organizations').insert({ name: row.organization, official_website: website, logo_url: httpsUrl(row.logo_url), verification_status: 'verified' }).select('id').single(); if (created.error) throw created.error; return created.data.id;
+}
+
+async function ensureSmartImportSource(row) {
+  const existing = await supabaseClient.from('sources').select('id').eq('source_url', row.source_url).maybeSingle(); if (existing.error) throw existing.error; if (existing.data) return existing.data.id;
+  const created = await supabaseClient.from('sources').insert({ name: row.source_name || row.organization, source_url: row.source_url, source_type: 'manual', access_status: 'authorized', active: true, visible_publicly: true }).select('id').single(); if (created.error) throw created.error; return created.data.id;
+}
+
+async function importSmartRows({ publish }) {
+  const rows = smartImportRows.filter(row => row.valid); if (!rows.length) { setFeedback($('#smartImportFeedback'), 'Não há cartões válidos para importar.', 'error'); return; } const button = publish ? $('#smartImportPublishButton') : $('#smartImportReviewButton'); button.disabled = true; let created = 0; const errors = [];
+  try { for (const row of rows) { try { const organizationId = await ensureSmartImportOrganization(row); const sourceId = await ensureSmartImportSource(row); const image = httpsUrl(row.image_url); const payload = { organization_id: organizationId, source_id: sourceId, title: row.title, description: row.description || null, public_summary: row.description || null, category: row.category, province: row.province || null, municipality: row.municipality || null, application_deadline: row.application_deadline || null, source_name: row.source_name || row.organization, source_url: row.source_url, application_url: httpsUrl(row.application_url), candidate_image_url: image, candidate_image_source_url: image ? row.source_url : null, image_url: null, image_source_url: null, image_rights_confirmed: false, collection_method: 'manual', status: 'pending_review', verification_status: 'unverified' }; const inserted = await supabaseClient.from('opportunities').insert(payload).select('id').single(); if (inserted.error) throw inserted.error; if (publish) { const promoted = await supabaseClient.from('opportunities').update({ status: 'published', verification_status: 'verified', published_at: new Date().toISOString() }).eq('id', inserted.data.id); if (promoted.error) throw promoted.error; } created += 1; } catch (error) { errors.push(`${row.title}: ${error.message}`); } }
+    setFeedback($('#smartImportFeedback'), `${created} cartão(ões) ${publish ? 'importado(s) e publicado(s)' : 'importado(s) para revisão'}.${errors.length ? ` ${errors.length} com erro: ${errors[0]}` : ''}`, errors.length ? 'error' : 'success'); if (created) { smartImportRows = []; renderSmartImportPreview(); $('#smartImportFile').value = ''; await Promise.all([loadOpportunities(), loadStats(), loadAdminAssets()]); }
+  } finally { button.disabled = false; }
+}
+
+function bindSmartImport() {
+  const input = $('#smartImportFile'); const dropzone = $('#smartImportDropzone'); input.addEventListener('change', () => void handleSmartImportFile(input.files[0])); ['dragenter', 'dragover'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.add('is-dragging'); })); ['dragleave', 'drop'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.remove('is-dragging'); })); dropzone.addEventListener('drop', event => void handleSmartImportFile(event.dataTransfer.files[0])); $('#clearSmartImport').addEventListener('click', () => { smartImportRows = []; input.value = ''; renderSmartImportPreview(); $('#smartImportFileName').textContent = ''; $('#smartImportSummary').textContent = ''; $('#smartImportFeedback').hidden = true; }); $('#smartImportReviewButton').addEventListener('click', () => void importSmartRows({ publish: false })); $('#smartImportPublishButton').addEventListener('click', () => { if (window.confirm('Confirmas os dados e queres publicar os cartões válidos agora?')) void importSmartRows({ publish: true }); });
 }
 
 async function loadAdminAssets() {
@@ -1016,6 +1087,7 @@ function bindEvents() {
     const action = event.target.closest('[data-auto-review]');
     if (action) void reviewAutomaticPublication(action.dataset.opportunityId, action.dataset.autoReview, action);
   });
+  bindSmartImport();
   $('#browserAlertButton').addEventListener('click', () => void enableBrowserAlerts());
   $('#browserAlertInline').addEventListener('click', () => void enableBrowserAlerts());
   $('#refreshNotifications').addEventListener('click', () => void loadNotifications());
