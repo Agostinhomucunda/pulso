@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-19T13:24:26.868841+00:00",
+  "generated_at": "2026-11-20T00:41:44.706545+00:00",
   "items": [
     {
       "id": "auto-eff3c897c327d6d2a0ca",
@@ -54,11 +54,6 @@
       "source_id": "us-embassy-luanda",
       "url": "https://ao.usembassy.gov/feed/",
       "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source_id": "angola-government",
-      "url": "https://governo.gov.ao/noticias/",
-      "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'governo.gov.ao'. (_ssl.c:1081)>"
     }
   ]
 }
