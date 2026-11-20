@@ -25,6 +25,7 @@
 - [x] Contagens calculadas exclusivamente a partir de oportunidades publicadas e verificadas; sem valores da imagem de referência.
 - [x] Ler e guardar nome, província, município, área profissional e escolaridade na linha própria de `profiles`, respeitando RLS.
 - [x] Listar, abrir, guardar e remover `saved_opportunities` da conta autenticada.
+- [x] Área administrativa de carregamento inteligente: aceitar TXT, CSV, JSON e ZIP, extrair vários cartões, mostrar pré-visualização com avisos e importar para revisão ou publicar em massa após confirmação.
 
 ### Alertas, notificações e contactos de suporte
 - [x] Criar, listar, activar, pausar e remover preferências em `user_alerts` por categoria, província e palavras-chave.
