@@ -9,6 +9,16 @@ const CATEGORY_LABELS = {
   training: 'Formação',
   recruitment_program: 'Programas',
 };
+const SOURCE_CLASS_LABELS = {
+  official_institution: 'Instituição pública',
+  employer: 'Empresa / recrutamento',
+  news_media: 'Notícias / imprensa',
+  international_organization: 'Organização internacional',
+  scholarship_provider: 'Bolsas de estudo',
+  data_source: 'Fonte de dados',
+  training_provider: 'Formação / cursos',
+  other: 'Outra fonte',
+};
 const CATEGORY_ICONS = {
   employment: '▰',
   scholarship: '◇',
@@ -41,6 +51,7 @@ let alerts = [];
 let notifications = [];
 let notificationIds = null;
 let isAdmin = false;
+let automationSources = [];
 let selectedAvatar = 'male';
 let opportunitiesOffset = 0;
 let opportunitiesHaveMore = false;
@@ -146,7 +157,10 @@ function activateView(view, { updateHash = true } = {}) {
   if (view === 'notifications') void loadNotifications({ poll: true });
   if (view === 'saved') void loadSavedOpportunities();
   if (view === 'alerts') void loadAlerts();
-  if (view === 'admin' && isAdmin) void loadAdminAssets();
+  if (view === 'admin' && isAdmin) {
+    void loadAdminAssets();
+    void loadAutomationAdmin();
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -266,6 +280,7 @@ async function loadAdminAccess() {
   isAdmin = true;
   $('#adminNavLink').hidden = false;
   await loadAdminAssets();
+  await loadAutomationAdmin();
 }
 
 async function loadAdminAssets() {
@@ -297,6 +312,206 @@ async function loadAdminAssets() {
     <label>Link do logótipo<input name="logo_url" type="url" placeholder="https://…" value="${escapeHtml(item.organization?.logo_url || '')}"></label>
     <button class="btn btn-primary-soft" type="submit">Guardar links</button>
   </form>`).join('');
+}
+
+function renderAutomationSources() {
+  const target = $('#automationSourceList');
+  if (!automationSources.length) {
+    target.innerHTML = '<div class="empty-state"><b>Não há fontes registadas.</b>Aplica a migration automática no Supabase para carregar as 67 fontes do ficheiro enviado.</div>';
+    $('#automationSourceCount').textContent = '0 fontes';
+    return;
+  }
+  const activeCount = automationSources.filter(source => source.active && source.collection_enabled).length;
+  $('#automationSourceCount').textContent = `${safeCount(activeCount)} activas · ${safeCount(automationSources.length)} no catálogo`;
+  target.innerHTML = automationSources.map(source => {
+    const active = source.active && source.collection_enabled && source.access_status === 'authorized';
+    const canActivate = Boolean(source.collection_endpoint && source.collection_format);
+    const endpoint = safeUrl(source.collection_endpoint);
+    const terms = safeUrl(source.terms_url);
+    const hosts = Array.isArray(source.collection_allowed_hosts) ? source.collection_allowed_hosts.join(', ') : '';
+    return `<details class="automation-source-card" data-source-card="${escapeHtml(source.id)}">
+      <summary><span><b>${escapeHtml(source.name)}</b><small>${escapeHtml(source.source_group || SOURCE_CLASS_LABELS[source.source_class] || 'Fonte PULSO')}</small></span><span class="automation-state ${active ? 'is-active' : ''}">${active ? 'Activa' : 'Desactivada'}</span></summary>
+      <div class="automation-source-info"><a href="${escapeHtml(safeUrl(source.source_url))}" target="_blank" rel="noopener noreferrer">Abrir fonte fornecida ↗</a><span>${escapeHtml(SOURCE_CLASS_LABELS[source.source_class] || 'Fonte PULSO')}</span></div>
+      ${source.last_scanned_at ? `<p class="automation-last-scan">Última recolha: ${escapeHtml(formatDateTime(source.last_scanned_at))}${source.last_scan_status ? ` · ${escapeHtml(source.last_scan_status)}` : ''}${source.last_scan_error ? ` · ${escapeHtml(source.last_scan_error)}` : ''}</p>` : ''}
+      <form class="automation-source-form" data-automation-source="${escapeHtml(source.id)}">
+        <label>Endpoint exacto RSS / Atom / JSON Feed<input name="collection_endpoint" type="url" inputmode="url" placeholder="https://…" value="${escapeHtml(endpoint)}" required></label>
+        <label>Formato<select name="collection_format" required><option value="">Escolher formato</option><option value="rss" ${source.collection_format === 'rss' ? 'selected' : ''}>RSS</option><option value="atom" ${source.collection_format === 'atom' ? 'selected' : ''}>Atom</option><option value="json_feed" ${source.collection_format === 'json_feed' ? 'selected' : ''}>JSON Feed</option></select></label>
+        <label class="automation-wide">Domínios adicionais autorizados<input name="collection_allowed_hosts" placeholder="exemplo.org, empregos.exemplo.org" value="${escapeHtml(hosts)}"><small>Opcional. O domínio da fonte fornecida já é permitido. Usa apenas domínios que aprovaste.</small></label>
+        <label class="automation-wide">Página de termos / utilização<input name="terms_url" type="url" inputmode="url" placeholder="https://…" value="${escapeHtml(terms)}"></label>
+        <div class="automation-source-actions"><button class="btn btn-primary-soft" type="submit">Guardar feed</button>${active ? `<button class="filter-reset" type="button" data-source-action="suspend" data-source-id="${escapeHtml(source.id)}">Suspender</button>` : `<button class="btn btn-primary-soft" type="button" data-source-action="activate" data-source-id="${escapeHtml(source.id)}" ${canActivate ? '' : 'disabled'}>Aprovar e activar</button>`}<button class="automation-remove" type="button" data-source-action="remove" data-source-id="${escapeHtml(source.id)}">Remover fonte</button></div>
+      </form>
+    </details>`;
+  }).join('');
+}
+
+function renderAutomaticReviews(rows) {
+  const target = $('#automationReviewList');
+  $('#automationReviewCount').textContent = `${safeCount(rows.length)} publicação(ões)`;
+  if (!rows.length) {
+    target.innerHTML = '<div class="empty-state"><b>Ainda não há publicações automáticas.</b>Activa uma fonte com feed e usa “Recolher agora”; os novos resultados aparecerão aqui para revisão posterior.</div>';
+    return;
+  }
+  target.innerHTML = rows.map(item => {
+    const source = safeUrl(item.source_url);
+    const application = safeUrl(item.application_url);
+    const image = safeUrl(item.candidate_image_url || item.image_url);
+    const org = Array.isArray(item.organization) ? item.organization[0] || {} : item.organization || {};
+    const pending = item.auto_review_status === 'pending';
+    const state = item.auto_review_status === 'reviewed' ? 'Revista' : item.auto_review_status === 'dismissed' ? 'Retirada' : 'Publicada · a rever';
+    const description = String(item.public_summary || item.description || '').slice(0, 600);
+    return `<article class="automation-review-card"><div class="automation-review-copy"><span class="automation-state ${pending ? '' : 'is-active'}">${state}${item.status !== 'published' ? ' · fora do catálogo' : ''}</span><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(org.name || 'Organização por confirmar')} · ${escapeHtml(item.source_name || 'Fonte PULSO')} · ${escapeHtml(categoryLabel(item.category))}${item.application_deadline ? ` · prazo ${escapeHtml(formatDate(item.application_deadline))}` : ' · sem prazo indicado'}</p><div class="automation-review-details">${description ? `<span>${escapeHtml(description)}</span>` : ''}${source ? `<a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir fonte original ↗</a>` : ''}${application ? `<a href="${escapeHtml(application)}" target="_blank" rel="noopener noreferrer">Abrir candidatura ↗</a>` : ''}${image ? `<a href="${escapeHtml(image)}" target="_blank" rel="noopener noreferrer">Ver imagem usada no cartão ↗</a>` : '<span>Sem imagem; podes completar o cartão mais tarde.</span>'}</div>${pending ? `<label>Site oficial da organização (opcional)<input class="automation-org-url" type="url" name="organization_website" value="${escapeHtml(org.official_website || '')}" placeholder="https://…"></label>${image ? '<span class="automation-image-note">O URL da imagem está no cartão; o ficheiro não foi descarregado.</span>' : ''}</div><div class="automation-review-actions"><button class="btn btn-primary-soft" type="button" data-auto-review="approve" data-opportunity-id="${escapeHtml(item.id)}">Marcar como revista</button><button class="automation-remove" type="button" data-auto-review="dismiss" data-opportunity-id="${escapeHtml(item.id)}">Retirar publicação</button></div>` : `<small class="automation-reviewed-date">${item.auto_reviewed_at ? `Revista ${escapeHtml(formatDateTime(item.auto_reviewed_at))}` : 'Histórico automático'}</small></div>`}</article>`;
+  }).join('');
+}
+
+async function loadAutomationAdmin() {
+  if (!isAdmin) return;
+  const sourceTarget = $('#automationSourceList');
+  const reviewTarget = $('#automationReviewList');
+  sourceTarget.innerHTML = '<div class="empty-state"><b>A carregar as fontes…</b></div>';
+  reviewTarget.innerHTML = '<div class="empty-state"><b>A carregar publicações automáticas…</b></div>';
+  const [sourceResult, reviewResult] = await Promise.all([
+    supabaseClient.from('sources').select('id,name,source_url,source_type,source_group,source_class,terms_url,access_status,active,collection_enabled,collection_endpoint,collection_format,collection_allowed_hosts,last_scanned_at,last_scan_status,last_scan_error').order('source_group').order('name'),
+    supabaseClient.from('opportunities').select('id,title,description,public_summary,category,application_deadline,published_at,source_name,source_url,application_url,image_url,candidate_image_url,candidate_image_source_url,organization_id,status,auto_review_status,auto_reviewed_at,organization:organizations(id,name,official_website,verification_status)').eq('collection_method', 'automatic').order('published_at', { ascending: false, nullsFirst: false }).limit(100),
+  ]);
+  if (sourceResult.error) {
+    sourceTarget.innerHTML = '<div class="empty-state" role="alert"><b>Configuração automática ainda não aplicada.</b>Aplica a migration <code>20261120180000_pulso_ai_automation.sql</code> no Supabase. O registo manual continua disponível.</div>';
+    $('#automationSourceCount').textContent = 'A configurar';
+  } else {
+    automationSources = sourceResult.data || [];
+    renderAutomationSources();
+  }
+  if (reviewResult.error) {
+    reviewTarget.innerHTML = '<div class="empty-state" role="alert"><b>Revisão automática ainda não disponível.</b>Aplica a migration de automação no Supabase. O formulário manual não depende desta opção.</div>';
+    $('#automationReviewCount').textContent = 'A configurar';
+  } else renderAutomaticReviews(reviewResult.data || []);
+}
+
+function sourceHostAllowed(host, baseUrl, additionalHosts) {
+  const matches = (domain) => {
+    const normalized = String(domain || '').trim().toLowerCase().replace(/^\.+|\.+$/g, '');
+    return normalized && (host === normalized || host.endsWith(`.${normalized}`));
+  };
+  let baseHost = '';
+  try { baseHost = new URL(baseUrl).hostname.toLowerCase(); } catch { return false; }
+  return matches(baseHost) || additionalHosts.some(matches);
+}
+
+async function saveAutomationSource(event) {
+  const form = event.target.closest('[data-automation-source]');
+  if (!form || !isAdmin) return;
+  event.preventDefault();
+  const source = automationSources.find(item => item.id === form.dataset.automationSource);
+  if (!source) return;
+  const endpointInput = form.elements.collection_endpoint;
+  const endpoint = httpsUrl(endpointInput.value, true);
+  const format = String(form.elements.collection_format.value || '');
+  const hosts = splitList(form.elements.collection_allowed_hosts.value).map(value => value.toLowerCase());
+  const termsValue = String(form.elements.terms_url.value || '').trim();
+  const terms = httpsUrl(termsValue);
+  if (!endpoint || !['rss', 'atom', 'json_feed'].includes(format) || (termsValue && !terms)) {
+    notify('Indica um endpoint e um formato suportados, usando links HTTPS.');
+    return;
+  }
+  let endpointHost = '';
+  try { endpointHost = new URL(endpoint).hostname.toLowerCase(); } catch { /* validation above */ }
+  if (!sourceHostAllowed(endpointHost, source.source_url, hosts)) {
+    notify('O domínio do feed tem de corresponder à fonte ou constar na lista de domínios autorizados.');
+    return;
+  }
+  const submit = form.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  try {
+    const { error } = await supabaseClient.from('sources').update({
+      collection_endpoint: endpoint,
+      collection_format: format,
+      source_type: format === 'json_feed' ? 'api' : 'rss',
+      collection_allowed_hosts: hosts,
+      terms_url: terms,
+    }).eq('id', source.id);
+    if (error) throw error;
+    notify('Configuração do feed guardada; a fonte continua com o estado de activação actual.');
+    await loadAutomationAdmin();
+  } catch (error) {
+    console.error('PULSO source configuration failed', error);
+    notify('Não foi possível guardar o feed. Confirma a migration e as permissões de administrador.');
+  } finally { submit.disabled = false; }
+}
+
+async function setAutomationSource(id, action) {
+  if (!isAdmin) return;
+  const source = automationSources.find(item => item.id === id);
+  if (!source) return;
+  if (action === 'remove' && !window.confirm(`Remover “${source.name}” do catálogo de fontes? As publicações já guardadas mantêm o título e a origem textual.`)) return;
+  if (action === 'activate' && (!source.collection_endpoint || !source.collection_format)) {
+    notify('Guarda primeiro um endpoint e o formato do feed.');
+    return;
+  }
+  try {
+    if (action === 'remove') {
+      const { error } = await supabaseClient.from('sources').delete().eq('id', id);
+      if (error) throw error;
+      notify('Fonte removida; as oportunidades já publicadas não foram apagadas.');
+    } else {
+      const patch = action === 'activate'
+        ? { active: true, collection_enabled: true, access_status: 'authorized', visible_publicly: true }
+        : { active: false, collection_enabled: false };
+      const { error } = await supabaseClient.from('sources').update(patch).eq('id', id);
+      if (error) throw error;
+      notify(action === 'activate' ? 'Fonte aprovada e activada.' : 'Recolha desta fonte suspensa.');
+    }
+    await loadAutomationAdmin();
+  } catch (error) {
+    console.error('PULSO source state change failed', error);
+    notify('Não foi possível alterar a fonte. Verifica a configuração e as permissões de administrador.');
+  }
+}
+
+async function runPulsoCollection() {
+  if (!isAdmin || !supabaseClient) return;
+  const button = $('#runPulsoCollection');
+  const status = $('#automationRunStatus');
+  button.disabled = true;
+  status.hidden = false;
+  status.textContent = 'A recolher uma fonte activa. A IA irá criar rascunhos privados para revisão.';
+  try {
+    const { data, error } = await supabaseClient.functions.invoke('pulso-ingest', { body: {} });
+    if (error) throw error;
+    const queued = Number(data?.items_published || 0);
+    status.textContent = data?.processed_sources
+      ? `Concluído: ${data.processed_sources} fonte(s), ${Number(data.items_seen || 0)} item(ns) analisado(s), ${queued} publicação(ões) criada(s).`
+      : (data?.message || 'Não há fontes activas com feed configurado.');
+    await loadAutomationAdmin();
+  } catch (error) {
+    console.error('PULSO collection run failed', error);
+    status.textContent = `A recolha falhou: ${error?.message || 'confirma a Edge Function e as chaves server-side.'}`;
+  } finally { button.disabled = false; }
+}
+
+async function reviewAutomaticPublication(id, action, button) {
+  if (!isAdmin) return;
+  const approving = action === 'approve';
+  const card = button.closest('.automation-review-card');
+  const websiteText = String(card?.querySelector('[name="organization_website"]')?.value || '').trim();
+  const website = approving && websiteText ? httpsUrl(websiteText, true) : null;
+  if (approving && websiteText && !website) {
+    notify('O site oficial deve usar HTTPS.');
+    return;
+  }
+  const imageRights = Boolean(approving && card?.querySelector('[data-auto-image-rights]')?.checked);
+  if (approving && !window.confirm('Confirmas que reveste a fonte e os dados desta publicação? A oportunidade já está online.')) return;
+  const { error } = await supabaseClient.rpc('pulso_review_automatic_opportunity', {
+    p_opportunity_id: id,
+    p_action: approving ? 'approve' : 'dismiss',
+    p_organization_website: website,
+    p_image_rights_confirmed: imageRights,
+  });
+  if (error) {
+    console.error('PULSO automatic opportunity review failed', error);
+    notify(error.message || 'Não foi possível guardar a revisão. Aplica a migration da fila de revisão.');
+    return;
+  }
+  notify(approving ? 'Aprovada e publicada.' : 'Oportunidade rejeitada e mantida fora do catálogo.');
+  await Promise.all([loadAutomationAdmin(), loadOpportunities(), loadStats()]);
 }
 
 function httpsUrl(value, required = false) {
@@ -790,6 +1005,17 @@ function bindEvents() {
   $('#manualOpportunityForm').addEventListener('submit', createManualOpportunity);
   $('#adminAssetList').addEventListener('submit', saveAdminAssets);
   $('#refreshAdminAssets').addEventListener('click', () => void loadAdminAssets());
+  $('#refreshAutomationAdmin').addEventListener('click', () => void loadAutomationAdmin());
+  $('#runPulsoCollection').addEventListener('click', () => void runPulsoCollection());
+  $('#automationSourceList').addEventListener('submit', saveAutomationSource);
+  $('#automationSourceList').addEventListener('click', event => {
+    const action = event.target.closest('[data-source-action]');
+    if (action) void setAutomationSource(action.dataset.sourceId, action.dataset.sourceAction);
+  });
+  $('#automationReviewList').addEventListener('click', event => {
+    const action = event.target.closest('[data-auto-review]');
+    if (action) void reviewAutomaticPublication(action.dataset.opportunityId, action.dataset.autoReview, action);
+  });
   $('#browserAlertButton').addEventListener('click', () => void enableBrowserAlerts());
   $('#browserAlertInline').addEventListener('click', () => void enableBrowserAlerts());
   $('#refreshNotifications').addEventListener('click', () => void loadNotifications());

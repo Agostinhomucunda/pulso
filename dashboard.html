@@ -9,6 +9,7 @@
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=20261120-15">
   <link rel="stylesheet" href="dashboard.css?v=20261120-15">
+  <link rel="stylesheet" href="automation.css?v=20261120-20">
   <script type="module" src="dashboard.js?v=20261120-15"></script>
 </head>
 <body class="dashboard-body">
@@ -167,6 +168,14 @@
           </div>
           <div class="dashboard-feedback" id="adminFormFeedback" role="status" aria-live="polite" hidden></div><button class="btn btn-primary" type="submit">Guardar oportunidade verificada <span>→</span></button>
         </form>
+        <section class="dash-panel pulso-automation-panel" id="adminAutomationPanel">
+          <div class="panel-heading automation-heading"><div><span class="section-kicker">RECOLHA AUTOMÁTICA</span><h2>Fontes e publicações automáticas.</h2><p>As fontes começam desactivadas. A recolha publica oportunidades encontradas; revê-as depois e retira qualquer erro.</p></div><div class="automation-header-actions"><button class="btn btn-primary" type="button" id="runPulsoCollection">Recolher agora</button><button class="filter-reset" type="button" id="refreshAutomationAdmin">Actualizar</button></div></div>
+          <div class="dashboard-feedback automation-run-status" id="automationRunStatus" role="status" aria-live="polite" hidden></div>
+          <div class="automation-section-heading"><div><span class="section-kicker">FONTES FORNECIDAS</span><h3>Activar fontes uma a uma.</h3></div><span class="automation-count" id="automationSourceCount">—</span></div>
+          <div id="automationSourceList"><div class="empty-state"><b>A carregar fontes…</b></div></div>
+          <div class="automation-section-heading automation-review-heading"><div><span class="section-kicker">PUBLICAÇÕES AUTOMÁTICAS</span><h3>Rever publicações da IA.</h3></div><span class="automation-count" id="automationReviewCount">—</span></div>
+          <div id="automationReviewList"><div class="empty-state"><b>A carregar publicações automáticas…</b></div></div>
+        </section>
       </section>
       <footer class="dash-footer"><a href="./index.html">PULSO · Oportunidades em movimento.</a><span>Fontes claras. Próximos passos com contexto.</span><button type="button" data-view="support">Ajuda e contactos</button></footer>
     </main>

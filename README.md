@@ -36,6 +36,12 @@ As fontes actualmente ligadas incluem SEPE, ENAPP, Portal do Governo de Angola, 
 
 O worker grava o catálogo em `data/opportunities.json`, o que permite à homepage funcionar mesmo sem consultar o Supabase. No ficheiro actual há sete oportunidades, todas da ENAPP; os outros conectores configurados ainda não aparecem no catálogo publicado. O site apresenta apenas os cinco cartões mais recentes; o GitHub Pages publica a alteração depois de o workflow fazer commit na `main`. “Toda a web” não é uma fonte tecnicamente finita: a cobertura é ampliada adicionando domínios públicos e autorizados a `data/sources.json`, sem prometer rastreio integral nem ignorar as regras dos sites.
 
+### Recolha assistida por IA no painel
+
+O painel de administração também inclui um colector RSS/Atom/JSON Feed via Supabase Edge Function `pulso-ingest`. Duas passagens de IA filtram e normalizam os itens; oportunidades válidas e respectivas URLs HTTPS de imagem são publicadas sem descarregar imagens, e ficam disponíveis para revisão/retirada posterior no painel. As fontes da lista fornecida começam inactivas; cada uma precisa de endpoint de feed configurado e aprovação explícita.
+
+Para activar esta opção, aplicar `20261119140000_manual_opportunity_admin.sql`, `20261120180000_pulso_ai_automation.sql` e `20261120190000_pulso_review_queue.sql` (depois do esquema inicial), publicar `supabase/functions/pulso-ingest/index.ts` e guardar `OPENAI_API_KEY` como segredo server-side no Supabase. A rotina Python de seis em seis horas é separada e não chama a API OpenAI.
+
 ## Configuração do Supabase
 
 `supabase-config.js` contém apenas o URL e a publishable key do projecto para uso no browser. Nunca adicionar `sb_secret_`, `service_role`, palavras-passe ou tokens ao repositório.
