@@ -23,3 +23,7 @@
 .pwa-install-card{top:calc(88px + env(safe-area-inset-top));bottom:auto;max-height:calc(100vh - 100px);overflow:auto}
 .pwa-install-card .pwa-install-button:disabled{opacity:.62;box-shadow:none;cursor:not-allowed}
 @media(max-width:620px){.pwa-install-card{top:calc(76px + env(safe-area-inset-top));bottom:auto;max-height:calc(100dvh - 88px)}}
+
+/* O cartão ocupa o seu próprio espaço antes do cabeçalho; não cobre cartões nem navegação. */
+.pwa-install-card{position:relative;top:auto;right:auto;bottom:auto;left:auto;width:min(370px,calc(100vw - 24px));max-height:none;overflow:visible;margin:10px 16px 8px auto}
+@media(max-width:620px){.pwa-install-card{top:auto;right:auto;bottom:auto;margin:8px 12px 8px auto;max-height:none}}

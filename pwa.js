@@ -57,7 +57,7 @@
   installCard.append(installCardIcon, installCardContent, installCardControls);
 
   document.addEventListener('DOMContentLoaded', () => {
-    document.body.append(networkBanner, installCard);
+    document.body.prepend(installCard, networkBanner);
     updateInstallUi();
   }, { once: true });
 
