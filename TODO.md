@@ -51,6 +51,7 @@
 
 ### Entrada, autenticação e conta empresarial
 - [x] Acrescentar apenas uma ligação mínima na home para a nova opção de empresas/parceiros, preservando acesso normal e navegação existente.
+- [x] Ao clicar em “Criar conta”, apresentar escolha entre conta normal, conta empresarial e pedido de parceria; manter o formulário/Auth normal e encaminhar os dois pedidos organizacionais ao portal próprio.
 - [x] Criar página própria com dois percursos: conta empresarial para entidades com documentação e pedido de parceria para startups, projectos, pequenos negócios e organizações.
 - [x] No percurso empresarial, recolher nome legal/comercial, NIF, registo comercial quando aplicável, sector, província, município, endereço, website, e-mail institucional e telefone; recolher nome, cargo, e-mail, contacto e identificação do representante, incluindo prova de representação quando necessária.
 - [x] Permitir enviar certidão comercial, documento de NIF, alvará quando aplicável, identificação, prova de representação e documentos adicionais; mostrar documentos enviados, pendentes e que precisam de substituição; permitir novos envios e substituições.

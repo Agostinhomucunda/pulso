@@ -11,6 +11,7 @@
   <title>PULSO — Oportunidades em movimento</title>
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=20261120-15">
+  <link rel="stylesheet" href="account-type-choice.css?v=20261121-01">
   <script type="module" src="app.js?v=20261121-04"></script>
 </head>
 <body>
@@ -96,6 +97,31 @@
   <footer class="site-footer"><a class="brand footer-brand" href="#inicio"><img src="assets/pulso-mark-3d-small.png" alt="" width="34" height="34"><span class="brand-copy"><strong>PULSO</strong><small>Oportunidades em movimento.</small></span></a><span>© <span id="year"></span> PULSO. Feito com propósito em Angola.</span><div><a href="#privacidade" data-open="privacy">Privacidade</a><a href="#termos" data-open="terms">Termos</a><a href="#contacto" data-open="contact">Contacto</a></div></footer>
 
   <dialog class="modal" id="appModal" aria-labelledby="modalTitle"><button class="modal-close" id="modalClose" aria-label="Fechar">×</button><div id="modalBody"></div></dialog>
+  <dialog class="account-type-modal" id="accountTypeDialog" aria-labelledby="accountTypeTitle" aria-describedby="accountTypeIntro">
+    <button class="account-type-close" id="accountTypeClose" type="button" aria-label="Fechar escolha">×</button>
+    <span class="account-type-kicker">Criar conta no PULSO</span>
+    <h2 id="accountTypeTitle">Que tipo de acesso procuras?</h2>
+    <p class="account-type-intro" id="accountTypeIntro">Escolhe a opção que corresponde ao teu objectivo. Os pedidos empresariais e de parceria são revistos separadamente.</p>
+    <div class="account-type-grid">
+      <button class="account-type-option" id="accountTypePersonal" type="button">
+        <span class="account-type-mark" aria-hidden="true">P</span>
+        <strong>Conta normal</strong>
+        <small>Criar o perfil pessoal para explorar e guardar oportunidades.</small>
+      </button>
+      <a class="account-type-option" href="empresas-parceiros.html?flow=business">
+        <span class="account-type-mark" aria-hidden="true">E</span>
+        <strong>Conta empresarial</strong>
+        <small>Submeter uma entidade para revisão documental e eventual verificação.</small>
+      </a>
+      <a class="account-type-option" href="empresas-parceiros.html?flow=partnership">
+        <span class="account-type-mark" aria-hidden="true">+</span>
+        <strong>Pedido de parceria</strong>
+        <small>Apresentar um projecto, startup, pequeno negócio ou organização.</small>
+      </a>
+    </div>
+    <p class="account-type-note">Os pedidos empresariais e de parceria usam a conta PULSO normal; se ainda não tens uma, cria primeiro uma conta normal e depois regressa para submeter o pedido.</p>
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="account-type-choice.js?v=20261121-01"></script>
 </body>
 </html>

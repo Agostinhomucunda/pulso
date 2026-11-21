@@ -40,8 +40,12 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const authPanel = $('#authPanel');
 const portalApp = $('#portalApp');
+const requestedFlow = new URLSearchParams(window.location.search).get('flow');
+const requestedView = requestedFlow === 'partnership' ? 'partnership' : 'business';
+const hasRequestedFlow = requestedFlow === 'business' || requestedFlow === 'partnership';
 let currentUser = null;
 let authUpdateInProgress = false;
+let initialViewApplied = false;
 
 function showFeedback(element, message, kind = 'info') {
   element.textContent = message;
@@ -59,8 +63,15 @@ function setSessionView(user) {
   currentUser = user || null;
   authPanel.hidden = Boolean(currentUser);
   portalApp.hidden = !currentUser;
-  if (!currentUser) return;
+  if (!currentUser) {
+    initialViewApplied = false;
+    return;
+  }
   $('#accountEmail').textContent = currentUser.email || 'Conta PULSO';
+  if (!initialViewApplied) {
+    initialViewApplied = true;
+    if (hasRequestedFlow) switchView(requestedView);
+  }
 }
 
 function switchView(name) {
