@@ -111,6 +111,8 @@
 .stat-card>b{margin-top:3px;color:#14264d;font:800 25px 'Manrope',sans-serif;letter-spacing:-1px}
 .stat-card small{margin-top:3px;color:#98a2b5;font-size:8px}
 .stat-bottom-line{position:absolute;left:17px;right:17px;bottom:0;height:2px;background:linear-gradient(90deg,#1459dc,#d3e1ff)}
+.stat-card[data-filter-category],.stat-card[data-view="saved"]{cursor:pointer}
+.stat-card[data-filter-category]:focus-visible,.stat-card[data-view="saved"]:focus-visible{outline:3px solid #7ca7ff;outline-offset:3px}
 .dash-panel{border:1px solid #e7edf5;border-radius:18px;background:#fff;box-shadow:0 12px 30px #19396609,0 2px 5px #19396605}
 .featured-panel{margin-top:20px;padding:20px 21px 15px}
 .panel-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:15px}

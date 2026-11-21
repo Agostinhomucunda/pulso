@@ -1140,8 +1140,24 @@ function withTimeout(promise, milliseconds, message) {
   return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
 }
 
+function activateStatsFilter(category) {
+  $('#opportunityCategory').value = category;
+  activateView('opportunities');
+  renderOpportunityLists();
+}
+
 function bindEvents() {
   $$('[data-view]').forEach(button => button.addEventListener('click', () => activateView(button.dataset.view)));
+  $$('[data-filter-category]').forEach(card => {
+    const activate = () => activateStatsFilter(card.dataset.filterCategory || '');
+    card.addEventListener('click', activate);
+    card.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        activate();
+      }
+    });
+  });
   $('#profileMenuButton').addEventListener('click', () => {
     const menu = $('#profileMenu');
     menu.hidden = !menu.hidden;
