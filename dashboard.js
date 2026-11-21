@@ -192,18 +192,26 @@ function activateView(view, { updateHash = true } = {}) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function maskEmail(email = '') {
+  const [local, domain, ...rest] = String(email).split('@');
+  if (!local || !domain || rest.length) return email;
+  const visible = local.slice(0, Math.min(2, local.length));
+  const hidden = '*'.repeat(Math.max(3, local.length - visible.length));
+  return `${visible}${hidden}@${domain}`;
+}
 function updateIdentity() {
   const name = userName();
   const email = currentUser?.email || '';
+  const displayEmail = maskEmail(email);
   $('#profileNameTop').textContent = name;
-  $('#profileEmailTop').textContent = email || 'Conta PULSO';
+  $('#profileEmailTop').textContent = displayEmail || 'Conta PULSO';
   renderAvatarTargets();
   $('#sidebarName').textContent = name.split(/\s+/)[0] || name;
   $('#profileMenuName').textContent = name;
-  $('#profileMenuEmail').textContent = email;
+  $('#profileMenuEmail').textContent = displayEmail;
   $('#profileShowcaseName').textContent = name;
-  $('#profileShowcaseEmail').textContent = email;
-  $('#profileEmailField').value = email;
+  $('#profileShowcaseEmail').textContent = displayEmail;
+  $('#profileEmailField').value = displayEmail;
   const first = name.split(/\s+/)[0] || name;
   $('#welcomeHeading').textContent = `Olá, ${first}. O teu próximo passo começa aqui.`;
   $('#profileForm [name="full_name"]').value = profile.full_name || currentUser?.user_metadata?.full_name || '';
