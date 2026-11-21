@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-AO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0739a8">
+  <meta name="description" content="Pedidos empresariais e de parceria do PULSO.">
+  <title>Empresas e parcerias — PULSO</title>
+  <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
+  <link rel="stylesheet" href="empresas-parceiros.css?v=20261121-01">
+  <script type="module" src="empresas-parceiros.js?v=20261121-01"></script>
+</head>
+<body>
+  <header class="portal-header">
+    <a class="portal-brand" href="index.html" aria-label="PULSO — página inicial">
+      <img src="assets/pulso-mark-3d-small.png" alt="" width="40" height="40">
+      <span><strong>PULSO</strong><small>Empresas e parcerias</small></span>
+    </a>
+    <a class="back-link" href="index.html#empresas">Voltar ao PULSO <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main class="portal-shell">
+    <section class="portal-intro">
+      <span class="eyebrow">ACESSO EMPRESARIAL</span>
+      <h1>Um espaço para<br><em>criar movimento.</em></h1>
+      <p>Submeta uma entidade para revisão documental ou proponha uma parceria com o PULSO. São percursos diferentes, com estados e critérios próprios.</p>
+    </section>
+
+    <section class="auth-panel panel" id="authPanel" hidden aria-labelledby="authTitle">
+      <span class="section-label">ÁREA RESERVADA</span>
+      <h2 id="authTitle">Entre com a sua conta PULSO</h2>
+      <p>Os pedidos ficam associados à sua conta existente. Este portal não cria nem altera contas normais.</p>
+      <form id="loginForm" class="form-grid" novalidate>
+        <label class="field field-wide">E-mail da conta PULSO<input name="email" type="email" autocomplete="email" required></label>
+        <label class="field field-wide">Palavra-passe<input name="password" type="password" autocomplete="current-password" required></label>
+        <div class="field-wide feedback" id="loginFeedback" role="status" aria-live="polite" hidden></div>
+        <button class="button button-primary field-wide" type="submit">Entrar sem sair deste portal <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="auth-footnote">Ainda não tem uma conta? <a href="index.html">Crie uma conta normal no PULSO</a> e volte a esta página.</p>
+    </section>
+
+    <section class="portal-app" id="portalApp" hidden>
+      <div class="account-strip"><span>Conta: <b id="accountEmail"></b></span><button type="button" class="text-button" id="signOutButton">Terminar sessão</button></div>
+      <div class="portal-tabs" role="tablist" aria-label="Percursos empresariais">
+        <button type="button" class="portal-tab active" role="tab" aria-selected="true" data-view="business">Conta empresarial</button>
+        <button type="button" class="portal-tab" role="tab" aria-selected="false" data-view="partnership">Solicitar parceria</button>
+        <button type="button" class="portal-tab" role="tab" aria-selected="false" data-view="requests">Acompanhar pedidos</button>
+      </div>
+
+      <section class="portal-view" id="view-business" role="tabpanel">
+        <div class="view-heading"><span class="section-label">01 / VERIFICAÇÃO DOCUMENTAL</span><h2>Criar conta empresarial</h2><p>Para empresas e organizações com documentação. A aprovação é feita por revisão documental por responsáveis autorizados; este processo não consulta automaticamente um registo oficial.</p></div>
+        <form id="businessForm" class="form-grid card-form">
+          <h3 class="form-section-title field-wide">Dados da organização</h3>
+          <label class="field">Nome legal da empresa<input name="legal_name" autocomplete="organization" required maxlength="180"></label>
+          <label class="field">Nome comercial, se diferente<input name="trade_name" maxlength="180"></label>
+          <label class="field">NIF<input name="tax_id" required maxlength="48" autocomplete="off"></label>
+          <label class="field">N.º de registo comercial, se aplicável<input name="commercial_registration_number" maxlength="80"></label>
+          <label class="field">Sector de actividade<select name="sector" required><option value="">Seleccione</option><option>Administração e serviços</option><option>Agricultura e pescas</option><option>Comércio</option><option>Construção e imobiliário</option><option>Educação e formação</option><option>Energia e indústria</option><option>Finanças</option><option>Saúde</option><option>Tecnologia e telecomunicações</option><option>Transportes e logística</option><option>Outro</option></select></label>
+          <label class="field">Província<input name="province" required maxlength="100" autocomplete="address-level1"></label>
+          <label class="field">Município<input name="municipality" required maxlength="100" autocomplete="address-level2"></label>
+          <label class="field field-wide">Endereço<input name="address" required maxlength="240" autocomplete="street-address"></label>
+          <label class="field">Website oficial, se existir<input name="website" type="url" inputmode="url" placeholder="https://"></label>
+          <label class="field">E-mail institucional<input name="institutional_email" type="email" required autocomplete="email"></label>
+          <label class="field">Telefone da organização<input name="organization_phone" type="tel" required autocomplete="tel"></label>
+
+          <h3 class="form-section-title field-wide">Representante</h3>
+          <label class="field">Nome completo<input name="representative_full_name" required maxlength="180" autocomplete="name"></label>
+          <label class="field">Cargo na empresa<input name="representative_role" required maxlength="120"></label>
+          <label class="field">E-mail do representante<input name="representative_email" type="email" required autocomplete="email"></label>
+          <label class="field">Contacto do representante<input name="representative_phone" type="tel" required autocomplete="tel"></label>
+
+          <h3 class="form-section-title field-wide">Documentos de suporte</h3>
+          <p class="field-wide upload-note">PDF, JPG, PNG ou WEBP; máximo de 10 MB por ficheiro. Os documentos são privados e visíveis apenas ao titular do pedido e a responsáveis autorizados. Pode submeter o pedido e completar documentos pendentes depois.</p>
+          <label class="field upload-field">Certidão comercial<input type="file" data-initial-document="commercial_certificate" accept="application/pdf,image/jpeg,image/png,image/webp"><small>Documento da entidade, se disponível.</small></label>
+          <label class="field upload-field">Documento de NIF<input type="file" data-initial-document="tax_document" accept="application/pdf,image/jpeg,image/png,image/webp"><small>Comprovativo/declaração de NIF.</small></label>
+          <label class="field upload-field">Alvará, quando aplicável<input type="file" data-initial-document="business_license" accept="application/pdf,image/jpeg,image/png,image/webp"><small>Envie apenas se aplicável à actividade.</small></label>
+          <label class="field upload-field">Identificação do representante<input type="file" data-initial-document="representative_id" accept="application/pdf,image/jpeg,image/png,image/webp"></label>
+          <label class="field upload-field field-wide">Procuração ou prova de representação, se necessária<input type="file" data-initial-document="representation_proof" accept="application/pdf,image/jpeg,image/png,image/webp"></label>
+          <label class="consent field-wide"><input name="consent_accepted" type="checkbox" required><span>Confirmo que posso submeter estes dados e documentos e autorizo a sua utilização para analisar este pedido de conta empresarial.</span></label>
+          <div class="field-wide feedback" id="businessFeedback" role="status" aria-live="polite" hidden></div>
+          <button class="button button-primary field-wide" type="submit">Submeter pedido empresarial <span aria-hidden="true">→</span></button>
+        </form>
+      </section>
+
+      <section class="portal-view" id="view-partnership" role="tabpanel" hidden>
+        <div class="view-heading"><span class="section-label">02 / COLABORAÇÃO</span><h2>Solicitar parceria</h2><p>Para startups, projectos, pequenos negócios e organizações que pretendem colaborar com o PULSO, mesmo sem documentação completa para uma verificação empresarial formal.</p></div>
+        <form id="partnershipForm" class="form-grid card-form">
+          <label class="field field-wide">Nome do projecto ou organização<input name="organization_name" required maxlength="180"></label>
+          <label class="field field-wide">Descrição da actividade<textarea name="activity_description" rows="4" required maxlength="3000"></textarea></label>
+          <label class="field">Nome do responsável<input name="representative_name" required maxlength="180" autocomplete="name"></label>
+          <label class="field">E-mail de contacto<input name="representative_email" type="email" required autocomplete="email"></label>
+          <label class="field">Contacto telefónico<input name="representative_phone" type="tel" required autocomplete="tel"></label>
+          <label class="field">Província<input name="province" required maxlength="100"></label>
+          <label class="field">Município<input name="municipality" required maxlength="100"></label>
+          <label class="field field-wide">Website ou redes sociais, se existirem<textarea name="website_or_social_links" rows="2" maxlength="1000" placeholder="Pode indicar vários links, um por linha."></textarea></label>
+          <label class="field field-wide">Tipo de colaboração pretendida<select name="collaboration_type" required><option value="">Seleccione</option><option>Emprego e recrutamento</option><option>Formação e desenvolvimento de competências</option><option>Bolsas e educação</option><option>Conteúdo e divulgação</option><option>Apoio, mentoria ou recursos</option><option>Outra colaboração</option></select></label>
+          <label class="field field-wide">Por que motivo pretende estabelecer esta parceria?<textarea name="collaboration_reason" rows="4" required maxlength="3000"></textarea></label>
+          <label class="consent field-wide"><input name="consent_accepted" type="checkbox" required><span>Confirmo que posso submeter estes dados e autorizo a sua utilização para analisar este pedido de parceria.</span></label>
+          <div class="field-wide feedback" id="partnershipFeedback" role="status" aria-live="polite" hidden></div>
+          <button class="button button-primary field-wide" type="submit">Enviar pedido de parceria <span aria-hidden="true">→</span></button>
+        </form>
+      </section>
+
+      <section class="portal-view" id="view-requests" role="tabpanel" hidden>
+        <div class="view-heading view-heading-row"><div><span class="section-label">03 / ESTADO DOS PEDIDOS</span><h2>Acompanhar pedidos</h2><p>Os estados são actualizados após revisão por responsáveis autorizados.</p></div><button type="button" class="button button-secondary" id="refreshButton">Actualizar estados</button></div>
+        <div class="feedback" id="requestsFeedback" role="status" aria-live="polite" hidden></div>
+        <div id="futureSpaces" class="future-spaces" aria-live="polite"></div>
+        <div id="requestList" class="request-list"></div>
+      </section>
+    </section>
+
+    <footer class="portal-footer"><span>PULSO · Oportunidades em movimento</span><span>Os pedidos empresariais e de parceria têm estados distintos.</span></footer>
+  </main>
+</body>
+</html>

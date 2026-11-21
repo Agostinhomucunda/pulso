@@ -45,3 +45,23 @@
 - [ ] Inserir e aprovar primeiras oportunidades reais e validar a apresentação no site.
 - [ ] Verificar autorização, termos, RSS/API e licenças das fontes antes de monitorização/ingestão.
 - [ ] Testar Auth por e-mail e a confirmação num dispositivo/conta controlados pelo proprietário.
+
+
+## Nova modalidade — empresas e parceiros (isolada)
+
+### Entrada, autenticação e conta empresarial
+- [x] Acrescentar apenas uma ligação mínima na home para a nova opção de empresas/parceiros, preservando acesso normal e navegação existente.
+- [x] Criar página própria com dois percursos: conta empresarial para entidades com documentação e pedido de parceria para startups, projectos, pequenos negócios e organizações.
+- [x] No percurso empresarial, recolher nome legal/comercial, NIF, registo comercial quando aplicável, sector, província, município, endereço, website, e-mail institucional e telefone; recolher nome, cargo, e-mail, contacto e identificação do representante, incluindo prova de representação quando necessária.
+- [x] Permitir enviar certidão comercial, documento de NIF, alvará quando aplicável, identificação, prova de representação e documentos adicionais; mostrar documentos enviados, pendentes e que precisam de substituição; permitir novos envios e substituições.
+- [x] Apresentar confirmação e permitir consultar os estados “Em análise”, “Documentação adicional solicitada”, “Verificada”, “Rejeitada” e “Suspensa”.
+
+### Pedido de parceria
+- [x] Recolher nome/descrição, responsável, e-mail/telefone, província/município, website/redes sociais, tipo e motivo da colaboração; apresentar confirmação de recepção e estados “Recebido”, “Em análise”, “Informação adicional solicitada”, “Parceria aprovada”, “Parceria rejeitada” e “Parceria suspensa”.
+- [x] Manter a parceria aprovada separada da verificação legal empresarial, sem a apresentar como empresa legalmente verificada.
+
+### Privacidade, revisão e espaços futuros
+- [ ] Rever a política pública de privacidade, o responsável pelo tratamento, a finalidade/base aplicável e os prazos de conservação/eliminação antes de activar a recolha pública de documentos de identificação.
+- [x] Guardar dados e documentos em estruturas novas, com RLS de titular/administrador e bucket privado; não expor documentos publicamente; revisão/aprovação por responsáveis autorizados, sem alterar dashboard administrativo.
+- [x] Preparar espaços visuais distintos para empresa verificada, parceiro aprovado e pedido em análise; não criar dashboards, menus internos, publicação, estatísticas ou gestão de oportunidades.
+- [x] Não implementar API oficial sem documentação/autorização comprovada; preservar autenticação, contas normais, dashboards, oportunidades, páginas, configurações e restantes módulos existentes; não introduzir redireccionamentos automáticos.
