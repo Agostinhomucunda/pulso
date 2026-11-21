@@ -194,11 +194,6 @@ function updateIdentity() {
 function renderOpportunityCard(item, { savedPage = false } = {}) {
   const id = escapeHtml(item.id);
   const org = organizationName(item);
-  const organization = organizationRecord(item);
-  const logo = safeUrl(organization.logo_url || organization.logo_source_url);
-  const mark = logo
-    ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy">`
-    : escapeHtml(initials(org));
   const image = safeUrl(item.image_url);
   const place = [item.municipality, item.province].filter(Boolean).map(escapeHtml).join(', ') || 'Localização não indicada';
   const deadline = formatDate(item.application_deadline);
@@ -211,7 +206,7 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
   const saved = savedIds.has(item.id);
   const source = safeUrl(item.source_url);
   return `<article class="dash-op-card" data-opportunity="${id}">
-    <span class="dash-op-visual" aria-hidden="true">${image ? `<img class="dash-op-image" src="${escapeHtml(image)}" alt="" loading="lazy">` : '<span class="dash-op-image dash-op-image-empty">P·</span>'}<span class="dash-op-mark">${mark}</span></span>
+    <span class="dash-op-visual" aria-hidden="true">${image ? `<img class="dash-op-image" src="${escapeHtml(image)}" alt="" loading="lazy">` : '<span class="dash-op-image dash-op-image-empty">P·</span>'}</span>
     <div class="dash-op-content">
       <h3>${escapeHtml(item.title)} <img class="verified-check-img" src="assets/logos/verified-3d.png" alt="Oportunidade verificada" title="Oportunidade verificada"></h3>
       <span class="dash-op-org">${escapeHtml(org)}</span>
@@ -302,9 +297,9 @@ const IMPORT_FIELD_ALIASES = {
 const IMPORT_CATEGORY_ALIASES = {
   emprego: 'employment', empregos: 'employment', trabalho: 'employment', vaga: 'employment', vagas: 'employment', job: 'employment', jobs: 'employment',
   bolsa: 'scholarship', bolsas: 'scholarship', scholarship: 'scholarship', scholarships: 'scholarship',
-  concurso: 'public_competition', concursos: 'public_competition', concurso publico: 'public_competition', concursos publicos: 'public_competition',
+  concurso: 'public_competition', concursos: 'public_competition', concursopublico: 'public_competition', concursospublicos: 'public_competition',
   estagio: 'internship', estagios: 'internship', internship: 'internship',
-  formacao: 'training', formações: 'training', formacao profissional: 'training', curso: 'training', cursos: 'training', training: 'training',
+  formacao: 'training', formacoes: 'training', formacaoprofissional: 'training', curso: 'training', cursos: 'training', training: 'training',
   programa: 'recruitment_program', programas: 'recruitment_program', program: 'recruitment_program', programs: 'recruitment_program',
 };
 
