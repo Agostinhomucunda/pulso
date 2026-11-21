@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pulso-shell-v6';
+const CACHE_NAME = 'pulso-shell-v7';
 const SCOPE_URL = new URL(self.registration.scope);
 const CORE_FILES = [
   'index.html',
@@ -77,6 +77,12 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Pedidos Range são usados por vídeos e não podem ser guardados como recursos completos.
+  if (request.headers.has('range')) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   // Connectivity probes must bypass all caches to check the real site connection.
   if (url.searchParams.has('__pwa_check')) {
