@@ -333,3 +333,9 @@
     transform: translateY(-50%);
   }
 }
+
+/* Profundidade nos ícones de Gmail e WhatsApp na área de suporte. */
+.gmail-icon,.whatsapp-icon{position:relative;isolation:isolate;transform:perspective(180px) rotateX(8deg) rotateY(-9deg) translateY(-1px);border:1px solid #ffffffb0;box-shadow:0 5px 0 #102e6b18,0 10px 15px #152b4e20;transition:transform .2s ease,box-shadow .2s ease}
+.gmail-icon svg,.whatsapp-icon svg{width:23px;height:23px;display:block;overflow:visible;filter:drop-shadow(0 2px 1px #172f6024)}
+.whatsapp-icon svg{fill:none;stroke:currentColor;stroke-width:.8;stroke-linecap:round;stroke-linejoin:round}
+.support-contact-card:hover .gmail-icon,.support-contact-card:hover .whatsapp-icon{transform:perspective(180px) rotateX(2deg) rotateY(0) translateY(-3px);box-shadow:0 7px 0 #102e6b15,0 14px 18px #152b4e24}
