@@ -374,3 +374,22 @@
   .dash-layout{min-height:calc(100vh - 104px)}
 }
 @media(max-width:360px){.dash-top-actions{gap:8px}.dash-wa-shortcut{padding:0 8px;font-size:8px}.browser-alert-btn{padding:0 6px;font-size:7px}}
+
+/* Mantém a sequência completa do cabeçalho numa única linha em telefones. */
+@media(max-width:620px){
+  .dash-topbar{height:67px;min-height:67px;align-items:center;flex-direction:row;justify-content:space-between;gap:5px;padding:0 8px}
+  .dash-brand{height:auto;min-width:0;flex:0 0 auto;gap:5px}
+  .dash-brand img{width:30px;height:30px}
+  .dash-brand strong{font-size:15px}
+  .dash-brand small{display:none}
+  .profile-anchor{position:static;top:auto;right:auto;flex:none}
+  .dash-top-actions{width:auto;height:auto;min-width:0;flex:1 1 auto;justify-content:flex-end;gap:5px}
+  .browser-alert-btn{height:33px;min-width:0;flex:none;gap:4px;padding:0 5px;font-size:8px}
+  .browser-alert-icon{width:13px;height:13px}
+  .browser-alert-btn span{font-size:8px}
+  .dash-bell{width:32px;height:32px;flex:none}
+  .dash-wa-shortcut{width:auto;max-width:none;min-width:0;height:33px;min-height:33px;flex:none;gap:4px;padding:0 6px;font-size:8px;white-space:nowrap}
+  .dash-wa-shortcut>span{font-size:12px}
+  .dash-layout{min-height:calc(100vh - 67px)}
+}
+@media(max-width:375px){.dash-brand>span{display:none}.dash-topbar{gap:4px}.dash-top-actions{gap:4px}.browser-alert-btn{padding:0 4px;font-size:7px}.browser-alert-btn span{font-size:7px}.dash-wa-shortcut{gap:3px;padding:0 5px;font-size:7px}}
