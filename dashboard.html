@@ -10,7 +10,9 @@
   <link rel="stylesheet" href="styles.css?v=20261120-15">
   <link rel="stylesheet" href="dashboard.css?v=20261121-05">
   <link rel="stylesheet" href="automation.css?v=20261120-20">
-  <script type="module" src="dashboard.js?v=20261121-05"></script>
+  <link rel="stylesheet" href="whatsapp-alerts.css?v=20261121-01">
+  <script type="module" src="dashboard.js?v=20261121-06"></script>
+  <script type="module" src="whatsapp-alerts.js?v=20261121-01"></script>
 </head>
 <body class="dashboard-body">
   <header class="dash-topbar">
@@ -25,6 +27,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
         <span class="notification-count" id="notificationCount" hidden>0</span>
       </button>
+      <button class="dash-wa-shortcut" type="button" data-view="whatsapp-alerts"><span aria-hidden="true">◉</span> Alertas WhatsApp</button>
       <div class="profile-anchor">
         <button class="profile-trigger" id="profileMenuButton" type="button" aria-haspopup="true" aria-expanded="false">
           <span class="profile-avatar" id="profileAvatar" data-avatar-target="top"><img src="assets/profile/avatar-male.jpg" alt="Avatar masculino"></span>
@@ -50,6 +53,7 @@
         <button class="dash-nav-link" type="button" data-view="publications"><span>✦</span> Publicações</button>
         <button class="dash-nav-link" type="button" data-view="saved"><span>♡</span> Guardadas <span class="nav-count" id="savedNavCount">0</span></button>
         <button class="dash-nav-link" type="button" data-view="alerts"><span>⌁</span> Os meus alertas</button>
+        <button class="dash-nav-link" type="button" data-view="whatsapp-alerts"><span>◉</span> Alertas WhatsApp</button>
         <button class="dash-nav-link" type="button" data-view="notifications"><span>♧</span> Notificações <span class="nav-count nav-alert-count" id="notificationNavCount" hidden>0</span></button>
         <button class="dash-nav-link" type="button" data-view="profile"><span>◉</span> Meu perfil</button>
         <button class="dash-nav-link admin-nav-link" type="button" data-view="admin" id="adminNavLink" hidden><span>⚙</span> Administração <span class="nav-count nav-alert-count" id="adminMissingCount" hidden>0</span></button>
@@ -140,6 +144,34 @@
           </form>
           <section class="dash-panel alert-list-panel"><div class="panel-heading"><div><span class="section-kicker">AS TUAS PREFERÊNCIAS</span><h2>Alertas configurados.</h2></div><span class="alert-total" id="alertTotal">0</span></div><div id="alertList"><div class="empty-state"><b>A carregar alertas…</b></div></div><div class="browser-notice-card"><span class="notice-bell">♧</span><div><b>Notificações neste navegador</b><small>Activar avisos enquanto o dashboard estiver aberto.</small></div><button id="browserAlertInline" type="button">Activar</button></div></section>
         </div>
+      </section>
+
+      <section class="dash-view" data-panel="whatsapp-alerts" hidden>
+        <div class="page-intro"><span class="section-kicker">ALERTAS PERSONALIZADOS</span><h1>Oportunidades no teu WhatsApp.</h1><p>Define o que procuras. O PULSO identifica correspondências e prepara a informação; uma pessoa da equipa envia a mensagem manualmente.</p></div>
+        <div class="wa-user-layout">
+          <form class="dash-panel wa-preferences-form" id="whatsappAlertForm">
+            <div class="panel-heading"><div><span class="section-kicker">AS TUAS PREFERÊNCIAS</span><h2>O que procuras?</h2></div><span class="panel-icon">◉</span></div>
+            <fieldset class="category-choice"><legend>Categoria</legend><div class="category-checkbox-grid wa-category-grid">
+              <label><input type="checkbox" name="wa_category" value="employment"> Empregos</label><label><input type="checkbox" name="wa_category" value="scholarship"> Bolsas</label><label><input type="checkbox" name="wa_category" value="public_competition"> Concursos</label><label><input type="checkbox" name="wa_category" value="internship"> Estágios</label><label><input type="checkbox" name="wa_category" value="training"> Formação</label><label><input type="checkbox" name="wa_category" value="recruitment_program"> Programas</label>
+            </div></fieldset>
+            <label>Sector(s)<input name="sectors" maxlength="500" placeholder="Ex.: saúde, administração, construção"></label>
+            <label>Província(s)<input name="provinces" maxlength="500" placeholder="Ex.: Luanda, Huíla"></label>
+            <label>Palavras-chave<input name="keywords" maxlength="500" placeholder="Ex.: técnico, estágio, licenciatura"></label>
+            <label>Número de WhatsApp<input name="whatsapp_number" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="+244 9XX XXX XXX" required></label>
+            <p class="wa-form-hint">Separa vários sectores, províncias ou termos por vírgulas. Dentro de cada campo basta corresponder a uma opção; os campos preenchidos combinam-se entre si. Um número angolano com 9 dígitos é guardado com o indicativo +244.</p>
+            <label class="wa-active-toggle"><input name="active" type="checkbox" checked> Activar estes alertas</label>
+            <label class="wa-consent"><input name="consent" type="checkbox" required><span>Autorizo o PULSO a guardar o meu número e a utilizá-lo para me enviar manualmente informações sobre oportunidades correspondentes. Sei que o número só fica visível para mim e para administradores autorizados e posso retirar esta autorização apagando o pedido.</span></label>
+            <div class="dashboard-feedback" id="whatsappAlertFeedback" role="status" aria-live="polite" hidden></div>
+            <div class="wa-form-actions"><button class="btn btn-primary" type="submit">Guardar preferências <span>→</span></button><button class="wa-delete-button" id="whatsappAlertDelete" type="button" hidden>Apagar o meu número e pedido</button></div>
+            <small class="wa-privacy-note" id="whatsappAlertState">Ainda não configuraste alertas WhatsApp.</small>
+          </form>
+          <aside class="wa-process-card"><span class="wa-process-icon">◉</span><span class="section-kicker">SEM ENVIO AUTOMÁTICO</span><h2>Tu defines. O PULSO encontra. A equipa envia.</h2><ol><li>Guardamos os teus critérios e o número com consentimento.</li><li>Quando surgir uma oportunidade publicada e verificada que corresponda, aparece na fila da equipa.</li><li>O administrador abre o WhatsApp com a mensagem pré-preenchida e envia manualmente.</li></ol><p>O PULSO não envia mensagens sem confirmação humana e não usa a API do WhatsApp.</p></aside>
+        </div>
+        <section class="dash-panel wa-admin-section" id="whatsappAdminSection" hidden>
+          <div class="panel-heading"><div><span class="section-kicker">ÁREA RESTRITA · ADMINISTRAÇÃO</span><h2>Pedidos e correspondências WhatsApp.</h2><p id="whatsappAdminSummary">A carregar…</p></div><button class="filter-reset" id="whatsappAdminRefresh" type="button">Actualizar fila ↻</button></div>
+          <div class="wa-admin-privacy-note">Esta área e os números de contacto são acessíveis apenas a administradores autorizados. O botão abre uma conversa; é necessário enviar a mensagem manualmente no WhatsApp e depois marcar o estado.</div>
+          <div class="wa-admin-queue" id="whatsappAdminQueue"><div class="empty-state"><b>A aguardar autorização administrativa…</b></div></div>
+        </section>
       </section>
 
       <section class="dash-view" data-panel="notifications" hidden>

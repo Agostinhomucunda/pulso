@@ -184,6 +184,7 @@ function activateView(view, { updateHash = true } = {}) {
   if (view === 'notifications') void loadNotifications({ poll: true });
   if (view === 'saved') void loadSavedOpportunities();
   if (view === 'alerts') void loadAlerts();
+  if (view === 'whatsapp-alerts') window.dispatchEvent(new CustomEvent('pulso:whatsapp-view'));
   if (view === 'admin' && isAdmin) {
     void loadAdminAssets();
     void loadAutomationAdmin();
@@ -302,7 +303,9 @@ async function loadAdminAccess() {
     .eq('user_id', currentUser.id).maybeSingle();
   if (error || !data) return;
   isAdmin = true;
+  window.__pulsoAdminAccess = true;
   $('#adminNavLink').hidden = false;
+  window.dispatchEvent(new CustomEvent('pulso:whatsapp-admin-access', { detail: { isAdmin: true } }));
   renderOpportunityLists();
   await loadAdminAssets();
   await loadAutomationAdmin();
@@ -1293,6 +1296,10 @@ async function initializeDashboard() {
       return;
     }
     currentUser = data.session.user;
+    window.__pulsoDashboardState = { client: supabaseClient, user: currentUser };
+    window.dispatchEvent(new CustomEvent('pulso:dashboard-ready', {
+      detail: { client: supabaseClient, user: currentUser },
+    }));
     supabaseClient.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) window.location.replace('./index.html');
       else {

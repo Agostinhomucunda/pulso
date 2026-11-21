@@ -12,6 +12,7 @@
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=20261121-16">
   <link rel="stylesheet" href="account-type-choice.css?v=20261121-02">
+  <link rel="stylesheet" href="whatsapp-alerts-home.css?v=20261121-01">
   <script type="module" src="app.js?v=20261121-04"></script>
 </head>
 <body>
@@ -31,7 +32,7 @@
       <a class="nav-link" href="#contacto">Contactos</a>
       <div class="nav-mobile-actions"><button class="btn btn-ghost" data-open="login" data-auth-state="signed-out">Entrar</button><button class="btn btn-yellow" data-open="register" data-auth-state="signed-out">Criar conta</button><button class="btn btn-ghost" data-open="account" data-auth-state="signed-in" hidden>A minha conta</button><button class="btn btn-outline-light" data-auth-signout data-auth-state="signed-in" hidden>Sair</button></div>
     </nav>
-    <div class="header-actions"><button class="icon-btn notification-trigger" aria-label="Notificações" data-open="notifications"><svg class="bell-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><button class="btn btn-outline-light" data-open="login" data-auth-state="signed-out">Entrar</button><button class="btn btn-yellow" data-open="register" data-auth-state="signed-out">Criar conta</button><button class="btn btn-outline-light" data-open="account" data-auth-state="signed-in" hidden>A minha conta</button><button class="btn btn-outline-light" data-auth-signout data-auth-state="signed-in" hidden>Sair</button></div>
+    <div class="header-actions"><button class="icon-btn notification-trigger" aria-label="Notificações" data-open="notifications"><svg class="bell-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><a class="btn btn-yellow whatsapp-alert-shortcut" href="./dashboard.html#whatsapp-alerts" data-auth-state="signed-in" hidden>Alertas WhatsApp <span aria-hidden="true">↗</span></a><button class="btn btn-outline-light" data-open="login" data-auth-state="signed-out">Entrar</button><button class="btn btn-yellow" data-open="register" data-auth-state="signed-out">Criar conta</button><button class="btn btn-outline-light" data-open="account" data-auth-state="signed-in" hidden>A minha conta</button><button class="btn btn-outline-light" data-auth-signout data-auth-state="signed-in" hidden>Sair</button></div>
   </header>
 
   <main>
