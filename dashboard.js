@@ -299,14 +299,34 @@ function importKey(value) {
 const IMPORT_FIELD_ALIASES = {
   title: ['title', 'titulo', 'nome', 'name', 'oportunidade', 'cargo'], category: ['category', 'categoria', 'tipo'], organization: ['organization', 'organizacao', 'entidade', 'empresa', 'organizationname'], official_website: ['officialwebsite', 'siteoficial', 'website', 'site'], source_url: ['sourceurl', 'linkdafonte', 'fonte', 'link', 'url', 'publicationurl'], application_url: ['applicationurl', 'candidatura', 'linkdacandidatura', 'applyurl'], province: ['province', 'provincia'], municipality: ['municipality', 'municipio'], application_deadline: ['applicationdeadline', 'prazo', 'deadline', 'datalimite'], description: ['description', 'descricao', 'detalhes', 'summary', 'resumo'], image_url: ['imageurl', 'imagem', 'fotografia', 'photo', 'image'], logo_url: ['logourl', 'logotipo', 'logo'], source_name: ['sourcename', 'nomedafonte'],
 };
-const IMPORT_CATEGORY_ALIASES = { emprego: 'employment', empregos: 'employment', job: 'employment', bolsa: 'scholarship', bolsas: 'scholarship', concurso: 'public_competition', concursos: 'public_competition', estagio: 'internship', estagios: 'internship', formacao: 'training', cursos: 'training', programa: 'recruitment_program', programas: 'recruitment_program' };
+const IMPORT_CATEGORY_ALIASES = {
+  emprego: 'employment', empregos: 'employment', trabalho: 'employment', vaga: 'employment', vagas: 'employment', job: 'employment', jobs: 'employment',
+  bolsa: 'scholarship', bolsas: 'scholarship', scholarship: 'scholarship', scholarships: 'scholarship',
+  concurso: 'public_competition', concursos: 'public_competition', concurso publico: 'public_competition', concursos publicos: 'public_competition',
+  estagio: 'internship', estagios: 'internship', internship: 'internship',
+  formacao: 'training', formações: 'training', formacao profissional: 'training', curso: 'training', cursos: 'training', training: 'training',
+  programa: 'recruitment_program', programas: 'recruitment_program', program: 'recruitment_program', programs: 'recruitment_program',
+};
+
+function normalizeImportCategory(value) {
+  const categoryKey = importKey(value);
+  if (IMPORT_CATEGORY_ALIASES[categoryKey]) return IMPORT_CATEGORY_ALIASES[categoryKey];
+  if (categoryKey.includes('bolsa') || categoryKey.includes('scholarship')) return 'scholarship';
+  if (categoryKey.includes('concurso') || categoryKey.includes('publiccompetition')) return 'public_competition';
+  if (categoryKey.includes('estagio') || categoryKey.includes('internship')) return 'internship';
+  if (categoryKey.includes('formac') || categoryKey.includes('curso') || categoryKey.includes('training')) return 'training';
+  if (categoryKey.includes('programa') || categoryKey.includes('recruitmentprogram')) return 'recruitment_program';
+  if (categoryKey.includes('emprego') || categoryKey.includes('trabalho') || categoryKey.includes('vaga') || categoryKey.includes('job')) return 'employment';
+  return Object.keys(CATEGORY_LABELS).includes(value) ? value : '';
+}
 
 function normalizeImportRecord(record) {
   const normalized = {}; const source = record && typeof record === 'object' ? record : {};
   Object.entries(IMPORT_FIELD_ALIASES).forEach(([field, aliases]) => { const found = Object.entries(source).find(([key]) => aliases.includes(importKey(key))); normalized[field] = String(found?.[1] ?? '').trim(); });
-  const categoryKey = importKey(normalized.category); normalized.category = IMPORT_CATEGORY_ALIASES[categoryKey] || (Object.keys(CATEGORY_LABELS).includes(normalized.category) ? normalized.category : 'employment');
+  normalized.category = normalizeImportCategory(normalized.category);
   normalized.source_name ||= normalized.organization; normalized.application_url ||= normalized.source_url;
-  normalized.valid = Boolean(normalized.title && normalized.organization && /^https:\/\//i.test(normalized.source_url)); normalized.issue = normalized.valid ? '' : 'Falta título, organização ou link HTTPS da fonte.';
+  normalized.valid = Boolean(normalized.title && normalized.organization && normalized.category && /^https:\/\//i.test(normalized.source_url));
+  normalized.issue = normalized.valid ? '' : (!normalized.category ? 'Categoria não reconhecida. Usa bolsa, emprego, concurso, estágio, formação ou programa.' : 'Falta título, organização ou link HTTPS da fonte.');
   return normalized;
 }
 
