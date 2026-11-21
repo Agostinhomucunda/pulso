@@ -66,7 +66,7 @@
       launchScreen.classList.add('pwa-launch-screen--leaving');
       launchScreen.setAttribute('aria-hidden', 'true');
       window.setTimeout(() => launchScreen.remove(), 500);
-    }, 1450);
+    }, 3500);
   }
 
   document.addEventListener('DOMContentLoaded', () => {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pulso-shell-v8';
+const CACHE_NAME = 'pulso-shell-v9';
 const SCOPE_URL = new URL(self.registration.scope);
 const CORE_FILES = [
   'index.html',
