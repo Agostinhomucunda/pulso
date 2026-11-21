@@ -106,10 +106,18 @@ dialog.account-type-modal::backdrop {
   place-items: center;
   margin-bottom: 15px;
   border-radius: 11px;
+  overflow: hidden;
   background: #edf4ff;
   color: #1655c5;
   font-size: 17px;
   font-weight: 800;
+}
+
+.account-type-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .account-type-option strong {
