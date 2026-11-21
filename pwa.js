@@ -1,5 +1,7 @@
 (() => {
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const INSTALLED_KEY = 'pulso-pwa-installed-v1';
+  const DISMISSED_KEY = 'pulso-pwa-install-dismissed-v1';
+  const displayMode = window.matchMedia('(display-mode: standalone)');
   let deferredInstallPrompt = null;
   let isOnline = navigator.onLine;
 
@@ -16,27 +18,82 @@
   retryButton.textContent = 'Verificar';
   networkBanner.append(networkCopy, retryButton);
 
+  const installCard = document.createElement('aside');
+  installCard.className = 'pwa-install-card';
+  installCard.setAttribute('aria-labelledby', 'pwaInstallTitle');
+  installCard.setAttribute('aria-live', 'polite');
+  installCard.hidden = true;
+
+  const installCardIcon = document.createElement('span');
+  installCardIcon.className = 'pwa-install-card-icon';
+  installCardIcon.setAttribute('aria-hidden', 'true');
+  installCardIcon.textContent = '↓';
+  const installCardContent = document.createElement('span');
+  installCardContent.className = 'pwa-install-card-content';
+  const installTitle = document.createElement('strong');
+  installTitle.id = 'pwaInstallTitle';
+  installTitle.textContent = 'Instalar aplicação PULSO';
+  const installDescription = document.createElement('span');
+  installDescription.className = 'pwa-install-description';
+  installDescription.textContent = 'Acesso rápido no teu telemóvel ou computador.';
+  const installInstructions = document.createElement('span');
+  installInstructions.className = 'pwa-install-instructions';
+  installInstructions.hidden = true;
+  installCardContent.append(installTitle, installDescription, installInstructions);
+
+  const installCardControls = document.createElement('span');
+  installCardControls.className = 'pwa-install-card-controls';
   const installButton = document.createElement('button');
   installButton.className = 'pwa-install-button';
   installButton.type = 'button';
-  installButton.textContent = 'Instalar PULSO';
-  installButton.hidden = true;
-
-  const installHelp = document.createElement('aside');
-  installHelp.className = 'pwa-install-help';
-  installHelp.setAttribute('role', 'status');
-  installHelp.hidden = true;
-  installHelp.innerHTML = '<span>Para instalar no iPhone ou iPad: toca em <b>Partilhar</b> e escolhe <b>Adicionar ao ecrã principal</b>.</span><button type="button" aria-label="Fechar instruções">×</button>';
-  installHelp.querySelector('button').addEventListener('click', () => { installHelp.hidden = true; });
+  installButton.textContent = 'Instalar aplicação';
+  const dismissButton = document.createElement('button');
+  dismissButton.className = 'pwa-install-dismiss';
+  dismissButton.type = 'button';
+  dismissButton.setAttribute('aria-label', 'Fechar aviso de instalação');
+  dismissButton.title = 'Fechar aviso';
+  dismissButton.textContent = '×';
+  installCardControls.append(installButton, dismissButton);
+  installCard.append(installCardIcon, installCardContent, installCardControls);
 
   document.addEventListener('DOMContentLoaded', () => {
-    document.body.append(networkBanner, installButton, installHelp);
+    document.body.append(networkBanner, installCard);
+    updateInstallUi();
   }, { once: true });
+
+  function safeStorageGet(storageName, key) {
+    try { return window[storageName].getItem(key); } catch { return null; }
+  }
+
+  function safeStorageSet(storageName, key, value) {
+    try { window[storageName].setItem(key, value); } catch { /* O armazenamento pode estar bloqueado pelo navegador. */ }
+  }
+
+  function isAppleMobile() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function isInstalled() {
+    const standalone = displayMode.matches || window.navigator.standalone === true;
+    if (standalone) safeStorageSet('localStorage', INSTALLED_KEY, '1');
+    return standalone || safeStorageGet('localStorage', INSTALLED_KEY) === '1';
+  }
+
+  function updateInstallUi() {
+    const installed = isInstalled();
+    const bell = document.getElementById('notificationBell');
+    if (bell) {
+      bell.classList.toggle('pwa-install-reminder', !installed);
+      bell.title = installed ? '' : 'Instala a aplicação PULSO';
+    }
+    const dismissed = safeStorageGet('sessionStorage', DISMISSED_KEY) === '1';
+    installCard.hidden = installed || dismissed || !isOnline;
+  }
 
   function showConnectionState(online) {
     isOnline = online;
     networkBanner.hidden = online;
-    installButton.hidden = online || (!deferredInstallPrompt && !isAppleMobile()) || standalone;
+    updateInstallUi();
   }
 
   async function checkConnection() {
@@ -58,8 +115,16 @@
     }
   }
 
-  function isAppleMobile() {
-    return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function showInstallInstructions() {
+    if (isAppleMobile()) {
+      installInstructions.textContent = 'No Safari: toca em Partilhar e escolhe “Adicionar ao ecrã principal”.';
+    } else if (/android/i.test(navigator.userAgent)) {
+      installInstructions.textContent = 'No menu ⋮ do navegador, escolhe “Instalar aplicação” ou “Adicionar ao ecrã principal”.';
+    } else {
+      installInstructions.textContent = 'No Chrome ou Edge, usa o ícone de instalação na barra de endereço ou a opção “Instalar aplicação” no menu.';
+    }
+    installInstructions.hidden = false;
+    installDescription.textContent = 'Segue estes passos para adicionar o PULSO ao teu dispositivo.';
   }
 
   retryButton.addEventListener('click', () => { void checkConnection(); });
@@ -68,27 +133,45 @@
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void checkConnection();
   });
+  if (displayMode.addEventListener) displayMode.addEventListener('change', updateInstallUi);
+  else displayMode.addListener?.(updateInstallUi);
 
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
     deferredInstallPrompt = event;
-    installButton.hidden = standalone || !isOnline;
+    updateInstallUi();
   });
   window.addEventListener('appinstalled', () => {
+    safeStorageSet('localStorage', INSTALLED_KEY, '1');
     deferredInstallPrompt = null;
-    installButton.hidden = true;
-    installHelp.hidden = true;
+    updateInstallUi();
   });
 
   installButton.addEventListener('click', async () => {
-    if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      const result = await deferredInstallPrompt.userChoice;
-      if (result?.outcome === 'accepted') installButton.hidden = true;
-      deferredInstallPrompt = null;
+    if (!deferredInstallPrompt) {
+      showInstallInstructions();
       return;
     }
-    if (isAppleMobile()) installHelp.hidden = false;
+    const promptEvent = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    try {
+      await promptEvent.prompt();
+      const choice = await promptEvent.userChoice;
+      if (choice?.outcome === 'accepted') {
+        installDescription.textContent = 'Confirma a instalação na janela apresentada pelo navegador.';
+      } else {
+        showInstallInstructions();
+      }
+    } catch {
+      showInstallInstructions();
+    }
+    updateInstallUi();
+  });
+
+  dismissButton.addEventListener('click', () => {
+    safeStorageSet('sessionStorage', DISMISSED_KEY, '1');
+    installCard.hidden = true;
+    // Dispensar o cartão não apaga o lembrete vermelho do sino.
   });
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
@@ -98,6 +181,7 @@
     }).catch(error => console.warn('PULSO PWA: service worker não registado.', error));
   }
 
+  updateInstallUi();
   void checkConnection();
   window.setInterval(() => {
     if (document.visibilityState === 'visible') void checkConnection();

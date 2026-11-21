@@ -5,3 +5,16 @@
 .pwa-install-help{bottom:calc(68px + env(safe-area-inset-bottom));width:min(430px,calc(100vw - 28px));font-size:11px}.pwa-install-help b{color:#ffdb72}
 @media(max-width:520px){.pwa-network-banner{font-size:11px}.pwa-install-button{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));min-height:40px}.pwa-install-help{bottom:calc(62px + env(safe-area-inset-bottom))}}
 @media(prefers-reduced-motion:reduce){.pwa-install-button{transition:none}}
+
+/* Lembrete de instalação persistente no sino e cartão de instalação dispensável. */
+.pwa-install-card{position:fixed;z-index:119;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:min(370px,calc(100vw - 24px));display:flex;align-items:flex-start;gap:11px;padding:14px 12px;border:1px solid #e1e8f4;border-radius:16px;background:#fff;color:#192c50;box-shadow:0 16px 42px #102d6226;font-family:'DM Sans',Arial,sans-serif}
+.pwa-install-card[hidden],.pwa-install-instructions[hidden]{display:none}
+.pwa-install-card-icon{width:34px;height:34px;display:grid;place-items:center;flex:none;border-radius:11px;background:#fff0f0;color:#dc3545;font-size:23px;font-weight:800;line-height:1}
+.pwa-install-card-content{display:grid;gap:4px;min-width:0;flex:1;padding-top:1px}.pwa-install-card-content strong{padding-right:20px;color:#18315f;font-size:12px;font-weight:800;line-height:1.35}.pwa-install-description,.pwa-install-instructions{color:#78849a;font-size:10px;line-height:1.5}.pwa-install-instructions{display:block;margin-top:4px;padding:7px 8px;border-radius:8px;background:#f2f6ff;color:#37517e}
+.pwa-install-card-controls{display:flex;align-items:center;gap:5px;flex:none}.pwa-install-card .pwa-install-button{position:static;z-index:auto;right:auto;bottom:auto;display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 10px;border:0;border-radius:9px;background:#0a57ed;color:#fff;font:800 9px 'DM Sans',Arial,sans-serif;white-space:nowrap;box-shadow:0 5px 12px #0a57ed25;cursor:pointer}.pwa-install-card .pwa-install-button:hover{background:#0849c8}
+.pwa-install-dismiss{position:absolute;top:5px;right:6px;width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:#77849a;font:500 20px/1 Arial,sans-serif;cursor:pointer}.pwa-install-dismiss:hover{background:#f0f3f9;color:#293b5c}
+.pwa-install-card .pwa-install-button:focus-visible,.pwa-install-dismiss:focus-visible,.pwa-network-banner button:focus-visible{outline:3px solid #ffcb55;outline-offset:2px}
+.dash-bell.pwa-install-reminder{border-color:#f0a0a0!important;color:#d82f3c!important;box-shadow:0 0 0 3px #e83e4b1b,0 3px 11px #e83e4b22!important}
+.dash-bell.pwa-install-reminder::after{content:"";position:absolute;left:-3px;bottom:-3px;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:#e53945;box-shadow:0 0 0 1px #e53945}
+@media(max-width:520px){.pwa-install-card{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:min(370px,calc(100vw - 24px));gap:8px;padding:12px 10px}.pwa-install-card-icon{width:30px;height:30px}.pwa-install-card .pwa-install-button{min-height:34px;padding:0 8px;font-size:8px}}
+@media(prefers-reduced-motion:reduce){.pwa-install-card .pwa-install-button,.pwa-install-dismiss,.pwa-network-banner button{transition:none}}
