@@ -360,3 +360,17 @@
   .dash-wa-shortcut>span{flex:none;font-size:15px}
 }
 @media(max-width:360px){.dash-topbar{gap:4px;padding-right:8px;padding-left:8px}.dash-top-actions{gap:4px}.browser-alert-btn{gap:4px;padding-right:5px;padding-left:5px;font-size:7px}.browser-alert-btn span{font-size:7px}.dash-wa-shortcut{width:32px;max-width:32px;min-height:34px}}
+
+/* Em telefone, reservar uma linha centrada para os dois sinos e WhatsApp. */
+@media(max-width:620px){
+  .dash-topbar{height:104px;min-height:104px;align-items:flex-start;flex-direction:column;justify-content:flex-start;gap:7px;padding:9px 13px}
+  .dash-brand{height:38px;flex:none}
+  .profile-anchor{position:absolute;top:11px;right:13px}
+  .dash-top-actions{width:100%;height:40px;flex:none;justify-content:center;gap:12px}
+  .browser-alert-btn{height:35px;padding:0 8px;font-size:8px}
+  .dash-bell{width:35px;height:35px;flex:none}
+  .dash-wa-shortcut{width:auto;max-width:none;min-width:0;height:35px;min-height:35px;flex:none;justify-content:center;gap:6px;padding:0 10px;overflow:visible;font-size:9px;white-space:nowrap}
+  .dash-wa-shortcut>span{font-size:14px}
+  .dash-layout{min-height:calc(100vh - 104px)}
+}
+@media(max-width:360px){.dash-top-actions{gap:8px}.dash-wa-shortcut{padding:0 8px;font-size:8px}.browser-alert-btn{padding:0 6px;font-size:7px}}
