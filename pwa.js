@@ -1,6 +1,6 @@
 (() => {
   const INSTALLED_KEY = 'pulso-pwa-installed-v1';
-  const DISMISSED_KEY = 'pulso-pwa-install-dismissed-v1';
+  const DISMISSED_KEY = 'pulso-pwa-install-dismissed-v2';
   const displayMode = window.matchMedia('(display-mode: standalone)');
   let deferredInstallPrompt = null;
   let isOnline = navigator.onLine;
@@ -139,6 +139,8 @@
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
     deferredInstallPrompt = event;
+    installButton.disabled = false;
+    installButton.textContent = 'Instalar aplicação';
     updateInstallUi();
   });
   window.addEventListener('appinstalled', () => {
@@ -158,9 +160,14 @@
       await promptEvent.prompt();
       const choice = await promptEvent.userChoice;
       if (choice?.outcome === 'accepted') {
-        installDescription.textContent = 'Confirma a instalação na janela apresentada pelo navegador.';
+        safeStorageSet('localStorage', INSTALLED_KEY, '1');
+        installInstructions.hidden = true;
+        updateInstallUi();
       } else {
-        showInstallInstructions();
+        installInstructions.hidden = true;
+        installDescription.textContent = 'A instalação não foi concluída. Podes tentar mais tarde.';
+        installButton.disabled = true;
+        installButton.textContent = 'Tenta mais tarde';
       }
     } catch {
       showInstallInstructions();

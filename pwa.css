@@ -18,3 +18,8 @@
 .dash-bell.pwa-install-reminder::after{content:"";position:absolute;left:-3px;bottom:-3px;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:#e53945;box-shadow:0 0 0 1px #e53945}
 @media(max-width:520px){.pwa-install-card{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:min(370px,calc(100vw - 24px));gap:8px;padding:12px 10px}.pwa-install-card-icon{width:30px;height:30px}.pwa-install-card .pwa-install-button{min-height:34px;padding:0 8px;font-size:8px}}
 @media(prefers-reduced-motion:reduce){.pwa-install-card .pwa-install-button,.pwa-install-dismiss,.pwa-network-banner button{transition:none}}
+
+/* O lembrete fica no topo, abaixo do cabeçalho, sem tapar a navegação. */
+.pwa-install-card{top:calc(88px + env(safe-area-inset-top));bottom:auto;max-height:calc(100vh - 100px);overflow:auto}
+.pwa-install-card .pwa-install-button:disabled{opacity:.62;box-shadow:none;cursor:not-allowed}
+@media(max-width:620px){.pwa-install-card{top:calc(76px + env(safe-area-inset-top));bottom:auto;max-height:calc(100dvh - 88px)}}
