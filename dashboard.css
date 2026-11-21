@@ -339,3 +339,9 @@
 .gmail-icon svg,.whatsapp-icon svg{width:23px;height:23px;display:block;overflow:visible;filter:drop-shadow(0 2px 1px #172f6024)}
 .whatsapp-icon svg{fill:none;stroke:currentColor;stroke-width:.8;stroke-linecap:round;stroke-linejoin:round}
 .support-contact-card:hover .gmail-icon,.support-contact-card:hover .whatsapp-icon{transform:perspective(180px) rotateX(2deg) rotateY(0) translateY(-3px);box-shadow:0 7px 0 #102e6b15,0 14px 18px #152b4e24}
+
+/* O título principal ocupa o espaço do antigo indicador de ligação. */
+.overview-section-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,auto);align-items:center;gap:20px}
+.overview-section-copy p{margin:6px 0 0;color:#7a87a0;font-size:10px;line-height:1.5}
+.overview-title-right{max-width:330px;margin:0!important;color:#1b2b4c;font:800 clamp(18px,2vw,22px)/1.2 'Manrope',sans-serif;letter-spacing:-.55px;text-align:right;overflow-wrap:anywhere}
+@media(max-width:620px){.overview-section-heading{display:flex;align-items:flex-start;flex-direction:column;gap:7px;margin:24px 0 13px}.overview-title-right{max-width:100%;font-size:17px;line-height:1.3;text-align:left}.overview-section-copy p{max-width:350px;font-size:9px;line-height:1.5}}
