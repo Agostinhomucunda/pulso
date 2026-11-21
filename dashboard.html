@@ -13,6 +13,12 @@
   <link rel="stylesheet" href="whatsapp-alerts.css?v=20261121-01">
   <script type="module" src="dashboard.js?v=20261121-07"></script>
   <script type="module" src="whatsapp-alerts.js?v=20261121-01"></script>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./assets/pwa-icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="PULSO">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="./pwa.css?v=20261121-01">
 </head>
 <body class="dashboard-body">
   <header class="dash-topbar">
@@ -237,5 +243,6 @@
 
   <dialog class="opportunity-dialog" id="opportunityDialog" aria-labelledby="detailTitle"><button class="detail-close" id="detailClose" type="button" aria-label="Fechar detalhe">×</button><div id="opportunityDetail"></div></dialog>
   <div class="dash-toast" id="dashboardToast" role="status" aria-live="polite"></div>
+  <script src="./pwa.js?v=20261121-01" defer></script>
 </body>
 </html>
