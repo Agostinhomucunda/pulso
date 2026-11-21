@@ -324,3 +324,12 @@
 /* Classificação e visualizações das oportunidades. */
 .op-rating,.op-views{display:inline-flex;align-items:center;gap:2px;white-space:nowrap}.op-rating{color:#c4ccd9;font-weight:800}.op-rating .rating-star{border:0;background:transparent;padding:0;color:#d8dee8;font-size:10px;line-height:1}.op-rating .rating-star.active{color:#f2b51d;text-shadow:0 1px 0 #fff1a0}.op-rating>b{margin-left:3px;color:#536987;font-size:8px}.op-rating small{color:#8b98ac;font-size:8px}.op-views{color:#8793a8;font-size:8px}.detail-rating{display:grid;gap:6px;margin:14px 0;padding:13px;border:1px solid #e2eafa;border-radius:12px;background:#f8faff;color:#526887;font-size:10px}.detail-rating>b{color:#294572;font-size:10px}.detail-rating .rating-star{border:0;background:transparent;padding:0 2px;color:#d7dee9;font-size:20px;line-height:1;cursor:pointer}.detail-rating .rating-star.active{color:#f2b51d;text-shadow:0 1px 0 #fff0a0}.detail-rating small{color:#8b97aa;font-size:8px}
 
+
+/* Mantém o computador dentro do cartão e afastado do texto em ecrãs de computador. */
+@media (min-width: 621px) {
+  .dashboard-device-video {
+    right: 34px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
