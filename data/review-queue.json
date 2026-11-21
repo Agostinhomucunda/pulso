@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T00:01:01.647821+00:00",
+  "generated_at": "2026-11-21T07:18:12.131658+00:00",
   "items": [
     {
       "id": "auto-eff3c897c327d6d2a0ca",
@@ -39,11 +39,6 @@
       "source_id": "angop",
       "url": "https://angop.ao/sitemap.xml/",
       "error": "[Errno 104] Connection reset by peer"
-    },
-    {
-      "source_id": "jornal-de-angola",
-      "url": "https://jornaldeangola.ao/noticias/3/sociedade",
-      "error": "The read operation timed out"
     },
     {
       "source_id": "us-embassy-luanda",
