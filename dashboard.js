@@ -1132,6 +1132,14 @@ function showConnectionError(message) {
   $('#dashboardLoading').innerHTML = `<span class="loading-orbit"></span><b>${escapeHtml(message)}</b><small>Não foi possível confirmar a tua sessão com o Supabase.</small><a class="back-home-link" href="./index.html">Voltar à página inicial</a>`;
 }
 
+function withTimeout(promise, milliseconds, message) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(() => reject(new Error(message)), milliseconds);
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+}
+
 function bindEvents() {
   $$('[data-view]').forEach(button => button.addEventListener('click', () => activateView(button.dataset.view)));
   $('#profileMenuButton').addEventListener('click', () => {
@@ -1226,11 +1234,19 @@ function bindEvents() {
 
 async function initializeDashboard() {
   try {
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+    const { createClient } = await withTimeout(
+      import('https://esm.sh/@supabase/supabase-js@2'),
+      15000,
+      'O serviço de ligação demorou demasiado tempo a responder.',
+    );
     supabaseClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true, flowType: 'pkce' },
     });
-    const { data, error } = await supabaseClient.auth.getSession();
+    const { data, error } = await withTimeout(
+      supabaseClient.auth.getSession(),
+      15000,
+      'A sessão demorou demasiado tempo a responder.',
+    );
     if (error) throw error;
     if (!data.session?.user) {
       window.location.replace('./index.html?from=dashboard');
@@ -1246,7 +1262,10 @@ async function initializeDashboard() {
     });
     const hashView = location.hash.slice(1);
     const firstView = $(`[data-panel="${hashView}"]`) ? hashView : 'overview';
-    await Promise.allSettled([loadProfile(), loadStats(), loadOpportunities(), loadSavedOpportunities(), loadAlerts(), loadNotifications(), loadAdminAccess()]);
+    void Promise.allSettled([
+      loadProfile(), loadStats(), loadOpportunities(), loadSavedOpportunities(),
+      loadAlerts(), loadNotifications(), loadAdminAccess(),
+    ]);
     updateIdentity();
     updateBrowserAlertButtons();
     $('#dashboardLoading').hidden = true;
