@@ -55,6 +55,7 @@ function renderEntries(){
   if(!filtered.length){const title=entries.length?'Não encontrámos oportunidades com estes critérios.':'Ainda não há oportunidades publicadas.';const detail=entries.length?'Experimenta outra pesquisa ou categoria.':'As oportunidades aparecerão aqui depois de serem verificadas e publicadas.';list.innerHTML=`<div class="empty-state"><b>${esc(title)}</b>${esc(detail)}</div>`;$('#resultsNote').textContent=searchTerm?`0 resultados para “${esc(searchTerm)}”`:'';return}
   list.innerHTML=filtered.map(item=>{
     const org=organizationName(item);const image=safeUrl(item.image_url);
+    const logo=safeUrl(item.organization?.logo_url);const mark=logo?`<img src="${esc(logo)}" alt="" loading="lazy">`:esc(initials(org));
     const deadline=dateLabel(item.application_deadline);const published=dateLabel(item.published_at);
     const metadata=[deadline?`Candidaturas até ${esc(deadline)}`:null,published?`Publicado ${esc(published)}`:null].filter(Boolean);
     const source=safeUrl(item.source_url);
