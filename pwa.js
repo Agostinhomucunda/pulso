@@ -1,6 +1,6 @@
 (() => {
   const INSTALLED_KEY = 'pulso-pwa-installed-v1';
-  const DISMISSED_KEY = 'pulso-pwa-install-dismissed-v2';
+  const DISMISSED_KEY = 'pulso-pwa-install-dismissed-v3';
   const displayMode = window.matchMedia('(display-mode: standalone)');
   let deferredInstallPrompt = null;
   let isOnline = navigator.onLine;
@@ -20,6 +20,7 @@
 
   const installCard = document.createElement('aside');
   installCard.className = 'pwa-install-card';
+  installCard.id = 'pwaInstallNotice';
   installCard.setAttribute('aria-labelledby', 'pwaInstallTitle');
   installCard.setAttribute('aria-live', 'polite');
   installCard.hidden = true;
@@ -32,10 +33,10 @@
   installCardContent.className = 'pwa-install-card-content';
   const installTitle = document.createElement('strong');
   installTitle.id = 'pwaInstallTitle';
-  installTitle.textContent = 'Instalar aplicação PULSO';
+  installTitle.textContent = 'Acesso rápido ao PULSO';
   const installDescription = document.createElement('span');
   installDescription.className = 'pwa-install-description';
-  installDescription.textContent = 'Acesso rápido no teu telemóvel ou computador.';
+  installDescription.textContent = 'Se quiseres, instala a aplicação no teu dispositivo. O site continua disponível no navegador.';
   const installInstructions = document.createElement('span');
   installInstructions.className = 'pwa-install-instructions';
   installInstructions.hidden = true;
@@ -57,8 +58,14 @@
   installCard.append(installCardIcon, installCardContent, installCardControls);
 
   document.addEventListener('DOMContentLoaded', () => {
-    document.body.prepend(installCard, networkBanner);
+    document.body.append(networkBanner);
+    const notificationList = document.getElementById('notificationList');
+    if (notificationList?.parentElement) notificationList.parentElement.insertBefore(installCard, notificationList);
     updateInstallUi();
+    const notificationView = document.querySelector('[data-panel="notifications"]');
+    if (notificationView) {
+      new MutationObserver(updateInstallUi).observe(notificationView, { attributes: true, attributeFilter: ['hidden'] });
+    }
   }, { once: true });
 
   function safeStorageGet(storageName, key) {
@@ -87,7 +94,9 @@
       bell.title = installed ? '' : 'Instala a aplicação PULSO';
     }
     const dismissed = safeStorageGet('sessionStorage', DISMISSED_KEY) === '1';
-    installCard.hidden = installed || dismissed || !isOnline;
+    const notificationView = document.querySelector('[data-panel="notifications"]');
+    const notificationsOpen = Boolean(notificationView && !notificationView.hidden);
+    installCard.hidden = installed || dismissed || !isOnline || !notificationsOpen;
   }
 
   function showConnectionState(online) {
@@ -124,7 +133,7 @@
       installInstructions.textContent = 'No Chrome ou Edge, usa o ícone de instalação na barra de endereço ou a opção “Instalar aplicação” no menu.';
     }
     installInstructions.hidden = false;
-    installDescription.textContent = 'Segue estes passos para adicionar o PULSO ao teu dispositivo.';
+    installDescription.textContent = 'Este navegador não permite instalar directamente pelo botão. Podes adicionar o PULSO pelo menu de partilha ou do navegador.';
   }
 
   retryButton.addEventListener('click', () => { void checkConnection(); });
