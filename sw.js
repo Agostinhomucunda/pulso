@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pulso-shell-v7';
+const CACHE_NAME = 'pulso-shell-v8';
 const SCOPE_URL = new URL(self.registration.scope);
 const CORE_FILES = [
   'index.html',
@@ -20,8 +20,8 @@ const CORE_FILES = [
   'account-type-choice.js',
   'whatsapp-alerts.js',
   'supabase-config.js',
-  'assets/pwa-icon-192.png',
-  'assets/pwa-icon-512.png',
+  'assets/pwa-icon-192-v2.png',
+  'assets/pwa-icon-512-v2.png',
   'assets/pulso-mark-3d-small.png',
   'assets/luanda-hero.jpg'
 ];
@@ -59,7 +59,9 @@ function isSameOriginStatic(url) {
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(CORE_FILES.map(path => new URL(path, SCOPE_URL).href));
+    // Ignore the browser HTTP cache so a new app shell cannot reinstall stale files.
+    const coreRequests = CORE_FILES.map(path => new Request(new URL(path, SCOPE_URL), { cache: 'reload' }));
+    await cache.addAll(coreRequests);
     await self.skipWaiting();
   })());
 });

@@ -57,7 +57,20 @@
   installCardControls.append(installButton, dismissButton);
   installCard.append(installCardIcon, installCardContent, installCardControls);
 
+  function showLaunchScreen() {
+    const launchScreen = document.getElementById('pwaLaunchScreen');
+    if (!launchScreen || !(displayMode.matches || window.navigator.standalone === true)) return;
+    launchScreen.classList.add('pwa-launch-screen--visible');
+    launchScreen.setAttribute('aria-hidden', 'false');
+    window.setTimeout(() => {
+      launchScreen.classList.add('pwa-launch-screen--leaving');
+      launchScreen.setAttribute('aria-hidden', 'true');
+      window.setTimeout(() => launchScreen.remove(), 500);
+    }, 1450);
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    showLaunchScreen();
     document.body.append(networkBanner);
     const notificationList = document.getElementById('notificationList');
     if (notificationList?.parentElement) notificationList.parentElement.insertBefore(installCard, notificationList);

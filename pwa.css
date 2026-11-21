@@ -32,3 +32,26 @@
   .pwa-install-dismiss{width:25px;height:25px}
 }
 @media(prefers-reduced-motion:reduce){.pwa-install-card .pwa-install-button,.pwa-install-dismiss,.pwa-network-banner button{transition:none}}
+
+/* Ecrã de entrada visível apenas quando o PULSO abre como aplicação instalada. */
+.pwa-launch-screen{display:none;position:fixed;inset:0;z-index:20000;overflow:hidden;place-items:center;isolation:isolate;color:#f4f8ff;background:radial-gradient(ellipse at 50% 42%,#143b76 0%,#0b2854 28%,transparent 60%),linear-gradient(150deg,#040d1d 0%,#071a38 48%,#0b2450 100%);opacity:1;transition:opacity .46s ease,visibility .46s ease}
+.pwa-launch-screen--visible{display:grid}
+@media(display-mode:standalone){.pwa-launch-screen{display:grid}}
+.pwa-launch-screen::before,.pwa-launch-screen::after{content:"";position:absolute;z-index:-1;left:50%;top:44%;width:min(88vw,420px);aspect-ratio:1;border:1px solid #8dc1ff18;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 28px #5ba5ff08,0 0 0 62px #5ba5ff05;animation:pwa-launch-orbit 18s linear infinite}
+.pwa-launch-screen::after{width:min(68vw,320px);border-color:#f0c96a24;box-shadow:0 0 34px #2973d91b;animation-duration:13s;animation-direction:reverse}
+.pwa-launch-screen__content{display:grid;justify-items:center;gap:0;padding:24px;text-align:center;transform:translateY(-2vh);animation:pwa-launch-arrive .75s cubic-bezier(.2,.75,.25,1) both}
+.pwa-launch-screen__emblem{position:relative;display:grid;width:112px;height:112px;margin-bottom:27px;place-items:center;border:1px solid #a8ccff52;border-radius:34px;background:linear-gradient(145deg,#ffffff18,#7faeff0b);box-shadow:0 18px 52px #0005,inset 0 1px #ffffff20,0 0 40px #3184ff28}
+.pwa-launch-screen__emblem::before{content:"";position:absolute;inset:-8px;border:1px solid #88baff28;border-radius:40px;animation:pwa-launch-pulse 2.4s ease-in-out infinite}
+.pwa-launch-screen__emblem img{display:block;width:88px;height:88px;object-fit:contain;filter:drop-shadow(0 7px 15px #00133480)}
+.pwa-launch-screen__wordmark{display:block;margin-right:-.22em;color:#f5f8ff;font:300 28px/1.15 'DM Sans',Inter,Arial,sans-serif;letter-spacing:.22em;text-indent:.22em}
+.pwa-launch-screen__wordmark span{color:#eacb7a}
+.pwa-launch-screen__tagline{margin-top:11px;color:#a9bfdc;font:600 9px/1.4 'DM Sans',Inter,Arial,sans-serif;letter-spacing:.24em}
+.pwa-launch-screen__loading{display:flex;align-items:center;gap:10px;margin-top:46px;color:#d4e3f6;font:500 12px/1.4 'DM Sans',Inter,Arial,sans-serif;letter-spacing:.025em}
+.pwa-launch-screen__spinner{width:18px;height:18px;flex:none;border:2px solid #ffffff28;border-right-color:#e9c873;border-top-color:#8dc4ff;border-radius:50%;animation:pwa-launch-spin .8s linear infinite}
+.pwa-launch-screen__location{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom));left:0;width:100%;color:#7894ba;font:700 8px/1 'DM Sans',Inter,Arial,sans-serif;letter-spacing:.3em;text-align:center}
+.pwa-launch-screen--leaving{opacity:0;visibility:hidden;pointer-events:none}
+@keyframes pwa-launch-spin{to{transform:rotate(360deg)}}
+@keyframes pwa-launch-orbit{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes pwa-launch-pulse{50%{transform:scale(1.055);opacity:.45}}
+@keyframes pwa-launch-arrive{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(-2vh) scale(1)}}
+@media(prefers-reduced-motion:reduce){.pwa-launch-screen,.pwa-launch-screen__content{transition:none;animation:none}.pwa-launch-screen::before,.pwa-launch-screen::after,.pwa-launch-screen__emblem::before,.pwa-launch-screen__spinner{animation:none}}
