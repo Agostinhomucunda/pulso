@@ -43,6 +43,7 @@ const portalApp = $('#portalApp');
 const requestedFlow = new URLSearchParams(window.location.search).get('flow');
 const requestedView = requestedFlow === 'partnership' ? 'partnership' : 'business';
 const hasRequestedFlow = requestedFlow === 'business' || requestedFlow === 'partnership';
+const requestedPanel = new URLSearchParams(window.location.search).get('view') === 'requests' ? 'requests' : null;
 let currentUser = null;
 let authUpdateInProgress = false;
 let initialViewApplied = false;
@@ -70,7 +71,8 @@ function setSessionView(user) {
   $('#accountEmail').textContent = currentUser.email || 'Conta PULSO';
   if (!initialViewApplied) {
     initialViewApplied = true;
-    if (hasRequestedFlow) switchView(requestedView);
+    if (requestedPanel) switchView(requestedPanel);
+    else if (hasRequestedFlow) switchView(requestedView);
   }
 }
 
@@ -277,7 +279,13 @@ function formatDate(value) {
   }
 }
 
-function renderBusinessCard(request, documents) {
+function renderStatusHistory(items) {
+  if (!items.length) return '<small class="request-meta">Ainda não há alterações anteriores registadas.</small>';
+  const labels = { ...BUSINESS_STATUSES, ...PARTNERSHIP_STATUSES };
+  return `<div class="request-status-history"><b>Histórico do processo</b>${items.map((item) => `<div><span>${escapeHtml(item.previous_status ? labels[item.previous_status] || item.previous_status : 'Pedido recebido')} → ${escapeHtml(labels[item.new_status] || item.new_status)}</span><small>${escapeHtml(formatDate(item.changed_at))}${item.status_note ? ` · ${escapeHtml(item.status_note)}` : ''}</small></div>`).join('')}</div>`;
+}
+
+function renderBusinessCard(request, documents, history) {
   const status = messageForStatus(request.status, BUSINESS_STATUSES);
   const docs = documents.filter((document) => document.request_id === request.id);
   const latestByType = new Map();
@@ -316,25 +324,30 @@ function renderBusinessCard(request, documents) {
     ${request.status_note ? `<div class="request-note">${escapeHtml(request.status_note)}</div>` : ''}
     <div class="document-checklist" aria-label="Estado dos documentos">${checklist}</div>
     ${docRows ? `<div class="document-list">${docRows}</div>` : '<p class="request-meta">Ainda não foram enviados documentos.</p>'}
+    ${renderStatusHistory(history.filter((item) => item.request_id === request.id))}
     ${uploadForm}
   </article>`;
 }
 
-function renderPartnershipCard(request) {
+function renderPartnershipCard(request, history) {
   const status = messageForStatus(request.status, PARTNERSHIP_STATUSES);
   return `<article class="request-card">
     <div class="request-card-top"><div><h3>${escapeHtml(request.organization_name)}</h3><div class="request-meta">Pedido de parceria · ${escapeHtml(formatDate(request.created_at))}</div></div><span class="status-badge" data-status="${escapeHtml(request.status)}">${escapeHtml(status)}</span></div>
     ${request.status_note ? `<div class="request-note">${escapeHtml(request.status_note)}</div>` : ''}
+    <div class="request-meta">${escapeHtml(request.collaboration_type)} · ${escapeHtml([request.municipality, request.province].filter(Boolean).join(', '))}</div>
+    <p class="request-meta">${escapeHtml(request.activity_description)} · Motivo: ${escapeHtml(request.collaboration_reason)}</p>
+    ${request.status === 'approved' ? '<a class="button button-secondary" href="./parceiro-dashboard.html">Abrir espaço Parceiro PULSO →</a>' : ''}
+    ${renderStatusHistory(history.filter((item) => item.request_id === request.id))}
   </article>`;
 }
 
 function renderFutureSpaces(businessRequests, partnershipRequests) {
   const spaces = [];
   if (businessRequests.some((request) => request.status === 'verified')) {
-    spaces.push('<article class="future-space" data-kind="verified"><b>Conta empresarial verificada · Espaço preparado</b><p>O pedido foi aprovado por revisão documental. O dashboard empresarial será desenvolvido numa fase futura; esta aprovação não resulta de uma consulta automática a registo oficial.</p></article>');
+    spaces.push('<article class="future-space" data-kind="verified"><b>Conta empresarial verificada</b><p>A aprovação resulta de revisão documental humana. As oportunidades continuam sujeitas a moderação.</p><a class="button button-secondary" href="./empresa-dashboard.html">Abrir dashboard empresarial →</a></article>');
   }
   if (partnershipRequests.some((request) => request.status === 'approved')) {
-    spaces.push('<article class="future-space" data-kind="partner"><b>Parceiro PULSO · Espaço preparado</b><p>Este estatuto confirma a aprovação da parceria e não representa uma empresa legalmente verificada. O espaço de parceiro será desenvolvido numa fase futura.</p></article>');
+    spaces.push('<article class="future-space" data-kind="partner"><b>Parceiro PULSO · Parceria aprovada</b><p>Este estatuto não representa verificação empresarial legal. As permissões de submissão são concedidas separadamente.</p><a class="button button-secondary" href="./parceiro-dashboard.html">Abrir dashboard de parceiro →</a></article>');
   }
   if (businessRequests.some((request) => ['under_review', 'additional_documents_requested'].includes(request.status))) {
     spaces.push('<article class="future-space" data-kind="pending"><b>Pedido empresarial em análise</b><p>O estado e eventuais pedidos de documentos aparecem abaixo. O acesso empresarial permanece reservado até decisão autorizada.</p></article>');
@@ -351,16 +364,19 @@ async function refreshRequests() {
   hideFeedback(feedback);
   const list = $('#requestList');
   list.innerHTML = '<div class="empty-state">A consultar os seus pedidos…</div>';
-  const [businessResult, partnershipResult, documentResult] = await Promise.all([
+  const [businessResult, partnershipResult, documentResult, historyResult] = await Promise.all([
     supabase.from('business_verification_requests')
       .select('id,legal_name,trade_name,status,status_note,created_at')
       .eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(50),
     supabase.from('partnership_requests')
-      .select('id,organization_name,status,status_note,created_at')
+      .select('id,organization_name,activity_description,collaboration_type,collaboration_reason,province,municipality,status,status_note,created_at,submitted_at')
       .eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(50),
     supabase.from('business_verification_documents')
       .select('id,request_id,user_id,document_type,original_filename,storage_path,replaces_document_id,status,review_note,uploaded_at')
-      .eq('user_id', currentUser.id).order('uploaded_at', { ascending: false }).limit(200)
+      .eq('user_id', currentUser.id).order('uploaded_at', { ascending: false }).limit(200),
+    supabase.from('organizational_account_status_history')
+      .select('id,request_type,request_id,user_id,previous_status,new_status,status_note,changed_at')
+      .eq('user_id', currentUser.id).order('changed_at', { ascending: false }).limit(200)
   ]);
 
   const errors = [businessResult.error, partnershipResult.error, documentResult.error].filter(Boolean);
@@ -373,14 +389,16 @@ async function refreshRequests() {
   const businessRequests = businessResult.data || [];
   const partnershipRequests = partnershipResult.data || [];
   const documents = documentResult.data || [];
+  const history = historyResult?.data || [];
+  if (historyResult?.error) console.warn('PULSO organizational status history is unavailable; apply the stage 2 migration.', historyResult.error.message);
   await Promise.all(documents.map(async (document) => {
     const { data } = await supabase.storage.from(BUCKET).createSignedUrl(document.storage_path, 120);
     document.fileUrl = data?.signedUrl || '';
   }));
   renderFutureSpaces(businessRequests, partnershipRequests);
   const cards = [
-    ...businessRequests.map((request) => renderBusinessCard(request, documents)),
-    ...partnershipRequests.map(renderPartnershipCard)
+    ...businessRequests.map((request) => renderBusinessCard(request, documents, history)),
+    ...partnershipRequests.map((request) => renderPartnershipCard(request, history))
   ];
   list.innerHTML = cards.length
     ? cards.join('')

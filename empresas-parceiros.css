@@ -4,3 +4,5 @@
 @media(max-width:430px){.form-grid{grid-template-columns:1fr}.field-wide{grid-column:1}.portal-tabs{gap:6px}.portal-tab{padding:9px 11px;font-size:9px}.request-card-top{flex-direction:column}.status-badge{align-self:flex-start}.document-row{align-items:flex-start}.document-row a,.document-row button{flex:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
 [hidden]{display:none!important}
+
+.request-status-history{display:grid;gap:7px;margin:13px 0;padding:12px;border:1px solid #e8edf5;border-radius:11px;background:#fbfcff}.request-status-history>b{color:#31558c;font:800 10px Manrope,sans-serif}.request-status-history>div{display:grid;gap:4px;padding-left:9px;border-left:2px solid #cbdaf5}.request-status-history span{color:#334866;font-size:9px;font-weight:800}.request-status-history small{color:#7d8aa1;font-size:8px;line-height:1.5}
