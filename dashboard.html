@@ -8,7 +8,7 @@
   <title>O teu painel — PULSO</title>
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=20261120-15">
-  <link rel="stylesheet" href="dashboard.css?v=20261121-03">
+  <link rel="stylesheet" href="dashboard.css?v=20261121-04">
   <link rel="stylesheet" href="automation.css?v=20261120-20">
   <script type="module" src="dashboard.js?v=20261121-05"></script>
 </head>
@@ -47,6 +47,7 @@
       <nav class="dash-navigation">
         <button class="dash-nav-link active" type="button" data-view="overview"><span>⌂</span> Painel inicial</button>
         <button class="dash-nav-link" type="button" data-view="opportunities"><span>▤</span> Oportunidades</button>
+        <button class="dash-nav-link" type="button" data-view="publications"><span>✦</span> Publicações</button>
         <button class="dash-nav-link" type="button" data-view="saved"><span>♡</span> Guardadas <span class="nav-count" id="savedNavCount">0</span></button>
         <button class="dash-nav-link" type="button" data-view="alerts"><span>⌁</span> Os meus alertas</button>
         <button class="dash-nav-link" type="button" data-view="notifications"><span>♧</span> Notificações <span class="nav-count nav-alert-count" id="notificationNavCount" hidden>0</span></button>
@@ -109,6 +110,19 @@
       <section class="dash-view" data-panel="saved" hidden>
         <div class="page-intro"><span class="section-kicker">A TUA LISTA PESSOAL</span><h1>Oportunidades guardadas.</h1><p>Os teus favoritos ficam associados à conta e disponíveis quando voltares.</p></div>
         <div class="dashboard-opportunity-list" id="savedOpportunityList"><div class="empty-state"><b>A carregar guardadas…</b></div></div>
+      </section>
+
+      <section class="dash-view" data-panel="publications" hidden>
+        <div class="page-intro"><span class="section-kicker">GUIAS PULSO</span><h1>Publicações para o teu próximo passo.</h1><p>Informação simples para te ajudar a interpretar oportunidades, preparar candidaturas e consultar fontes com mais segurança.</p></div>
+        <div class="publication-intro-card"><span class="publication-intro-icon">✦</span><div><b>Informação que acompanha a oportunidade.</b><p>As publicações são conteúdos educativos. Não substituem a fonte oficial nem representam uma candidatura aberta.</p></div></div>
+        <div class="publication-grid">
+          <article class="publication-card"><span class="publication-card-icon">01</span><span class="publication-type">GUIA DE CANDIDATURA</span><h2>Como preparar uma candidatura a uma bolsa</h2><p>Uma sequência prática para leres os requisitos, reunires documentos e confirmares o prazo antes de enviar.</p><span class="publication-read">Ler guia <span>→</span></span></article>
+          <article class="publication-card"><span class="publication-card-icon">02</span><span class="publication-type">DOCUMENTOS</span><h2>O que deves ter pronto antes de te candidatares</h2><p>Organiza certificados, identificação, currículo e outros documentos para não perderes tempo quando surgir uma oportunidade.</p><span class="publication-read">Ler guia <span>→</span></span></article>
+          <article class="publication-card"><span class="publication-card-icon">03</span><span class="publication-type">CATEGORIAS</span><h2>Emprego, estágio ou formação: qual é a diferença?</h2><p>Entende o que distingue cada tipo de oportunidade e escolhe melhor aquilo que corresponde ao teu momento.</p><span class="publication-read">Ler guia <span>→</span></span></article>
+          <article class="publication-card"><span class="publication-card-icon">04</span><span class="publication-type">FONTES OFICIAIS</span><h2>Como reconhecer uma fonte segura</h2><p>Aprende a verificar a entidade anunciante, o endereço da página e os sinais que ajudam a evitar informação duvidosa.</p><span class="publication-read">Ler guia <span>→</span></span></article>
+          <article class="publication-card"><span class="publication-card-icon">05</span><span class="publication-type">CURRÍCULO</span><h2>Pequenos ajustes que melhoram o teu currículo</h2><p>Apresenta as tuas competências de forma clara e adapta o currículo ao tipo de oportunidade que procuras.</p><span class="publication-read">Ler guia <span>→</span></span></article>
+          <article class="publication-card"><span class="publication-card-icon">06</span><span class="publication-type">SEGURANÇA</span><h2>Antes de clicar: confirma estes detalhes</h2><p>Uma lista curta para confirmares o prazo, a candidatura e a origem da publicação antes de partilhares os teus dados.</p><span class="publication-read">Ler guia <span>→</span></span></article>
+        </div>
       </section>
 
       <section class="dash-view" data-panel="alerts" hidden>
