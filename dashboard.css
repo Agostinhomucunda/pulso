@@ -393,3 +393,6 @@
   .dash-layout{min-height:calc(100vh - 67px)}
 }
 @media(max-width:375px){.dash-brand>span{display:none}.dash-topbar{gap:4px}.dash-top-actions{gap:4px}.browser-alert-btn{padding:0 4px;font-size:7px}.browser-alert-btn span{font-size:7px}.dash-wa-shortcut{gap:3px;padding:0 5px;font-size:7px}}
+
+/* Evita que a regra da folha WhatsApp quebre o rótulo no cabeçalho móvel. */
+@media(max-width:620px){.dash-top-actions .dash-wa-shortcut{width:auto;max-width:none;white-space:nowrap;line-height:normal;text-align:center}}
