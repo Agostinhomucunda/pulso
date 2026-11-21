@@ -109,6 +109,27 @@ function categoryIcon(category) {
 function categoryAsset(category) {
   return CATEGORY_ASSETS[category] || CATEGORY_ASSETS.recruitment_program;
 }
+function ratingMarkup(item, interactive = false) {
+  const score = Math.max(3, Math.min(5, Number(item.rating_score || 3)));
+  const rounded = Math.round(score);
+  const stars = '★★★★★'.split('').map((star, index) => interactive
+    ? `<button class="rating-star ${index < rounded ? 'active' : ''}" type="button" data-rate-opportunity="${escapeHtml(item.id)}" data-rating="${index + 1}" aria-label="Classificar com ${index + 1} estrelas">${star}</button>`
+    : `<span class="rating-star ${index < rounded ? 'active' : ''}">${star}</span>`).join('');
+  return `<span class="op-rating" title="Classificação média ${score.toFixed(1)} em 5">${stars}<b>${score.toFixed(1)}</b>${Number(item.rating_count || 0) ? `<small>(${Number(item.rating_count)})</small>` : ''}</span><span class="op-views">◉ ${Number(item.views_count || 200).toLocaleString('pt-AO')} visualizações</span>`;
+}
+
+async function recordView(id) {
+  const { error } = await supabaseClient.rpc('record_opportunity_view', { p_opportunity_id: id });
+  if (error) console.warn('PULSO view counter unavailable', error.message);
+}
+
+async function rateOpportunity(id, rating) {
+  const { data, error } = await supabaseClient.rpc('rate_opportunity', { p_opportunity_id: id, p_rating: rating });
+  if (error) { notify('Não foi possível guardar a classificação. Tenta novamente.'); return; }
+  const item = opportunities.find(row => row.id === id) || savedRows.find(row => row.id === id);
+  if (item && data?.[0]) { item.rating_score = data[0].rating_score; item.rating_count = data[0].rating_count; renderOpportunityLists(); renderOpportunityDetail(item); }
+  notify('A tua classificação foi contabilizada na média.');
+}
 
 function organizationRecord(item) {
   const value = item?.organization;
@@ -210,7 +231,7 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
     <div class="dash-op-content">
       <h3>${escapeHtml(item.title)} <img class="verified-check-img" src="assets/logos/verified-3d.png" alt="Oportunidade verificada" title="Oportunidade verificada"></h3>
       <span class="dash-op-org">${escapeHtml(org)}</span>
-      <div class="dash-op-meta"><span class="dash-op-category"><img class="category-3d-img" src="${categoryAsset(item.category)}" alt="" aria-hidden="true">${escapeHtml(categoryLabel(item.category))}</span>${meta}</div>
+      <div class="dash-op-meta"><span class="dash-op-category"><img class="category-3d-img" src="${categoryAsset(item.category)}" alt="" aria-hidden="true">${escapeHtml(categoryLabel(item.category))}</span>${meta}${ratingMarkup(item)}</div>
     </div>
     <div class="dash-op-actions">
       ${isAdmin ? `<button class="dash-op-delete" type="button" data-delete-opportunity="${id}">Eliminar</button>` : ''}
@@ -797,7 +818,7 @@ async function loadOpportunities({ append = false } = {}) {
   const from = append ? opportunitiesOffset : 0;
   const to = from + PAGE_SIZE - 1;
   const { data, error } = await supabaseClient.from('opportunities')
-    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(id,name,logo_url,logo_source_url)')
+    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
     .eq('status', 'published').eq('verification_status', 'verified')
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false }).range(from, to);
@@ -820,7 +841,7 @@ async function loadSavedOpportunities() {
   const target = $('#savedOpportunityList');
   target.innerHTML = '<div class="empty-state"><b>A carregar oportunidades guardadas…</b></div>';
   const { data, error } = await supabaseClient.from('saved_opportunities')
-    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(id,name,logo_url,logo_source_url))')
+    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url))')
     .eq('user_id', currentUser.id).order('created_at', { ascending: false });
   if (error) {
     console.error('PULSO dashboard saved items failed', error);
@@ -1015,7 +1036,7 @@ async function openOpportunity(id) {
   let item = opportunities.find(row => row.id === id) || savedRows.find(row => row.id === id);
   if (!item) {
     const { data, error } = await supabaseClient.from('opportunities')
-      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,organization:organizations(id,name,logo_url,logo_source_url)')
+      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
       .eq('id', id).eq('status', 'published').eq('verification_status', 'verified').maybeSingle();
     if (error || !data) {
       notify('Esta oportunidade já não está disponível.');
@@ -1023,6 +1044,7 @@ async function openOpportunity(id) {
     }
     item = data;
   }
+  void recordView(id);
   renderOpportunityDetail(item);
 }
 
@@ -1038,7 +1060,7 @@ function renderOpportunityDetail(item) {
     <div class="detail-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> OPORTUNIDADE VERIFICADA</div>
     <h2 id="detailTitle">${escapeHtml(item.title)}</h2>
     <p>${escapeHtml(organizationName(item))} · ${escapeHtml(place)}</p>
-    <div class="detail-meta"><span class="detail-pill">${escapeHtml(categoryLabel(item.category))}</span>${item.application_deadline ? `<span class="detail-pill">Candidaturas até ${escapeHtml(formatDate(item.application_deadline))}</span>` : ''}</div>
+    <div class="detail-meta"><span class="detail-pill">${escapeHtml(categoryLabel(item.category))}</span>${item.application_deadline ? `<span class="detail-pill">Candidaturas até ${escapeHtml(formatDate(item.application_deadline))}</span>` : ''}</div><div class="detail-rating"><b>Classificação da oportunidade</b><div>${ratingMarkup(item, true)}</div><small>As avaliações dos utilizadores formam uma média.</small></div>
     ${details.length ? `<div class="detail-description">${details.map(escapeHtml).join('\n\n')}</div>` : ''}
     <div class="detail-source"><b>Fonte:</b> ${escapeHtml(item.source_name || organizationName(item))}${source ? ` · <a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir publicação original ↗</a>` : ''}</div>
     <div class="detail-links">${apply ? `<a href="${escapeHtml(apply)}" target="_blank" rel="noopener noreferrer">Aceder à candidatura <span>↗</span></a>` : ''}${source ? `<a class="secondary-link" href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Ver fonte original</a>` : ''}<button class="dash-op-save ${savedIds.has(item.id) ? 'saved' : ''}" type="button" data-save-opportunity="${escapeHtml(item.id)}">${savedIds.has(item.id) ? '♥ Remover dos guardados' : '♡ Guardar oportunidade'}</button></div>
@@ -1223,12 +1245,14 @@ function bindEvents() {
     const save = event.target.closest('[data-save-opportunity]');
     const remove = event.target.closest('[data-delete-opportunity]');
     const detail = event.target.closest('[data-detail-opportunity]');
+    const rating = event.target.closest('[data-rate-opportunity]');
     const read = event.target.closest('[data-read-notification]');
     const notificationOpportunity = event.target.closest('[data-notification-opportunity]');
     const retry = event.target.closest('[data-retry-opportunities]');
     const card = event.target.closest('[data-opportunity]');
     if (save) void toggleSavedOpportunity(save.dataset.saveOpportunity);
     if (remove) void deleteAdminOpportunity(remove.dataset.deleteOpportunity);
+    if (rating) void rateOpportunity(rating.dataset.rateOpportunity, Number(rating.dataset.rating));
     if (detail) void openOpportunity(detail.dataset.detailOpportunity);
     if (!save && !remove && !detail && card) void openOpportunity(card.dataset.opportunity);
     if (read) void markNotificationRead(read.dataset.readNotification);
