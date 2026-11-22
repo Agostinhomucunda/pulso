@@ -55,6 +55,9 @@ let automationSources = [];
 let businessSubmissions = [];
 let smartImportRows = [];
 let selectedAvatar = 'male';
+let communityPosts = [];
+let communityLikes = new Set();
+const COMMUNITY_CATEGORY_LABELS = { employment: 'Emprego', service: 'Serviço', informal_work: 'Trabalho informal', sale: 'Venda', training: 'Formação', other: 'Outro' };
 let opportunitiesOffset = 0;
 let opportunitiesHaveMore = false;
 let toastTimer;
@@ -191,6 +194,7 @@ function activateView(view, { updateHash = true } = {}) {
   if (updateHash) history.replaceState(null, '', `#${view}`);
   if (view === 'notifications') void loadNotifications({ poll: true });
   if (view === 'saved') void loadSavedOpportunities();
+  if (view === 'publications') void loadCommunityPosts();
   if (view === 'alerts') void loadAlerts();
   if (view === 'whatsapp-alerts') window.dispatchEvent(new CustomEvent('pulso:whatsapp-view'));
   if (view === 'admin' && isAdmin) {
@@ -227,6 +231,98 @@ function updateIdentity() {
   $('#profileForm [name="municipality"]').value = profile.municipality || '';
   $('#profileForm [name="professional_area"]').value = profile.professional_area || '';
   $('#profileForm [name="education_level"]').value = profile.education_level || '';
+}
+
+function normalizeAngolaPhone(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (/^9\d{8}$/.test(digits)) return `244${digits}`;
+  if (/^2449\d{8}$/.test(digits)) return digits;
+  return '';
+}
+
+function communityCategoryLabel(value) { return COMMUNITY_CATEGORY_LABELS[value] || 'Outro'; }
+
+function communityAvatar(author) {
+  const key = avatarKey(author?.preferences?.avatar);
+  return `<span class="community-author-avatar"><img src="${AVATAR_ASSETS[key]}" alt="Avatar de ${escapeHtml(author?.full_name || 'utilizador')}"></span>`;
+}
+
+function renderCommunityPost(post) {
+  const author = post.author || {};
+  const place = [post.neighborhood, post.municipality, post.province].filter(Boolean).map(escapeHtml).join(' · ');
+  const comments = (post.comments || []).slice(0, 3).map(comment => `<div class="community-comment"><b>${escapeHtml(comment.author?.full_name || 'Utilizador')}:</b> ${escapeHtml(comment.body)}</div>`).join('');
+  const phone = normalizeAngolaPhone(post.phone);
+  const whatsapp = normalizeAngolaPhone(post.whatsapp);
+  return `<article class="community-post-card" data-community-post="${escapeHtml(post.id)}">
+    <div class="community-post-author">${communityAvatar(author)}<span class="community-author-copy"><b>${escapeHtml(author.full_name || 'Utilizador PULSO')}</b><small>${escapeHtml(formatDateTime(post.created_at))}</small></span><span class="community-post-badge">${escapeHtml(communityCategoryLabel(post.category))}</span></div>
+    <div><span class="community-post-type">${escapeHtml(post.type_label)}</span><h3>${escapeHtml(post.title)}</h3></div>
+    <p class="community-post-description">${escapeHtml(post.description)}</p>
+    <div class="community-post-meta"><span>⌖ ${place}</span><span>▣ ${escapeHtml(post.work_location)}</span></div>
+    <div class="community-post-contacts">${whatsapp ? `<a class="community-contact-button whatsapp" href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Olá ${author.full_name || ''}, vi a tua publicação no PULSO: ${post.title}`)}" target="_blank" rel="noopener noreferrer">◉ WhatsApp</a>` : ''}${phone ? `<a class="community-contact-button phone" href="tel:+${phone}">☎ Ligar</a>` : ''}</div>
+    <div class="community-post-stats"><button class="community-like-button ${communityLikes.has(post.id) ? 'liked' : ''}" type="button" data-community-like="${escapeHtml(post.id)}">${communityLikes.has(post.id) ? '♥' : '♡'} Gostar · ${safeCount(post.likes_count)}</button><span>◉ ${safeCount(post.views_count)} visualizações</span><span>▱ ${safeCount(post.comments_count)} comentários</span></div>
+    <div class="community-comments">${comments || '<small class="community-comment">Ainda não há comentários. Sê o primeiro a pedir mais informações.</small>'}<form class="community-comment-form" data-community-comment-form="${escapeHtml(post.id)}"><input name="body" maxlength="600" placeholder="Pedir mais informações…" required><button type="submit">Enviar</button></form></div>
+  </article>`;
+}
+
+async function loadCommunityPosts() {
+  const target = $('#communityPostList');
+  if (!target || !supabaseClient) return;
+  target.innerHTML = '<div class="empty-state community-empty"><b>A carregar publicações da comunidade…</b></div>';
+  const result = await supabaseClient.from('community_posts').select('id,author_id,title,category,type_label,description,work_location,neighborhood,municipality,province,phone,whatsapp,likes_count,comments_count,views_count,created_at').eq('status', 'active').order('created_at', { ascending: false }).limit(40);
+  if (result.error) { console.error('PULSO community feed failed', result.error); target.innerHTML = '<div class="empty-state community-empty"><b>Não foi possível carregar o feed comunitário.</b>Tenta novamente dentro de instantes.</div>'; return; }
+  communityPosts = result.data || [];
+  const ids = communityPosts.map(item => item.id);
+  const authors = [...new Set(communityPosts.map(item => item.author_id))];
+  const [profilesResult, commentsResult, likesResult] = await Promise.all([
+    authors.length ? supabaseClient.from('profiles').select('id,full_name,preferences,province').in('id', authors) : { data: [], error: null },
+    ids.length ? supabaseClient.from('community_post_comments').select('id,post_id,author_id,body,created_at').in('post_id', ids).order('created_at', { ascending: false }).limit(120) : { data: [], error: null },
+    currentUser && ids.length ? supabaseClient.from('community_post_likes').select('post_id').eq('user_id', currentUser.id).in('post_id', ids) : { data: [], error: null },
+  ]);
+  const profiles = new Map((profilesResult.data || []).map(item => [item.id, item]));
+  const commentAuthors = [...new Set((commentsResult.data || []).map(item => item.author_id))];
+  const commentProfiles = commentAuthors.length ? await supabaseClient.from('profiles').select('id,full_name').in('id', commentAuthors) : { data: [] };
+  const commentNames = new Map((commentProfiles.data || []).map(item => [item.id, item]));
+  const comments = (commentsResult.data || []).map(item => ({ ...item, author: commentNames.get(item.author_id) }));
+  communityLikes = new Set((likesResult.data || []).map(item => item.post_id));
+  communityPosts = communityPosts.map(item => ({ ...item, author: profiles.get(item.author_id), comments: comments.filter(comment => comment.post_id === item.id).reverse() }));
+  target.innerHTML = communityPosts.length ? communityPosts.map(renderCommunityPost).join('') : '<div class="empty-state community-empty"><b>Ainda não há publicações comunitárias.</b>Usa “+ Publicar” para partilhar a primeira.</div>';
+}
+
+async function recordCommunityView(id) {
+  const { data, error } = await supabaseClient.rpc('record_community_post_view', { p_post_id: id });
+  if (!error && data != null) { const post = communityPosts.find(item => item.id === id); if (post) post.views_count = Number(data); }
+}
+
+async function toggleCommunityLike(id) {
+  if (!currentUser) { notify('Inicia sessão para gostar de uma publicação.'); return; }
+  const { data, error } = await supabaseClient.rpc('toggle_community_post_like', { p_post_id: id });
+  if (error) { notify('Não foi possível actualizar o gosto. Tenta novamente.'); return; }
+  const post = communityPosts.find(item => item.id === id);
+  if (post && data?.[0]) { post.likes_count = data[0].likes_count; data[0].liked ? communityLikes.add(id) : communityLikes.delete(id); $('#communityPostList').innerHTML = communityPosts.map(renderCommunityPost).join(''); }
+}
+
+async function addCommunityComment(event) {
+  event.preventDefault();
+  if (!currentUser) { notify('Inicia sessão para comentar.'); return; }
+  const form = event.currentTarget; const body = String(new FormData(form).get('body') || '').trim(); const postId = form.dataset.communityCommentForm;
+  if (!body) return;
+  const { error } = await supabaseClient.from('community_post_comments').insert({ post_id: postId, author_id: currentUser.id, body });
+  if (error) { notify('Não foi possível publicar o comentário.'); return; }
+  notify('Comentário publicado.'); await loadCommunityPosts();
+}
+
+async function createCommunityPost(event) {
+  event.preventDefault();
+  const form = event.currentTarget; const feedback = $('#communityFormFeedback'); const values = new FormData(form);
+  const phone = normalizeAngolaPhone(values.get('phone')); const whatsapp = normalizeAngolaPhone(values.get('whatsapp'));
+  if (!phone || !whatsapp) { setFeedback(feedback, 'Indica números angolanos válidos com 9 dígitos ou indicativo +244.', 'error'); return; }
+  const submit = $('button[type="submit"]', form); submit.disabled = true;
+  try {
+    const payload = { author_id: currentUser.id, title: String(values.get('title')).trim(), category: values.get('category'), type_label: String(values.get('type_label')).trim(), description: String(values.get('description')).trim(), work_location: String(values.get('work_location')).trim(), neighborhood: String(values.get('neighborhood')).trim(), municipality: String(values.get('municipality') || '').trim() || null, province: String(values.get('province')).trim(), phone, whatsapp };
+    const { error } = await supabaseClient.from('community_posts').insert(payload); if (error) throw error;
+    form.reset(); $('#communityComposer').hidden = true; setFeedback(feedback, '', 'success'); notify('Publicação comunitária criada.'); await loadCommunityPosts();
+  } catch (error) { console.error('PULSO community post create failed', error); setFeedback(feedback, error.message?.includes('phone') ? 'Confirma os números de contacto.' : 'Não foi possível publicar. Verifica os campos e tenta novamente.', 'error'); }
+  finally { submit.disabled = false; }
 }
 
 function renderOpportunityCard(item, { savedPage = false } = {}) {
@@ -1359,6 +1455,15 @@ function bindEvents() {
   $('#notificationBell').addEventListener('click', () => activateView('notifications'));
   $('#signOutButton').addEventListener('click', () => void signOut());
   $('#alertForm').addEventListener('submit', createAlert);
+  $('#communityPostForm').addEventListener('submit', createCommunityPost);
+  $('#openCommunityComposer').addEventListener('click', () => { $('#communityComposer').hidden = false; $('#communityComposer').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  $('#closeCommunityComposer').addEventListener('click', () => { $('#communityComposer').hidden = true; });
+  $('#refreshCommunityPosts').addEventListener('click', () => void loadCommunityPosts());
+  $('#communityPostList').addEventListener('submit', addCommunityComment);
+  $('#communityPostList').addEventListener('click', event => {
+    const like = event.target.closest('[data-community-like]');
+    if (like) void toggleCommunityLike(like.dataset.communityLike);
+  });
   $('#profileForm').addEventListener('submit', saveProfile);
   $$('[data-avatar-choice]').forEach(input => input.addEventListener('change', () => {
     selectedAvatar = avatarKey(input.value);
@@ -1424,10 +1529,10 @@ function bindEvents() {
     if (remove) void deleteAdminOpportunity(remove.dataset.deleteOpportunity);
     if (rating) void rateOpportunity(rating.dataset.rateOpportunity, Number(rating.dataset.rating));
     if (detail) void openOpportunity(detail.dataset.detailOpportunity);
-    if (!save && !remove && !detail && card) void openOpportunity(card.dataset.opportunity);
     if (read) void markNotificationRead(read.dataset.readNotification);
     if (notificationOpportunity) void openOpportunity(notificationOpportunity.dataset.notificationOpportunity);
     if (retry) void loadOpportunities();
+    if (card && !save && !remove && !detail && !card.closest('.community-post-card')) void openOpportunity(card.dataset.opportunity);
   });
   $('#detailClose').addEventListener('click', () => $('#opportunityDialog').close());
   $('#opportunityDialog').addEventListener('click', event => {
@@ -1478,7 +1583,7 @@ async function initializeDashboard() {
     const firstView = $(`[data-panel="${hashView}"]`) ? hashView : 'overview';
     void Promise.allSettled([
       loadProfile(), loadStats(), loadOpportunities(), loadSavedOpportunities(),
-      loadAlerts(), loadNotifications(), loadAdminAccess(), loadWorkspaceSwitcher(),
+      loadAlerts(), loadNotifications(), loadCommunityPosts(), loadAdminAccess(), loadWorkspaceSwitcher(),
     ]);
     updateIdentity();
     updateBrowserAlertButtons();

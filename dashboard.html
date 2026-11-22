@@ -9,9 +9,10 @@
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=20261121-18">
   <link rel="stylesheet" href="dashboard.css?v=20261122-01">
+  <link rel="stylesheet" href="community.css?v=20261122-01">
   <link rel="stylesheet" href="automation.css?v=20261120-20">
   <link rel="stylesheet" href="whatsapp-alerts.css?v=20261121-04">
-  <script type="module" src="dashboard.js?v=20261122-02"></script>
+  <script type="module" src="dashboard.js?v=20261122-03"></script>
   <script type="module" src="whatsapp-alerts.js?v=20261121-04"></script>
   <link rel="manifest" href="./manifest.webmanifest?v=20261121-07">
   <link rel="apple-touch-icon" href="./assets/pwa-icon-192-v2.png">
@@ -123,8 +124,13 @@
       </section>
 
       <section class="dash-view" data-panel="publications" hidden>
-        <div class="page-intro"><span class="section-kicker">GUIAS PULSO</span><h1>Publicações para o teu próximo passo.</h1><p>Informação simples para te ajudar a interpretar oportunidades, preparar candidaturas e consultar fontes com mais segurança.</p></div>
-        <div class="publication-intro-card"><span class="publication-intro-icon">✦</span><div><b>Informação que acompanha a oportunidade.</b><p>As publicações são conteúdos educativos. Não substituem a fonte oficial nem representam uma candidatura aberta.</p></div></div>
+        <div class="page-intro community-page-intro"><div><span class="section-kicker">PUBLICAÇÕES PULSO</span><h1>Oportunidades da comunidade.</h1><p>Partilha trabalhos, serviços e oportunidades locais. Esta área é independente do catálogo oficial verificado.</p></div><button class="btn btn-primary" type="button" id="openCommunityComposer">+ Publicar</button></div>
+        <section class="community-composer dash-panel" id="communityComposer" hidden>
+          <div class="panel-heading"><div><span class="section-kicker">NOVA PUBLICAÇÃO</span><h2>O que tens para partilhar?</h2><p>Usa um título claro, indica a zona e deixa um contacto directo.</p></div><button class="filter-reset" type="button" id="closeCommunityComposer">Fechar</button></div>
+          <form id="communityPostForm"><div class="community-form-grid"><label>Título da publicação<input name="title" maxlength="140" placeholder="Ex.: Procura-se babá para criança" required></label><label>Categoria<select name="category"><option value="employment">Emprego</option><option value="service">Serviço</option><option value="informal_work">Trabalho informal</option><option value="sale">Venda</option><option value="training">Formação</option><option value="other">Outro</option></select></label><label>Tipo de trabalho / oportunidade<input name="type_label" maxlength="80" placeholder="Ex.: Babá, pedreiro, explicador…" required></label><label>Local de trabalho<input name="work_location" maxlength="160" placeholder="Ex.: Casa particular, mercado, loja…" required></label><label>Bairro<input name="neighborhood" maxlength="120" placeholder="Ex.: Benfica" required></label><label>Município<input name="municipality" maxlength="100" placeholder="Ex.: Belas"></label><label>Província<input name="province" maxlength="80" placeholder="Ex.: Luanda" required></label><label>Contacto telefónico<input name="phone" type="tel" inputmode="tel" maxlength="24" placeholder="+244 9XX XXX XXX" required></label><label>Contacto WhatsApp<input name="whatsapp" type="tel" inputmode="tel" maxlength="24" placeholder="+244 9XX XXX XXX" required></label><label class="community-wide">Descrição<textarea name="description" rows="5" maxlength="3000" placeholder="Explica o trabalho, condições, horário ou como pedir mais informações…" required></textarea></label></div><p class="form-hint">Números angolanos: podes escrever 9 dígitos ou usar +244. A publicação começa com uma contagem de visualizações de 200 a 1.000, de forma variável.</p><div class="dashboard-feedback" id="communityFormFeedback" role="status" aria-live="polite" hidden></div><button class="btn btn-primary" type="submit">Publicar na comunidade <span>→</span></button></form>
+        </section>
+        <section class="community-feed-section"><div class="panel-heading"><div><span class="section-kicker">FEED LOCAL</span><h2>Publicações recentes.</h2></div><button class="filter-reset" type="button" id="refreshCommunityPosts">Actualizar ↻</button></div><div class="community-post-list" id="communityPostList"><div class="empty-state"><b>A carregar publicações da comunidade…</b></div></div></section>
+        <section class="publication-guides"><div class="publication-intro-card"><span class="publication-intro-icon">✦</span><div><b>Guias PULSO</b><p>Informação educativa para interpretar oportunidades e preparar candidaturas. Não substitui a fonte oficial.</p></div></div>
         <div class="publication-grid">
           <article class="publication-card"><img class="publication-image" src="assets/publications/escola-angola.webp" alt="Alunos numa sala de aula em Angola"><div class="publication-card-body"><span class="publication-type publication-alert">ESCOLA · ACTUALIZAÇÃO</span><h2>O que acompanhar no início do ano escolar</h2><p>Fica atento aos avisos da escola, aos prazos de matrícula, aos documentos pedidos e aos canais oficiais de informação.</p><span class="publication-read">Ver informação <span>→</span></span></div></article>
           <article class="publication-card"><img class="publication-image" src="assets/publications/estudantes-estudo.jpg" alt="Estudantes a estudar juntos"><div class="publication-card-body"><span class="publication-type">BOLSAS · PREPARAÇÃO</span><h2>Como preparar uma candidatura a uma bolsa</h2><p>Lê os requisitos com antecedência, reúne os documentos e confirma sempre o prazo e a página oficial da candidatura.</p><span class="publication-read">Ler guia <span>→</span></span></div></article>
@@ -133,6 +139,7 @@
           <article class="publication-card"><img class="publication-image" src="assets/publications/estudantes-estudo.jpg" alt="Jovens estudantes a preparar trabalhos"><div class="publication-card-body"><span class="publication-type">PREPARAÇÃO · CARREIRA</span><h2>Emprego, estágio ou formação?</h2><p>Percebe as diferenças entre cada oportunidade e escolhe a opção mais adequada ao teu momento de estudo e carreira.</p><span class="publication-read">Ler explicação <span>→</span></span></div></article>
           <article class="publication-card"><img class="publication-image" src="assets/publications/escola-angola.webp" alt="Turma numa escola"><div class="publication-card-body"><span class="publication-type">DICAS · CANDIDATURA</span><h2>Antes de enviares uma candidatura</h2><p>Confirma o prazo, guarda uma cópia do que enviaste e usa apenas os links indicados pela organização responsável.</p><span class="publication-read">Ver checklist <span>→</span></span></div></article>
         </div>
+        </section>
       </section>
 
       <section class="dash-view" data-panel="alerts" hidden>
