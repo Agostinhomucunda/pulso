@@ -370,15 +370,15 @@ async function addCommunityComment(event) {
 
 async function createCommunityPost(event) {
   event.preventDefault();
-  const form = event.currentTarget; const feedback = $('#communityFormFeedback'); const values = new FormData(form);
+  const form = event.currentTarget; const values = new FormData(form);
   const description = String(values.get('description') || '').trim();
-  if (!description) { setFeedback(feedback, 'Escreve o texto da publicação.', 'error'); return; }
+  if (!description) return;
   const submit = $('button[type="submit"]', form); submit.disabled = true;
   try {
     const payload = { author_id: currentUser.id, title: 'Publicação da comunidade', category: 'other', type_label: 'Publicação', description, work_location: null, neighborhood: null, municipality: null, province: null };
     const { error } = await supabaseClient.from('community_posts').insert(payload); if (error) throw error;
-    form.reset(); $('#communityComposer').hidden = true; setFeedback(feedback, '', 'success'); notify('Publicação comunitária criada.'); await loadCommunityPosts();
-  } catch (error) { console.error('PULSO community post create failed', error); setFeedback(feedback, 'Não foi possível publicar agora. Tenta novamente.', 'error'); }
+    form.reset(); $('#communityComposer').hidden = true; notify('Publicação comunitária criada.'); await loadCommunityPosts();
+  } catch (error) { console.error('PULSO community post create failed', error); }
   finally { submit.disabled = false; }
 }
 
