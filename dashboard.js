@@ -284,6 +284,37 @@ function renderOpportunityLists() {
   $('#provinceOptions').innerHTML = provinces.map(value => `<option value="${escapeHtml(value)}"></option>`).join('');
 }
 
+async function loadWorkspaceSwitcher() {
+  const target = $('#workspaceSwitcher');
+  if (!target || !currentUser) return;
+  try {
+    const [business, partner] = await Promise.all([
+      supabaseClient.from('business_verification_requests').select('id,status,created_at')
+        .eq('user_id', currentUser.id).order('created_at', { ascending: false })
+        .order('id', { ascending: false }).limit(1),
+      supabaseClient.from('partnership_requests').select('id,status,created_at')
+        .eq('user_id', currentUser.id).order('created_at', { ascending: false })
+        .order('id', { ascending: false }).limit(1),
+    ]);
+    if (business.error) throw business.error;
+    if (partner.error) throw partner.error;
+    const links = [];
+    if (business.data?.[0]?.status === 'verified') {
+      links.push('<a href="./empresa-dashboard.html">Painel empresarial <span>→</span></a>');
+    }
+    if (partner.data?.[0]?.status === 'approved') {
+      links.push('<a href="./parceiro-dashboard.html">Painel parceiro <span>→</span></a>');
+    }
+    target.innerHTML = links.length
+      ? `<small>Trocar de espaço</small>${links.join('')}`
+      : '';
+    target.hidden = links.length === 0;
+  } catch (error) {
+    target.hidden = true;
+    console.warn('PULSO workspace switcher could not verify access', error.message);
+  }
+}
+
 async function loadProfile() {
   const { data, error } = await supabaseClient.from('profiles')
     .select('id,full_name,province,municipality,professional_area,education_level,preferences')
@@ -1319,7 +1350,7 @@ async function initializeDashboard() {
     const firstView = $(`[data-panel="${hashView}"]`) ? hashView : 'overview';
     void Promise.allSettled([
       loadProfile(), loadStats(), loadOpportunities(), loadSavedOpportunities(),
-      loadAlerts(), loadNotifications(), loadAdminAccess(),
+      loadAlerts(), loadNotifications(), loadAdminAccess(), loadWorkspaceSwitcher(),
     ]);
     updateIdentity();
     updateBrowserAlertButtons();

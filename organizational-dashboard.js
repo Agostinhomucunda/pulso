@@ -14,6 +14,9 @@ const dateLabel = value => {
 const BUSINESS_LABELS = { under_review:'Em análise', additional_documents_requested:'Documentação adicional solicitada', verified:'Verificada', rejected:'Rejeitada', suspended:'Suspensa' };
 const PARTNER_LABELS = { received:'Recebido', under_review:'Em análise', additional_information_requested:'Informação adicional solicitada', approved:'Parceria aprovada', rejected:'Rejeitada', suspended:'Suspensa' };
 const OPPORTUNITY_LABELS = { draft:'Rascunho', pending_review:'Em análise', rejected:'Rejeitada', published:'Publicada', expired:'Expirada' };
+const OPPORTUNITY_IMAGE_BUCKET = 'pulso-opportunity-submissions';
+const MAX_OPPORTUNITY_IMAGE_SIZE = 3 * 1024 * 1024;
+const OPPORTUNITY_IMAGE_TYPES = new Map([['image/jpeg','jpg'],['image/png','png'],['image/webp','webp']]);
 const CATEGORY_LABELS = { employment:'Empregos', scholarship:'Bolsas', public_competition:'Concursos', internship:'Estágios', training:'Formações', recruitment_program:'Programas', other:'Outras oportunidades' };
 const loading = $('#orgLoading');
 const workspace = $('#orgWorkspace');
@@ -42,6 +45,84 @@ function historyMarkup(items, formatter) {
   if (!items.length) return '<div class="org-empty">O histórico aparecerá aqui após a primeira actualização.</div>';
   return `<div class="org-history">${items.map(item => `<article class="org-history-item"><b>${esc(formatter(item))}</b><small>${esc(dateLabel(item.changed_at))}</small>${item.note ? `<p>${esc(item.note)}</p>` : ''}</article>`).join('')}</div>`;
 }
+function safeHttpsUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+function entityInitials(value) {
+  return String(value || 'PULSO').trim().split(/\s+/).slice(0, 2)
+    .map(part => part[0] || '').join('').toLocaleUpperCase('pt-AO') || 'P';
+}
+function entityAvatarMarkup(name, logoUrl) {
+  const logo = safeHttpsUrl(logoUrl);
+  return `<span class="org-avatar" aria-hidden="true">${logo ? `<img src="${esc(logo)}" alt="">` : `<span>${esc(entityInitials(name))}</span>`}</span>`;
+}
+function submissionFormMarkup(canSubmit, entityName, request) {
+  if (!canSubmit) {
+    return '<div class="org-card"><h2>Submissão ainda não autorizada</h2><p>O estatuto de parceiro não concede automaticamente permissão para publicar. Contacta a equipa PULSO ou aguarda a autorização do administrador.</p></div>';
+  }
+  return `<form class="org-card" id="orgSubmissionForm">
+    <div class="org-field-grid">
+      <label class="org-field">Título<input name="title" maxlength="180" required></label>
+      <label class="org-field">Categoria<select name="category" required>${Object.entries(CATEGORY_LABELS).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label>
+      <label class="org-field">Entidade responsável<input name="source_name" maxlength="180" value="${entityName}" required></label>
+      <label class="org-field">Ligação oficial da publicação<input name="source_url" type="url" inputmode="url" placeholder="https://…" required></label>
+      <label class="org-field org-field-wide">Descrição<textarea name="description" maxlength="5000" rows="4" required></textarea></label>
+      <details class="org-optional-fields org-field-wide"><summary>Mais detalhes (opcional)</summary><div class="org-field-grid">
+        <label class="org-field">Ligação oficial de candidatura<input name="application_url" type="url" inputmode="url" placeholder="https://…"></label>
+        <label class="org-field">Província<input name="province" maxlength="100" value="${esc(request.province || '')}"></label>
+        <label class="org-field">Município<input name="municipality" maxlength="100" value="${esc(request.municipality || '')}"></label>
+        <label class="org-field">Prazo de candidatura<input name="application_deadline" type="date"></label>
+        <label class="org-field org-field-wide">Requisitos<textarea name="requirements" maxlength="4000" rows="3"></textarea></label>
+      </div></details>
+      <fieldset class="org-image-section org-field-wide"><legend>Imagem da publicação <small>opcional</small></legend>
+        <div class="org-image-choices" role="radiogroup" aria-label="Como adicionar uma imagem">
+          <label><input type="radio" name="image_mode" value="none" checked><span>Sem imagem</span></label>
+          <label><input type="radio" name="image_mode" value="link"><span>Colar um link</span></label>
+          <label><input type="radio" name="image_mode" value="upload"><span>Carregar fotografia</span></label>
+        </div>
+        <label class="org-field" data-image-link-panel hidden>Link HTTPS da imagem<input name="image_url" type="url" inputmode="url" placeholder="https://…"></label>
+        <label class="org-field" data-image-file-panel hidden>Fotografia do dispositivo<input name="image_file" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"><small>JPG, PNG ou WEBP · máximo de 3 MB.</small></label>
+        <div class="org-image-rights" data-image-rights hidden>
+          <label class="org-field">Origem/licença da imagem<input name="image_source_url" type="url" inputmode="url" placeholder="https://…"></label>
+          <label class="org-check"><input type="checkbox" name="image_rights_confirmed"><span>Confirmo que a entidade tem autorização para usar esta imagem.</span></label>
+        </div>
+      </fieldset>
+    </div>
+    <p id="orgSubmissionFeedback" class="org-feedback" role="status" aria-live="polite" hidden></p>
+    <div class="org-actions"><button class="org-button" type="submit" data-submit-mode="pending_review">Submeter para revisão</button><button class="org-button org-button-secondary" type="submit" data-submit-mode="draft">Guardar rascunho</button></div>
+  </form>`;
+}
+function syncImageFields(form) {
+  if (!form) return;
+  const mode = form.querySelector('[name="image_mode"]:checked')?.value || 'none';
+  const linkPanel = form.querySelector('[data-image-link-panel]');
+  const filePanel = form.querySelector('[data-image-file-panel]');
+  const rightsPanel = form.querySelector('[data-image-rights]');
+  const linkInput = form.elements.image_url;
+  const fileInput = form.elements.image_file;
+  const imageUrl = mode === 'link' ? String(linkInput.value || '').trim() : '';
+  const imageFile = mode === 'upload' ? fileInput.files?.[0] || null : null;
+  const hasImage = Boolean(imageUrl || imageFile);
+  linkPanel.hidden = mode !== 'link';
+  linkInput.disabled = mode !== 'link';
+  filePanel.hidden = mode !== 'upload';
+  fileInput.disabled = mode !== 'upload';
+  rightsPanel.hidden = !hasImage;
+  form.elements.image_source_url.disabled = !hasImage;
+  form.elements.image_source_url.required = hasImage;
+  form.elements.image_rights_confirmed.disabled = !hasImage;
+  form.elements.image_rights_confirmed.required = hasImage;
+  if (!hasImage) {
+    form.elements.image_source_url.value = '';
+    form.elements.image_rights_confirmed.checked = false;
+  }
+}
+
 function renderOpportunityRows() {
   const rows = opportunities.length ? opportunities.map(item => {
     const status = statusLabel(item);
@@ -61,26 +142,31 @@ function renderWorkspace() {
       ? 'A parceria foi aprovada. Este estatuto não equivale a verificação legal empresarial; as submissões permitidas passam por moderação.'
       : 'A parceria foi aprovada, mas ainda não foi concedida permissão para submeter oportunidades. Este estatuto não equivale a verificação legal empresarial.';
   const canSubmit = isBusiness || request.allow_opportunity_submissions === true;
-  const entityName = esc(isBusiness ? (organization?.name || name) : name);
+  const entityNameRaw = isBusiness ? (organization?.name || name) : name;
+  const entityName = esc(entityNameRaw);
+  const logoUrl = isBusiness && organization?.logo_rights_confirmed === true
+    && safeHttpsUrl(organization.logo_source_url) ? safeHttpsUrl(organization.logo_url) : '';
+  const avatarMarkup = entityAvatarMarkup(entityNameRaw, logoUrl);
 
   workspace.innerHTML = `
-    <header class="org-topbar"><a class="org-brand" href="./index.html"><img src="assets/pulso-mark-3d-small.png" alt=""><span><strong>PULSO</strong><small>${isBusiness ? 'ESPAÇO EMPRESARIAL' : 'PARCEIRO PULSO'}</small></span></a><div class="org-top-actions"><a href="./dashboard.html">Dashboard normal</a><button type="button" class="org-signout" id="orgSignOut">Terminar sessão</button></div></header>
-    <div class="org-layout"><aside class="org-sidebar"><div class="org-identity"><small>${identity}</small><b>${esc(name)}</b></div><nav class="org-nav" aria-label="Navegação organizacional">${[['overview','⌂','Visão geral'],['profile','◉',isBusiness?'Perfil da empresa':'Perfil do parceiro'],['status','✓',isBusiness?'Verificação':'Estado da parceria'],['opportunities','▤','Oportunidades'],['submit','＋','Submeter oportunidade'],['history','◷','Histórico'],['notifications','♧','Notificações'],['settings','⚙','Definições']].map(([view,icon,label])=>`<button type="button" data-org-view="${view}" aria-current="${view==='overview'?'true':'false'}"><span>${icon}</span>${label}</button>`).join('')}</nav></aside>
+    <header class="org-topbar"><a class="org-brand" href="./index.html"><img src="assets/pulso-mark-3d-small.png" alt=""><span><strong>PULSO</strong><small>${isBusiness ? 'ESPAÇO EMPRESARIAL' : 'PARCEIRO PULSO'}</small></span></a><div class="org-top-entity">${avatarMarkup}<span><small>${identity}</small><b>${entityName}</b></span></div><div class="org-top-actions"><a href="./dashboard.html">Dashboard normal</a><button type="button" class="org-signout" id="orgSignOut">Terminar sessão</button></div></header>
+    <div class="org-layout"><aside class="org-sidebar"><div class="org-identity">${avatarMarkup}<span><small>${identity}</small><b>${entityName}</b></span></div><nav class="org-nav" aria-label="Navegação organizacional">${[['overview','⌂','Visão geral'],['profile','◉',isBusiness?'Perfil da empresa':'Perfil do parceiro'],['status','✓',isBusiness?'Verificação':'Estado da parceria'],['opportunities','▤','Oportunidades'],['submit','＋','Submeter oportunidade'],['history','◷','Histórico'],['notifications','♧','Notificações'],['settings','⚙','Definições']].map(([view,icon,label])=>`<button type="button" data-org-view="${view}" aria-current="${view==='overview'?'true':'false'}"><span>${icon}</span>${label}</button>`).join('')}</nav></aside>
       <main class="org-main">
         <section class="org-page" data-org-page="overview"><div class="org-page-intro"><span class="org-kicker">${identity}</span><h1>${title}</h1><p>${isBusiness ? 'Acompanha o perfil da entidade, as oportunidades submetidas e os resultados da revisão.' : 'Acompanha a colaboração e as submissões autorizadas, num espaço separado do dashboard empresarial.'}</p></div>
-          <div class="org-status-banner" data-kind="${isBusiness?'business':'partner'}"><div><b>${statusTitle}</b><p>${statusDescription}</p></div><span class="org-status-pill">${isBusiness?'Verificada':'Aprovada'}</span></div>
+          <div class="org-status-banner" data-kind="${isBusiness?'business':'partner'}"><div class="org-banner-identity">${avatarMarkup}<span><small>${identity}</small><b>${entityName}</b></span></div><div class="org-banner-copy"><b>${statusTitle}</b><p>${statusDescription}</p></div><span class="org-status-pill">${isBusiness?'Verificada':'Aprovada'}</span></div>
           <div class="org-stat-row"><article class="org-stat"><small>Oportunidades acompanhadas</small><b id="orgStatTotal">0</b></article><article class="org-stat"><small>Em análise</small><b id="orgStatPending">0</b></article><article class="org-stat"><small>Publicadas</small><b id="orgStatPublished">0</b></article></div>
           <div class="org-grid"><section class="org-card org-card-wide"><h2>Publicações recentes</h2><div class="org-list" id="orgOpportunityList"><div class="org-empty">A carregar…</div></div></section><section class="org-card"><h2>${isBusiness?'Verificação empresarial':'Estado da parceria'}</h2><p>${esc(BUSINESS_LABELS[request.status] || PARTNER_LABELS[request.status])} · Pedido recebido ${esc(dateLabel(request.submitted_at || request.created_at))}</p>${request.status_note?`<p><strong>Nota do PULSO:</strong> ${esc(request.status_note)}</p>`:''}</section><section class="org-card"><h2>Próximo passo</h2><p>${canSubmit?'Submete uma oportunidade com os dados da fonte oficial. O envio será revisto e não fica público automaticamente.':'A permissão de submissão deve ser concedida por um administrador PULSO.'}</p><button type="button" class="org-button org-button-secondary" data-org-view="${canSubmit?'submit':'status'}">${canSubmit?'Preparar submissão':'Consultar permissão'}</button></section></div>
         </section>
-        <section class="org-page" data-org-page="profile" hidden><div class="org-page-intro"><span class="org-kicker">IDENTIFICAÇÃO</span><h1>${isBusiness?'Perfil da empresa.':'Perfil do parceiro.'}</h1><p>Dados apresentados a partir do pedido original. Para corrigir informação, contacta a equipa PULSO.</p></div><div class="org-card"><div class="org-field-grid">${(isBusiness?[["Entidade",name],["Nome legal",request.legal_name],["NIF",request.tax_id],["Sector",request.sector],["Província",request.province],["Município",request.municipality],["Website",request.website],["E-mail institucional",request.institutional_email],["Representante",request.representative_full_name],["Cargo",request.representative_role]]:[["Organização",request.organization_name],["Tipo de colaboração",request.collaboration_type],["Actividade",request.activity_description],["Província",request.province],["Município",request.municipality],["Website/redes sociais",request.website_or_social_links],["Responsável",request.representative_name],["E-mail",request.representative_email],["Telefone",request.representative_phone]]).map(([label,value])=>`<div><small class="org-kicker">${esc(label)}</small><p>${esc(value || '—')}</p></div>`).join('')}</div></div></section>
+        <section class="org-page" data-org-page="profile" hidden><div class="org-page-intro"><span class="org-kicker">IDENTIFICAÇÃO</span><h1>${isBusiness?'Perfil da empresa.':'Perfil do parceiro.'}</h1><p>Dados apresentados a partir do pedido original. Para corrigir informação, contacta a equipa PULSO.</p></div><div class="org-profile-identity">${avatarMarkup}<span><small>${identity} · ${esc(BUSINESS_LABELS[request.status] || PARTNER_LABELS[request.status])}</small><b>${entityName}</b></span></div><div class="org-card"><div class="org-field-grid">${(isBusiness?[["Entidade",name],["Nome legal",request.legal_name],["NIF",request.tax_id],["Sector",request.sector],["Província",request.province],["Município",request.municipality],["Website",request.website],["E-mail institucional",request.institutional_email],["Representante",request.representative_full_name],["Cargo",request.representative_role]]:[["Organização",request.organization_name],["Tipo de colaboração",request.collaboration_type],["Actividade",request.activity_description],["Província",request.province],["Município",request.municipality],["Website/redes sociais",request.website_or_social_links],["Responsável",request.representative_name],["E-mail",request.representative_email],["Telefone",request.representative_phone]]).map(([label,value])=>`<div><small class="org-kicker">${esc(label)}</small><p>${esc(value || '—')}</p></div>`).join('')}</div></div></section>
         <section class="org-page" data-org-page="status" hidden><div class="org-page-intro"><span class="org-kicker">ESTADO DA CONTA</span><h1>${isBusiness?'Verificação empresarial.':'Parceria PULSO.'}</h1><p>${esc(statusDescription)}</p></div><div class="org-card"><h2>${esc(BUSINESS_LABELS[request.status] || PARTNER_LABELS[request.status])}</h2><p>Submetido em ${esc(dateLabel(request.submitted_at || request.created_at))}</p>${request.status_note?`<p><strong>Última nota:</strong> ${esc(request.status_note)}</p>`:''}${!isBusiness?`<p>Permissão para submeter oportunidades: <strong>${canSubmit?'Concedida':'Ainda não concedida'}</strong>.</p>`:''}<h2>Histórico do processo</h2><div id="orgAccountHistory"></div></div></section>
         <section class="org-page" data-org-page="opportunities" hidden><div class="org-page-intro"><span class="org-kicker">ACOMPANHAMENTO</span><h1>As tuas oportunidades.</h1><p>Consulta estado, notas de revisão e histórico das publicações desta conta.</p></div><section class="org-card"><div class="org-list" id="orgOpportunityListAll"></div></section></section>
-        <section class="org-page" data-org-page="submit" hidden><div class="org-page-intro"><span class="org-kicker">SUBMISSÃO MODERADA</span><h1>Submeter oportunidade.</h1><p>A verificação da empresa ou a aprovação da parceria não publica automaticamente. A equipa PULSO revê cada proposta e confirma a entidade, a fonte e os direitos das imagens.</p></div>${canSubmit?`<form class="org-card" id="orgSubmissionForm"><div class="org-field-grid"><label class="org-field">Título<input name="title" maxlength="180" required></label><label class="org-field">Categoria<select name="category" required>${Object.entries(CATEGORY_LABELS).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><label class="org-field">Entidade responsável<input name="source_name" maxlength="180" value="${entityName}" required></label><label class="org-field">Ligação oficial da publicação<input name="source_url" type="url" placeholder="https://…" required></label><label class="org-field">Ligação oficial de candidatura<input name="application_url" type="url" placeholder="https://…"></label><label class="org-field">Província<input name="province" maxlength="100" value="${esc(request.province || '')}"></label><label class="org-field">Município<input name="municipality" maxlength="100" value="${esc(request.municipality || '')}"></label><label class="org-field">Prazo de candidatura<input name="application_deadline" type="date"></label><label class="org-field org-field-wide">Descrição<textarea name="description" maxlength="5000" rows="5" required></textarea></label><label class="org-field">Requisitos<textarea name="requirements" maxlength="4000" rows="3"></textarea></label><label class="org-field">URL da imagem do cartão (opcional)<input name="image_url" type="url" placeholder="https://…"></label><label class="org-field org-field-wide">Origem/licença da imagem (obrigatório quando há imagem)<input name="image_source_url" type="url" placeholder="https://…"></label><label class="org-check org-field-wide"><input type="checkbox" name="image_rights_confirmed"><span>Confirmo que a entidade tem autorização para usar esta imagem.</span></label></div><p id="orgSubmissionFeedback" class="org-feedback" role="status" aria-live="polite" hidden></p><div class="org-actions"><button class="org-button" type="submit" data-submit-mode="pending_review">Submeter para revisão</button><button class="org-button org-button-secondary" type="submit" data-submit-mode="draft">Guardar rascunho</button></div></form>`:`<div class="org-card"><h2>Submissão ainda não autorizada</h2><p>O estatuto de parceiro não concede automaticamente permissão para publicar. Contacta a equipa PULSO ou aguarda a autorização do administrador.</p></div>`}</section>
+        <section class="org-page" data-org-page="submit" hidden><div class="org-page-intro"><span class="org-kicker">SUBMISSÃO MODERADA</span><h1>Submeter oportunidade.</h1><p>A verificação da empresa ou a aprovação da parceria não publica automaticamente. A equipa PULSO revê cada proposta e confirma a entidade, a fonte e os direitos das imagens.</p></div>${submissionFormMarkup(canSubmit, entityName, request)}</section>
         <section class="org-page" data-org-page="history" hidden><div class="org-page-intro"><span class="org-kicker">REGISTO DE ALTERAÇÕES</span><h1>Histórico.</h1><p>Alterações de estado do pedido e das oportunidades submetidas.</p></div><div class="org-grid"><section class="org-card"><h2>Conta</h2><div id="orgAccountHistoryFull"></div></section><section class="org-card"><h2>Oportunidades</h2><div id="orgOpportunityHistoryFull"></div></section></div></section>
         <section class="org-page" data-org-page="notifications" hidden><div class="org-page-intro"><span class="org-kicker">ACTUALIZAÇÕES</span><h1>Notificações.</h1><p>Actualizações do pedido e das publicações, apresentadas a partir do histórico seguro da conta.</p></div><section class="org-card"><div id="orgNotifications"></div></section></section>
         <section class="org-page" data-org-page="settings" hidden><div class="org-page-intro"><span class="org-kicker">SESSÃO</span><h1>Definições da conta.</h1><p>O acesso usa a conta PULSO existente.</p></div><section class="org-card"><h2>Conta autenticada</h2><p>${esc(user.email || 'Conta PULSO')}</p><button type="button" class="org-button org-signout" id="orgSignOutSettings">Terminar sessão</button></section></section>
         <footer class="org-footer"><a href="./index.html">PULSO · Oportunidades em movimento.</a></footer>
       </main></div>`;
+  syncImageFields($('#orgSubmissionForm'));
   workspace.hidden = false;
   loading.hidden = true;
   renderOpportunityRows();
@@ -129,56 +215,101 @@ function httpsOrEmpty(value) {
 async function createSubmission(form, status) {
   if (!form.reportValidity()) return;
   const values = new FormData(form);
-  const image = String(values.get('image_url') || '').trim();
+  const imageMode = String(values.get('image_mode') || 'none');
+  const linkedImage = imageMode === 'link' ? String(values.get('image_url') || '').trim() : '';
+  const imageFile = imageMode === 'upload' ? form.elements.image_file.files?.[0] || null : null;
   const imageSource = String(values.get('image_source_url') || '').trim();
   const source = String(values.get('source_url') || '').trim();
   const application = String(values.get('application_url') || '').trim();
-  if (![source, application, image, imageSource].every(httpsOrEmpty)) return setFeedback('As ligações oficiais, de candidatura e de imagem devem usar HTTPS.', 'error');
-  if (image && (!imageSource || values.get('image_rights_confirmed') !== 'on')) return setFeedback('Para usar uma imagem, indica a origem HTTPS e confirma os direitos de utilização.', 'error');
+  const hasImage = Boolean(linkedImage || imageFile);
+  if (![source, application, linkedImage, imageSource].every(httpsOrEmpty)) {
+    setFeedback('As ligações oficiais, de candidatura e de imagem devem usar HTTPS.', 'error');
+    return;
+  }
+  if (hasImage && (!imageSource || values.get('image_rights_confirmed') !== 'on')) {
+    setFeedback('Para usar uma imagem, indica a origem HTTPS e confirma os direitos de utilização.', 'error');
+    return;
+  }
+  if (imageFile && !OPPORTUNITY_IMAGE_TYPES.has(imageFile.type)) {
+    setFeedback('Carrega uma fotografia JPG, PNG ou WEBP.', 'error');
+    return;
+  }
+  if (imageFile && imageFile.size > MAX_OPPORTUNITY_IMAGE_SIZE) {
+    setFeedback('A fotografia excede o limite de 3 MB.', 'error');
+    return;
+  }
 
   const submitter = form.querySelector(`[data-submit-mode="${status}"]`);
-  form.querySelectorAll('button[type="submit"]').forEach(button=>button.disabled=true);
-  setFeedback(status === 'draft' ? 'A guardar rascunho…' : 'A submeter para revisão…');
-  const payload = {
-    organization_id: isBusiness ? request.organization_id : null,
-    submitted_by_user_id: user.id,
-    submission_kind: isBusiness ? 'business' : 'partner',
-    title: String(values.get('title')).trim(),
-    category: String(values.get('category')),
-    description: String(values.get('description')).trim(),
-    requirements: String(values.get('requirements') || '').trim() || null,
-    province: String(values.get('province') || '').trim() || null,
-    municipality: String(values.get('municipality') || '').trim() || null,
-    application_deadline: String(values.get('application_deadline') || '') || null,
-    source_name: String(values.get('source_name')).trim(),
-    source_url: source,
-    application_url: application || null,
-    image_url: image || null,
-    image_source_url: imageSource || null,
-    image_rights_confirmed: Boolean(image && values.get('image_rights_confirmed') === 'on'),
-    source_id: null,
-    collection_method: 'manual',
-    status,
-    verification_status: 'unverified',
-    review_note: null,
-  };
+  form.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = true; });
+  setFeedback(imageFile ? 'A carregar a fotografia e a submeter…' : status === 'draft' ? 'A guardar rascunho…' : 'A submeter para revisão…');
+  let uploadedPath = null;
+  let imageUrl = linkedImage || null;
   try {
+    if (imageFile) {
+      const extension = OPPORTUNITY_IMAGE_TYPES.get(imageFile.type);
+      uploadedPath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from(OPPORTUNITY_IMAGE_BUCKET).upload(uploadedPath, imageFile, {
+        cacheControl: '31536000',
+        contentType: imageFile.type,
+        upsert: false,
+      });
+      if (uploadError) throw uploadError;
+      imageUrl = safeHttpsUrl(supabase.storage.from(OPPORTUNITY_IMAGE_BUCKET).getPublicUrl(uploadedPath).data?.publicUrl);
+      if (!imageUrl) throw new Error('Não foi possível obter a ligação pública da fotografia carregada.');
+    }
+
+    const payload = {
+      organization_id: isBusiness ? request.organization_id : null,
+      submitted_by_user_id: user.id,
+      submission_kind: isBusiness ? 'business' : 'partner',
+      title: String(values.get('title')).trim(),
+      category: String(values.get('category')),
+      description: String(values.get('description')).trim(),
+      requirements: String(values.get('requirements') || '').trim() || null,
+      province: String(values.get('province') || '').trim() || null,
+      municipality: String(values.get('municipality') || '').trim() || null,
+      application_deadline: String(values.get('application_deadline') || '') || null,
+      source_name: String(values.get('source_name')).trim(),
+      source_url: source,
+      application_url: application || null,
+      image_url: imageUrl,
+      image_source_url: hasImage ? imageSource : null,
+      image_rights_confirmed: Boolean(hasImage && values.get('image_rights_confirmed') === 'on'),
+      source_id: null,
+      collection_method: 'manual',
+      status,
+      verification_status: 'unverified',
+      review_note: null,
+    };
     const { error } = await supabase.from('opportunities').insert(payload);
     if (error) throw error;
-    form.reset();
-    form.elements.source_name.value = isBusiness ? (organization?.name || request.trade_name || request.legal_name) : request.organization_name;
-    form.elements.province.value = request.province || '';
-    form.elements.municipality.value = request.municipality || '';
-    setFeedback(status === 'draft' ? 'Rascunho guardado. Podes submetê-lo para revisão quando estiver pronto.' : 'Oportunidade recebida e enviada para revisão. Ainda não está publicada.', 'success');
+  } catch (error) {
+    if (uploadedPath) {
+      try {
+        const { error: cleanupError } = await supabase.storage.from(OPPORTUNITY_IMAGE_BUCKET).remove([uploadedPath]);
+        if (cleanupError) console.warn('PULSO could not clean up an unreferenced submission image', cleanupError.message);
+      } catch (cleanupError) {
+        console.warn('PULSO could not clean up an unreferenced submission image', cleanupError.message);
+      }
+    }
+    console.error('PULSO organizational opportunity submission failed', error);
+    setFeedback('Não foi possível guardar a oportunidade. Confirma as permissões da conta e tenta novamente.', 'error');
+    if (submitter) submitter.disabled = false;
+    form.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = false; });
+    return;
+  }
+
+  form.reset();
+  syncImageFields(form);
+  setFeedback(status === 'draft' ? 'Rascunho guardado. Podes submetê-lo para revisão quando estiver pronto.' : 'Oportunidade recebida e enviada para revisão. Ainda não está publicada.', 'success');
+  try {
     await loadWorkspaceData();
     showToast(status === 'draft' ? 'Rascunho guardado.' : 'Submissão recebida para revisão.');
   } catch (error) {
-    console.error('PULSO organizational opportunity submission failed', error);
-    setFeedback('Não foi possível guardar a oportunidade. Confirma se a migration de permissões está activa e tenta novamente.', 'error');
-  } finally {
-    if (submitter) submitter.disabled = false;
-    form.querySelectorAll('button[type="submit"]').forEach(button=>button.disabled=false);
+    console.error('PULSO opportunity was saved but the dashboard could not refresh', error);
+    showToast('A submissão foi guardada. Actualiza a página para ver o estado.');
   }
+  if (submitter) submitter.disabled = false;
 }
 async function submitDraft(id) {
   const { error } = await supabase.from('opportunities')
@@ -198,11 +329,20 @@ function bindWorkspaceEvents() {
     if (draft) void submitDraft(draft.dataset.submitDraft);
     if (event.target.closest('#orgSignOut') || event.target.closest('#orgSignOutSettings')) void supabase.auth.signOut().then(()=>location.replace('./index.html'));
   });
-  const form = $('#orgSubmissionForm');
-  if (form) form.addEventListener('submit', event => {
+  workspace.addEventListener('submit', event => {
+    const form = event.target.closest('#orgSubmissionForm');
+    if (!form) return;
     event.preventDefault();
     const mode = event.submitter?.dataset.submitMode || 'pending_review';
     void createSubmission(form, mode);
+  });
+  workspace.addEventListener('input', event => {
+    const form = event.target.closest('#orgSubmissionForm');
+    if (form) syncImageFields(form);
+  });
+  workspace.addEventListener('change', event => {
+    const form = event.target.closest('#orgSubmissionForm');
+    if (form) syncImageFields(form);
   });
 }
 async function loadWorkspaceData() {
@@ -215,7 +355,7 @@ async function loadWorkspaceData() {
   request = rows?.[0];
   if (!request) throw new Error('O pedido organizacional aprovado deixou de estar disponível.');
   if (isBusiness) {
-    const result = await supabase.from('organizations').select('id,name,sector,province,municipality,official_website').eq('id', request.organization_id).maybeSingle();
+    const result = await supabase.from('organizations').select('id,name,sector,province,municipality,official_website,logo_url,logo_source_url,logo_rights_confirmed').eq('id', request.organization_id).maybeSingle();
     if (result.error) throw result.error;
     organization = result.data;
   }

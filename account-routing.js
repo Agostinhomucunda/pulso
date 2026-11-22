@@ -21,16 +21,29 @@ async function latestRequest(supabase, table, userId, columns) {
   return data?.[0] || null;
 }
 
+function requestedWorkspaceDestination(type, request) {
+  const activeStatus = type === 'business' ? BUSINESS_ACTIVE : PARTNER_ACTIVE;
+  if (request?.status === activeStatus) {
+    return type === 'business' ? './empresa-dashboard.html' : './parceiro-dashboard.html';
+  }
+  if (!request) return './dashboard.html';
+  if (TERMINAL_STATES.has(request.status)) {
+    return `./organization-account-status.html?type=${type === 'business' ? 'business' : 'partnership'}`;
+  }
+  return `./empresas-parceiros.html?view=requests&flow=${type === 'business' ? 'business' : 'partnership'}`;
+}
+
 export async function resolvePULSODestination(supabase, user, preferredWorkspace = null) {
   if (!user?.id) return './index.html';
+  if (preferredWorkspace === 'personal') return './dashboard.html';
 
   const [business, partnership] = await Promise.all([
     latestRequest(supabase, 'business_verification_requests', user.id, 'id,status,created_at'),
-    latestRequest(supabase, 'partnership_requests', user.id, 'id,status,created_at')
+    latestRequest(supabase, 'partnership_requests', user.id, 'id,status,created_at'),
   ]);
 
-  if (preferredWorkspace === 'business' && business?.status === BUSINESS_ACTIVE) return './empresa-dashboard.html';
-  if (preferredWorkspace === 'partner' && partnership?.status === PARTNER_ACTIVE) return './parceiro-dashboard.html';
+  if (preferredWorkspace === 'business') return requestedWorkspaceDestination('business', business);
+  if (preferredWorkspace === 'partner') return requestedWorkspaceDestination('partner', partnership);
 
   const { data: admin, error: adminError } = await supabase
     .from('admin_users')

@@ -396,3 +396,5 @@
 
 /* Evita que a regra da folha WhatsApp quebre o rótulo no cabeçalho móvel. */
 @media(max-width:620px){.dash-top-actions .dash-wa-shortcut{width:auto;max-width:none;white-space:nowrap;line-height:normal;text-align:center}}
+
+.profile-menu-workspaces{display:grid;gap:3px;padding:10px 7px 8px;border-bottom:1px solid #edf0f6}.profile-menu-workspaces>small{padding:2px 5px 4px;color:#8792a9;font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.profile-menu-workspaces>a{display:flex;align-items:center;justify-content:space-between;padding:9px 8px;border-radius:8px;color:#174fb8;font-size:10px;font-weight:800;text-decoration:none}.profile-menu-workspaces>a:hover{background:#f1f5fc}
