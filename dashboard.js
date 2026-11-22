@@ -371,11 +371,11 @@ async function addCommunityComment(event) {
 async function createCommunityPost(event) {
   event.preventDefault();
   const form = event.currentTarget; const feedback = $('#communityFormFeedback'); const values = new FormData(form);
-  const phone = normalizeAngolaPhone(values.get('phone')); const whatsapp = normalizeAngolaPhone(values.get('whatsapp'));
-  if (!phone || !whatsapp) { setFeedback(feedback, 'Indica números angolanos válidos com 9 dígitos ou indicativo +244.', 'error'); return; }
+  const description = String(values.get('description') || '').trim();
+  if (!description) { setFeedback(feedback, 'Escreve o texto da publicação.', 'error'); return; }
   const submit = $('button[type="submit"]', form); submit.disabled = true;
   try {
-    const payload = { author_id: currentUser.id, title: String(values.get('title')).trim(), category: values.get('category'), type_label: String(values.get('type_label')).trim(), description: String(values.get('description')).trim(), work_location: 'A indicar nos comentários', neighborhood: 'Comunidade', municipality: null, province: 'Angola', phone, whatsapp };
+    const payload = { author_id: currentUser.id, title: 'Publicação da comunidade', category: 'other', type_label: 'Publicação', description, work_location: null, neighborhood: null, municipality: null, province: null, phone: null, whatsapp: null };
     const { error } = await supabaseClient.from('community_posts').insert(payload); if (error) throw error;
     form.reset(); $('#communityComposer').hidden = true; setFeedback(feedback, '', 'success'); notify('Publicação comunitária criada.'); await loadCommunityPosts();
   } catch (error) { console.error('PULSO community post create failed', error); setFeedback(feedback, error.message?.includes('phone') ? 'Confirma os números de contacto.' : 'Não foi possível publicar. Verifica os campos e tenta novamente.', 'error'); }
