@@ -111,7 +111,7 @@ function categoryAsset(category) {
   return CATEGORY_ASSETS[category] || CATEGORY_ASSETS.recruitment_program;
 }
 function ratingMarkup(item, interactive = false) {
-  const score = Math.max(3, Math.min(5, Number(item.rating_score || 3)));
+  const score = Math.max(1, Math.min(5, Number(item.rating_score || 3)));
   const rounded = Math.round(score);
   const stars = '★★★★★'.split('').map((star, index) => interactive
     ? `<button class="rating-star ${index < rounded ? 'active' : ''}" type="button" data-rate-opportunity="${escapeHtml(item.id)}" data-rating="${index + 1}" aria-label="Classificar com ${index + 1} estrelas">${star}</button>`
@@ -120,8 +120,15 @@ function ratingMarkup(item, interactive = false) {
 }
 
 async function recordView(id) {
-  const { error } = await supabaseClient.rpc('record_opportunity_view', { p_opportunity_id: id });
-  if (error) console.warn('PULSO view counter unavailable', error.message);
+  const { data, error } = await supabaseClient.rpc('record_opportunity_view', { p_opportunity_id: id });
+  if (error) { console.warn('PULSO view counter unavailable', error.message); return; }
+  if (data == null) return;
+  const item = opportunities.find(row => row.id === id) || savedRows.find(row => row.id === id);
+  const views = Number(data);
+  if (item && Number.isFinite(views)) {
+    item.views_count = Math.max(Number(item.views_count || 0), views);
+    renderOpportunityLists();
+  }
 }
 
 async function rateOpportunity(id, rating) {

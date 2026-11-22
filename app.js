@@ -40,13 +40,13 @@ function categoryLabel(item){return categoryLabels[item.category]||'Oportunidade
 function categoryIcon(item){return categoryIcons[item.category]||'✦'}
 function categoryAsset(category){return categoryAssets[category]||categoryAssets.recruitment_program}
 function ratingMarkup(item, interactive=false){
-  const score=Math.max(3,Math.min(5,Number(item.rating_score||3)));
+  const score=Math.max(1,Math.min(5,Number(item.rating_score||3)));
   const rounded=Math.round(score);
   const stars='★★★★★'.split('').map((star,index)=>interactive?`<button class="rating-star ${index<rounded?'active':''}" type="button" data-rate-opportunity="${esc(item.id)}" data-rating="${index+1}" aria-label="Classificar com ${index+1} estrelas">${star}</button>`:`<span class="rating-star ${index<rounded?'active':''}">${star}</span>`).join('');
   return `<span class="op-rating" title="Classificação média ${score.toFixed(1)} em 5">${stars}<b>${score.toFixed(1)}</b>${Number(item.rating_count||0)?`<small>(${Number(item.rating_count)})</small>`:''}</span><span class="op-views">◉ ${Number(item.views_count||200).toLocaleString('pt-AO')} visualizações</span>`;
 }
-async function recordView(id){if(!supabaseClient)return;const {error}=await supabaseClient.rpc('record_opportunity_view',{p_opportunity_id:id});if(error)console.warn('PULSO view counter unavailable',error.message)}
-async function rateOpportunity(id,rating){if(!currentUser){openModal('login');return}const {data,error}=await supabaseClient.rpc('rate_opportunity',{p_opportunity_id:id,p_rating:rating});if(error){notify('Não foi possível guardar a classificação. Tenta novamente.');return}const item=entries.find(row=>row.id===id);if(item&&data?.[0]){item.rating_score=data[0].rating_score;item.rating_count=data[0].rating_count;renderEntries();openModal('detail',id)}notify('A tua classificação foi contabilizada na média.')}
+async function recordView(id){if(!supabaseClient)return;const {data,error}=await supabaseClient.rpc('record_opportunity_view',{p_opportunity_id:id});if(error){console.warn('PULSO view counter unavailable',error.message);return}if(data==null)return;const item=entries.find(row=>row.id===id);const views=Number(data);if(item&&Number.isFinite(views)){item.views_count=Math.max(Number(item.views_count||0),views);renderEntries()}}
+async function rateOpportunity(id,rating){if(!currentUser){openModal('login');return}const {data,error}=await supabaseClient.rpc('rate_opportunity',{p_opportunity_id:id,p_rating:rating});if(error){notify('Não foi possível guardar a classificação. Tenta novamente.');return}const item=entries.find(row=>row.id===id);if(item&&data?.[0]){item.rating_score=data[0].rating_score;item.rating_count=data[0].rating_count;renderEntries();openModal('detail',id,{countView:false})}notify('A tua classificação foi contabilizada na média.')}
 function organizationName(item){return item.organization?.name||item.source_name||'Entidade anunciante'}
 function entryMatches(item){const category=selectedCategory==='Todas'||categoryLabel(item)===selectedCategory;const haystack=[item.title,organizationName(item),item.category,item.sector,item.province,item.municipality,item.public_summary].filter(Boolean).join(' ').toLocaleLowerCase('pt-AO');return category&&haystack.includes(searchTerm.toLocaleLowerCase('pt-AO'))}
 function renderEntries(){
@@ -77,11 +77,11 @@ function renderCompanies(){
     return website?`<a class="company-card" href="${esc(website)}" target="_blank" rel="noopener noreferrer">${card}</a>`:`<article class="company-card">${card}</article>`;
   }).join('');
 }
-function openModal(type,id){
+function openModal(type,id,{countView=true}={}){
   const body=$('#modalBody');
   if(type==='detail'){
     const item=entries.find(row=>row.id===id);if(!item)return;
-    void recordView(id);
+    if(countView)void recordView(id);
     const org=organizationName(item);const source=safeUrl(item.source_url);const apply=safeUrl(item.application_url)||source;const deadline=dateLabel(item.application_deadline);const details=[item.description||item.public_summary,item.requirements?`Requisitos: ${item.requirements}`:'',item.education_level?`Escolaridade: ${item.education_level}`:'',item.experience?`Experiência: ${item.experience}`:''].filter(Boolean);const image=safeUrl(item.image_url);
     const sourceLink=source?`<a class="btn btn-outline-blue" href="${esc(source)}" target="_blank" rel="noopener noreferrer">Ir para fonte oficial ↗</a>`:'';const applyLink=apply?`<a class="btn btn-yellow" href="${esc(apply)}" target="_blank" rel="noopener noreferrer">Aceder à candidatura ↗</a>`:'';
     body.innerHTML=`<div class="modal-inner opportunity-detail-inner">${image?`<img class="detail-image" src="${esc(image)}" alt="Imagem de ${esc(item.title)}" loading="lazy">`:''}<div class="modal-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> OPORTUNIDADE VERIFICADA</div><h2 id="modalTitle">${esc(item.title)}</h2><p>${esc(org)} · ${esc(placeLabel(item))}</p><div class="modal-meta"><span class="modal-pill">${esc(categoryLabel(item))}</span>${deadline?`<span class="modal-pill">Prazo: ${esc(deadline)}</span>`:''}</div><div class="detail-rating"><b>Classificação da oportunidade</b><div>${ratingMarkup(item,true)}</div><small>As avaliações dos utilizadores formam uma média.</small></div>${details.map(text=>`<div class="detail-description">${esc(text)}</div>`).join('')}<div class="source-box"><b>Fonte:</b> ${esc(item.source_name||org)}${source?` · <a href="${esc(source)}" target="_blank" rel="noopener noreferrer">Abrir fonte oficial</a>`:''}</div><div class="modal-actions">${applyLink}${sourceLink}</div><button class="btn btn-outline-blue" data-modal-save="${esc(item.id)}">${savedIds.has(item.id)?'Remover dos guardados':'Guardar oportunidade'}</button></div>`;
