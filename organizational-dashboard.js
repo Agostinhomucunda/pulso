@@ -248,7 +248,7 @@ async function initialize() {
     if (error) throw error;
     user = data.session?.user;
     if (!user) { location.replace('./empresas-parceiros.html?flow='+(isBusiness?'business':'partnership')+'&view=requests'); return; }
-    const destination = await resolvePULSODestination(supabase, user);
+    const destination = await resolvePULSODestination(supabase, user, isBusiness ? 'business' : 'partner');
     const expected = isBusiness ? './empresa-dashboard.html' : './parceiro-dashboard.html';
     if (new URL(destination,location.href).pathname !== new URL(expected,location.href).pathname) {
       location.replace(destination);

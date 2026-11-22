@@ -21,8 +21,16 @@ async function latestRequest(supabase, table, userId, columns) {
   return data?.[0] || null;
 }
 
-export async function resolvePULSODestination(supabase, user) {
+export async function resolvePULSODestination(supabase, user, preferredWorkspace = null) {
   if (!user?.id) return './index.html';
+
+  const [business, partnership] = await Promise.all([
+    latestRequest(supabase, 'business_verification_requests', user.id, 'id,status,created_at'),
+    latestRequest(supabase, 'partnership_requests', user.id, 'id,status,created_at')
+  ]);
+
+  if (preferredWorkspace === 'business' && business?.status === BUSINESS_ACTIVE) return './empresa-dashboard.html';
+  if (preferredWorkspace === 'partner' && partnership?.status === PARTNER_ACTIVE) return './parceiro-dashboard.html';
 
   const { data: admin, error: adminError } = await supabase
     .from('admin_users')
@@ -30,12 +38,6 @@ export async function resolvePULSODestination(supabase, user) {
     .eq('user_id', user.id)
     .maybeSingle();
   if (!adminError && admin) return './dashboard.html';
-
-  const [business, partnership] = await Promise.all([
-    latestRequest(supabase, 'business_verification_requests', user.id, 'id,status,created_at'),
-    latestRequest(supabase, 'partnership_requests', user.id, 'id,status,created_at')
-  ]);
-
   if (business?.status === BUSINESS_ACTIVE) return './empresa-dashboard.html';
   if (partnership?.status === PARTNER_ACTIVE) return './parceiro-dashboard.html';
   if (business && TERMINAL_STATES.has(business.status)) return './organization-account-status.html?type=business';
