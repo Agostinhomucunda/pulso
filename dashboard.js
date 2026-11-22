@@ -247,6 +247,14 @@ function communityAvatar(author) {
   return `<span class="community-author-avatar"><img src="${AVATAR_ASSETS[key]}" alt="Avatar de ${escapeHtml(author?.full_name || 'utilizador')}"></span>`;
 }
 
+function whatsappIconMarkup() {
+  return '<svg class="community-contact-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a8.4 8.4 0 0 0-7.2 12.7L4 20l4.2-1.1A8.4 8.4 0 1 0 12 3.2Zm0 1.8a6.6 6.6 0 1 1-3.4 12.3l-.5-.3-1.8.5.5-1.8-.3-.5A6.6 6.6 0 0 1 12 5Z"/><path d="M9.1 8.2c-.2-.4-.4-.4-.6-.4h-.4c-.2 0-.5.1-.7.4-.2.2-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.3 3.8 2.1.8 2.5.6 3 .5.5-.1 1.6-.7 1.8-1.3.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.5-.3l-1.7-.8c-.2-.1-.4-.1-.6.2l-.8 1c-.2.2-.3.2-.6.1a6.8 6.8 0 0 1-2-1.2 7.4 7.4 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.8-1.9Z"/></svg>';
+}
+
+function phoneIconMarkup() {
+  return '<svg class="community-contact-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 3.5 9.8 3c.6-.1 1.1.2 1.3.8l1.1 3.1c.2.5 0 .9-.4 1.2L10.2 9.2a13 13 0 0 0 4.6 4.6l1.1-1.6c.3-.4.7-.6 1.2-.4l3.1 1.1c.6.2.9.7.8 1.3l-.5 2.6c-.1.6-.6 1-1.2 1C11.2 17.8 6.2 12.8 6.2 5.7c0-1.1.4-2 1-2.2Z"/></svg>';
+}
+
 function renderCommunityPost(post) {
   const author = post.author || {};
   const place = [post.neighborhood, post.municipality, post.province].filter(Boolean).map(escapeHtml).join(' · ');
@@ -257,9 +265,9 @@ function renderCommunityPost(post) {
     <div class="community-post-author">${communityAvatar(author)}<span class="community-author-copy"><b>${escapeHtml(author.full_name || 'Utilizador PULSO')}</b><small>${escapeHtml(formatDateTime(post.created_at))}</small></span><span class="community-post-badge">${escapeHtml(communityCategoryLabel(post.category))}</span></div>
     <div><span class="community-post-type">${escapeHtml(post.type_label)}</span><h3>${escapeHtml(post.title)}</h3></div>
     <p class="community-post-description">${escapeHtml(post.description)}</p>
-    <div class="community-post-meta"><span>⌖ ${place}</span><span>▣ ${escapeHtml(post.work_location)}</span></div>
-    <div class="community-post-contacts">${whatsapp ? `<a class="community-contact-button whatsapp" href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Olá ${author.full_name || ''}, vi a tua publicação no PULSO: ${post.title}`)}" target="_blank" rel="noopener noreferrer">◉ WhatsApp</a>` : ''}${phone ? `<a class="community-contact-button phone" href="tel:+${phone}">☎ Ligar</a>` : ''}</div>
-    <div class="community-post-stats"><button class="community-like-button ${communityLikes.has(post.id) ? 'liked' : ''}" type="button" data-community-like="${escapeHtml(post.id)}">${communityLikes.has(post.id) ? '♥' : '♡'} Gostar · ${safeCount(post.likes_count)}</button><span>◉ ${safeCount(post.views_count)} visualizações</span><span>▱ ${safeCount(post.comments_count)} comentários</span></div>
+    <div class="community-post-details"><div><small>LOCALIZAÇÃO</small><b>⌖ ${place}</b></div><div><small>LOCAL DE TRABALHO</small><b>▣ ${escapeHtml(post.work_location)}</b></div></div>
+    <div class="community-post-contacts"><span class="community-contact-label">CONTACTAR AUTOR</span>${whatsapp ? `<a class="community-contact-button whatsapp" href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Olá ${author.full_name || ''}, vi a tua publicação no PULSO: ${post.title}`)}" target="_blank" rel="noopener noreferrer">${whatsappIconMarkup()}<span><b>WhatsApp</b><small>+${whatsapp}</small></span></a>` : ''}${phone ? `<a class="community-contact-button phone" href="tel:+${phone}">${phoneIconMarkup()}<span><b>Ligar</b><small>+${phone}</small></span></a>` : ''}</div>
+    <div class="community-post-stats"><button class="community-like-button ${communityLikes.has(post.id) ? 'liked' : ''}" type="button" data-community-like="${escapeHtml(post.id)}">${communityLikes.has(post.id) ? '♥' : '♡'} Gostar <b>${safeCount(post.likes_count)}</b></button><span>◉ ${safeCount(post.views_count)} visualizações</span><span>▱ ${safeCount(post.comments_count)} comentários</span></div>
     <div class="community-comments">${comments || '<small class="community-comment">Ainda não há comentários. Sê o primeiro a pedir mais informações.</small>'}<form class="community-comment-form" data-community-comment-form="${escapeHtml(post.id)}"><input name="body" maxlength="600" placeholder="Pedir mais informações…" required><button type="submit">Enviar</button></form></div>
   </article>`;
 }
@@ -296,18 +304,20 @@ async function recordCommunityView(id) {
 async function toggleCommunityLike(id) {
   if (!currentUser) { notify('Inicia sessão para gostar de uma publicação.'); return; }
   const { data, error } = await supabaseClient.rpc('toggle_community_post_like', { p_post_id: id });
-  if (error) { notify('Não foi possível actualizar o gosto. Tenta novamente.'); return; }
+  if (error) { console.error('PULSO community like failed', error); notify(error.message || 'Não foi possível actualizar o gosto. Tenta novamente.'); return; }
   const post = communityPosts.find(item => item.id === id);
-  if (post && data?.[0]) { post.likes_count = data[0].likes_count; data[0].liked ? communityLikes.add(id) : communityLikes.delete(id); $('#communityPostList').innerHTML = communityPosts.map(renderCommunityPost).join(''); }
+  const result = Array.isArray(data) ? data[0] : data;
+  if (post && result) { post.likes_count = result.likes_count; result.liked ? communityLikes.add(id) : communityLikes.delete(id); $('#communityPostList').innerHTML = communityPosts.map(renderCommunityPost).join(''); }
 }
 
 async function addCommunityComment(event) {
   event.preventDefault();
   if (!currentUser) { notify('Inicia sessão para comentar.'); return; }
-  const form = event.currentTarget; const body = String(new FormData(form).get('body') || '').trim(); const postId = form.dataset.communityCommentForm;
+  const form = event.target.closest('[data-community-comment-form]'); if (!form) return;
+  const body = String(new FormData(form).get('body') || '').trim(); const postId = form.dataset.communityCommentForm;
   if (!body) return;
   const { error } = await supabaseClient.from('community_post_comments').insert({ post_id: postId, author_id: currentUser.id, body });
-  if (error) { notify('Não foi possível publicar o comentário.'); return; }
+  if (error) { console.error('PULSO community comment failed', error); notify(error.message || 'Não foi possível publicar o comentário.'); return; }
   notify('Comentário publicado.'); await loadCommunityPosts();
 }
 
