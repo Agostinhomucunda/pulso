@@ -303,11 +303,18 @@ async function recordCommunityView(id) {
 
 async function toggleCommunityLike(id) {
   if (!currentUser) { notify('Inicia sessão para gostar de uma publicação.'); return; }
-  const { data, error } = await supabaseClient.rpc('toggle_community_post_like', { p_post_id: id });
-  if (error) { console.error('PULSO community like failed', error); notify(error.message || 'Não foi possível actualizar o gosto. Tenta novamente.'); return; }
   const post = communityPosts.find(item => item.id === id);
-  const result = Array.isArray(data) ? data[0] : data;
-  if (post && result) { post.likes_count = result.likes_count; result.liked ? communityLikes.add(id) : communityLikes.delete(id); $('#communityPostList').innerHTML = communityPosts.map(renderCommunityPost).join(''); }
+  if (!post) return;
+  const liked = communityLikes.has(id);
+  const result = liked
+    ? await supabaseClient.from('community_post_likes').delete().eq('post_id', id).eq('user_id', currentUser.id)
+    : await supabaseClient.from('community_post_likes').insert({ post_id: id, user_id: currentUser.id });
+  if (result.error) { console.error('PULSO community like failed', result.error); notify(result.error.message || 'Não foi possível actualizar o gosto. Tenta novamente.'); return; }
+  liked ? communityLikes.delete(id) : communityLikes.add(id);
+  const countResult = await supabaseClient.from('community_posts').select('likes_count').eq('id', id).maybeSingle();
+  if (countResult.error) console.warn('PULSO community like count unavailable', countResult.error.message);
+  post.likes_count = Number(countResult.data?.likes_count ?? post.likes_count + (liked ? -1 : 1));
+  $('#communityPostList').innerHTML = communityPosts.map(renderCommunityPost).join('');
 }
 
 async function addCommunityComment(event) {
