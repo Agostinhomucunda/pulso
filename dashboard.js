@@ -299,7 +299,7 @@ async function loadCommunityPosts() {
   const target = $('#communityPostList');
   if (!target || !supabaseClient) return;
   target.innerHTML = '<div class="empty-state community-empty"><b>A carregar publicações da comunidade…</b></div>';
-  const result = await supabaseClient.from('community_posts').select('id,author_id,title,category,type_label,description,phone,whatsapp,likes_count,comments_count,shares_count,saves_count,views_count,created_at').eq('status', 'active').order('created_at', { ascending: false }).limit(40);
+  const result = await supabaseClient.from('community_posts').select('id,author_id,title,category,type_label,description,likes_count,comments_count,shares_count,saves_count,views_count,created_at').eq('status', 'active').order('created_at', { ascending: false }).limit(40);
   if (result.error) { console.error('PULSO community feed failed', result.error); target.innerHTML = '<div class="empty-state community-empty"><b>Não foi possível carregar o feed comunitário.</b>Tenta novamente dentro de instantes.</div>'; return; }
   communityPosts = result.data || [];
   const ids = communityPosts.map(item => item.id);
@@ -375,10 +375,10 @@ async function createCommunityPost(event) {
   if (!description) { setFeedback(feedback, 'Escreve o texto da publicação.', 'error'); return; }
   const submit = $('button[type="submit"]', form); submit.disabled = true;
   try {
-    const payload = { author_id: currentUser.id, title: 'Publicação da comunidade', category: 'other', type_label: 'Publicação', description, work_location: null, neighborhood: null, municipality: null, province: null, phone: null, whatsapp: null };
+    const payload = { author_id: currentUser.id, title: 'Publicação da comunidade', category: 'other', type_label: 'Publicação', description, work_location: null, neighborhood: null, municipality: null, province: null };
     const { error } = await supabaseClient.from('community_posts').insert(payload); if (error) throw error;
     form.reset(); $('#communityComposer').hidden = true; setFeedback(feedback, '', 'success'); notify('Publicação comunitária criada.'); await loadCommunityPosts();
-  } catch (error) { console.error('PULSO community post create failed', error); setFeedback(feedback, error.message?.includes('phone') ? 'Confirma os números de contacto.' : 'Não foi possível publicar. Verifica os campos e tenta novamente.', 'error'); }
+  } catch (error) { console.error('PULSO community post create failed', error); setFeedback(feedback, 'Não foi possível publicar agora. Tenta novamente.', 'error'); }
   finally { submit.disabled = false; }
 }
 
