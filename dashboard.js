@@ -38,7 +38,14 @@ const CATEGORY_ASSETS = {
 const AVATAR_ASSETS = {
   male: 'assets/profile/avatar-male.jpg',
   female: 'assets/profile/avatar-female.jpg',
+  extra1: 'assets/profile/extra/avatar-extra-1.jpg',
+  extra2: 'assets/profile/extra/avatar-extra-2.jpg',
+  extra3: 'assets/profile/extra/avatar-extra-3.jpg',
+  extra4: 'assets/profile/extra/avatar-extra-4.jpg',
+  extra5: 'assets/profile/extra/avatar-extra-5.jpg',
+  extra6: 'assets/profile/extra/avatar-extra-6.jpg',
 };
+const AVATAR_LABELS = { male: 'masculino', female: 'feminino', extra1: 'avatar 1', extra2: 'avatar 2', extra3: 'avatar 3', extra4: 'avatar 4', extra5: 'avatar 5', extra6: 'avatar 6' };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 let supabaseClient = null;
@@ -89,14 +96,14 @@ function userName() {
 }
 
 function avatarKey(value) {
-  return value === 'female' ? 'female' : 'male';
+  return Object.prototype.hasOwnProperty.call(AVATAR_ASSETS, value) ? value : 'male';
 }
 
 function renderAvatarTargets() {
   const key = avatarKey(selectedAvatar);
   const src = AVATAR_ASSETS[key];
   $$('[data-avatar-target]').forEach(target => {
-    target.innerHTML = `<img src="${src}" alt="Avatar ${key === 'female' ? 'feminino' : 'masculino'}">`;
+    target.innerHTML = `<img src="${src}" alt="Avatar ${AVATAR_LABELS[key]}">`;
   });
   $$('[data-avatar-choice]').forEach(input => {
     input.checked = input.value === key;
@@ -1532,6 +1539,14 @@ function bindEvents() {
     selectedAvatar = avatarKey(input.value);
     renderAvatarTargets();
   }));
+  $('#toggleMoreAvatars').addEventListener('click', event => {
+    const button = event.currentTarget;
+    const extra = $('#extraAvatarChoices');
+    const expanded = button.getAttribute('aria-expanded') === 'true';
+    extra.hidden = expanded;
+    button.setAttribute('aria-expanded', String(!expanded));
+    button.innerHTML = expanded ? 'Ver mais avatares <span>⌄</span>' : 'Ver menos avatares <span>⌃</span>';
+  });
   $('#manualOpportunityForm').addEventListener('submit', createManualOpportunity);
   $('#adminAssetList').addEventListener('submit', saveAdminAssets);
   $('#adminAssetList').addEventListener('click', event => {
