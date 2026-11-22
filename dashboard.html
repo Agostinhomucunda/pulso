@@ -206,6 +206,10 @@
 
       <section class="dash-view" data-panel="admin" hidden>
         <div class="page-intro"><span class="section-kicker">PAINEL RESTRITO</span><h1>Administração PULSO.</h1><p>Completa imagens em falta e regista oportunidades que o colector não encontrou.</p></div>
+        <section class="dash-panel business-submissions-panel" id="businessSubmissionsPanel">
+          <div class="panel-heading business-submissions-heading"><div><span class="section-kicker">REVISÃO EMPRESARIAL</span><h2>Publicações empresariais.</h2><p>Vê a empresa e a conta que submeteu cada oportunidade. Ao aceitar, a publicação fica verificada e entra no dashboard normal.</p></div><div class="business-submissions-controls"><span class="automation-count" id="businessSubmissionCount">A carregar…</span><button class="filter-reset" type="button" id="refreshBusinessSubmissions">Actualizar</button></div></div>
+          <div id="businessSubmissionList"><div class="empty-state"><b>A carregar submissões empresariais…</b></div></div>
+        </section>
         <section class="dash-panel admin-alert-panel" id="adminAssetAlert" hidden><b>Há cartões que precisam de imagens.</b><span id="adminAssetAlertText">A carregar…</span></section>
         <section class="dash-panel admin-assets-panel"><div class="panel-heading"><div><span class="section-kicker">ACÇÕES PENDENTES</span><h2>Completar cartões.</h2></div><button class="filter-reset" type="button" id="refreshAdminAssets">Actualizar</button></div><div id="adminAssetList"><div class="empty-state"><b>A carregar oportunidades…</b></div></div></section>
         <form class="dash-panel admin-form" id="manualOpportunityForm">

@@ -398,3 +398,36 @@
 @media(max-width:620px){.dash-top-actions .dash-wa-shortcut{width:auto;max-width:none;white-space:nowrap;line-height:normal;text-align:center}}
 
 .profile-menu-workspaces{display:grid;gap:3px;padding:10px 7px 8px;border-bottom:1px solid #edf0f6}.profile-menu-workspaces>small{padding:2px 5px 4px;color:#8792a9;font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.profile-menu-workspaces>a{display:flex;align-items:center;justify-content:space-between;padding:9px 8px;border-radius:8px;color:#174fb8;font-size:10px;font-weight:800;text-decoration:none}.profile-menu-workspaces>a:hover{background:#f1f5fc}
+
+/* Revisão das submissões empresariais no painel de administração. */
+.business-submissions-panel{padding:20px;margin:0 0 18px}
+.business-submissions-heading{align-items:flex-start}
+.business-submissions-heading h2{font-size:16px}
+.business-submissions-heading p{max-width:650px;margin:7px 0 0;color:#74829c;font-size:10px;line-height:1.55}
+.business-submissions-controls{display:flex;align-items:center;gap:12px;flex:none}
+.business-submission-list{display:grid;gap:10px}
+.business-submission-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:16px;padding:15px;border:1px solid #e7edf6;border-radius:14px;background:linear-gradient(135deg,#fff,#fbfcff)}
+.business-submission-copy{min-width:0}
+.business-submission-status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:8px;background:#fff5df;color:#936517;font-size:8px;font-weight:800}
+.business-submission-status.is-published{background:#e9f8f1;color:#187150}
+.business-submission-status.is-rejected{background:#fff0ed;color:#a53e34}
+.business-submission-copy h3{margin:9px 0 6px;color:#203454;font:800 13px/1.35 'Manrope',sans-serif}
+.business-submission-identity{display:flex;flex-wrap:wrap;gap:5px 18px;margin:0;color:#435879;font-size:9px;line-height:1.5}
+.business-submission-identity b{color:#263b5e}
+.business-submission-meta{margin:6px 0 0;color:#8190a8;font-size:8px;line-height:1.55}
+.business-submission-description{max-width:900px;margin:9px 0 0;color:#5f6f8a;font-size:9px;line-height:1.6;white-space:pre-line}
+.business-submission-note{margin:8px 0 0;padding:8px 10px;border-radius:8px;background:#fff5f3;color:#9e4a40;font-size:8px;line-height:1.5}
+.business-submission-links{display:flex;flex-wrap:wrap;gap:7px 14px;margin-top:9px}
+.business-submission-links a,.business-submission-links span{color:#1454ca;font-size:8px;font-weight:800}
+.business-submission-links span{color:#8894a8;font-weight:500}
+.business-submission-reviewed{display:block;margin-top:8px;color:#8995a9;font-size:8px}
+.business-submission-actions{display:flex;flex-direction:column;gap:7px;min-width:142px}
+.business-submission-actions .btn,.business-submission-actions .automation-remove{min-height:36px;padding:0 10px;font-size:8px;white-space:nowrap}
+@media(max-width:700px){
+  .business-submissions-panel{padding:15px}
+  .business-submissions-heading{display:grid;gap:11px}
+  .business-submissions-controls{width:100%;justify-content:space-between}
+  .business-submission-card{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}
+  .business-submission-actions{display:flex;flex-direction:row;flex-wrap:wrap;min-width:0}
+  .business-submission-actions .btn,.business-submission-actions .automation-remove{flex:1 1 135px}
+}

@@ -52,6 +52,7 @@ let notifications = [];
 let notificationIds = null;
 let isAdmin = false;
 let automationSources = [];
+let businessSubmissions = [];
 let smartImportRows = [];
 let selectedAvatar = 'male';
 let opportunitiesOffset = 0;
@@ -346,8 +347,123 @@ async function loadAdminAccess() {
   $('#adminNavLink').hidden = false;
   window.dispatchEvent(new CustomEvent('pulso:whatsapp-admin-access', { detail: { isAdmin: true } }));
   renderOpportunityLists();
-  await loadAdminAssets();
-  await loadAutomationAdmin();
+  await Promise.all([loadAdminAssets(), loadAutomationAdmin(), loadBusinessSubmissions()]);
+}
+
+function renderBusinessSubmissions() {
+  const target = $('#businessSubmissionList');
+  const pendingCount = businessSubmissions.filter(item => item.status === 'pending_review').length;
+  $('#businessSubmissionCount').textContent = `${safeCount(pendingCount)} por rever · ${safeCount(businessSubmissions.length)} no histórico`;
+  if (!businessSubmissions.length) {
+    target.innerHTML = '<div class="empty-state"><b>Ainda não há publicações empresariais submetidas.</b>As novas oportunidades enviadas para revisão aparecerão aqui com a empresa e a conta responsável.</div>';
+    return;
+  }
+
+  target.innerHTML = businessSubmissions.map(item => {
+    const organization = organizationRecord(item);
+    const company = organization.name || item.source_name || 'Empresa por identificar';
+    const submitter = item.submitter_name || 'Conta sem nome de perfil';
+    const pending = item.status === 'pending_review';
+    const rejected = item.status === 'rejected';
+    const state = pending ? 'Por rever' : rejected ? 'Rejeitada' : 'Publicada no dashboard normal';
+    const stateClass = pending ? 'is-pending' : rejected ? 'is-rejected' : 'is-published';
+    const description = String(item.public_summary || item.description || '').trim().slice(0, 900);
+    const source = safeUrl(item.source_url);
+    const application = safeUrl(item.application_url);
+    const image = safeUrl(item.image_url);
+    const place = [item.municipality, item.province].filter(Boolean).map(escapeHtml).join(', ');
+    const timestamp = item.created_at ? formatDateTime(item.created_at) : '';
+    const reviewDate = item.reviewed_at ? formatDateTime(item.reviewed_at) : '';
+    return `<article class="business-submission-card">
+      <div class="business-submission-copy">
+        <span class="business-submission-status ${stateClass}">${state}</span>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p class="business-submission-identity"><span><b>Empresa:</b> ${escapeHtml(company)}</span><span><b>Submetido por:</b> ${escapeHtml(submitter)}</span></p>
+        <p class="business-submission-meta">${escapeHtml(categoryLabel(item.category))}${place ? ` · ${place}` : ''}${item.application_deadline ? ` · prazo ${escapeHtml(formatDate(item.application_deadline))}` : ''}${timestamp ? ` · submetida ${escapeHtml(timestamp)}` : ''}</p>
+        ${description ? `<p class="business-submission-description">${escapeHtml(description)}</p>` : ''}
+        ${rejected && item.review_note ? `<p class="business-submission-note"><b>Nota de revisão:</b> ${escapeHtml(item.review_note)}</p>` : ''}
+        <div class="business-submission-links">${source ? `<a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir publicação original ↗</a>` : ''}${application ? `<a href="${escapeHtml(application)}" target="_blank" rel="noopener noreferrer">Abrir candidatura ↗</a>` : ''}${image ? `<a href="${escapeHtml(image)}" target="_blank" rel="noopener noreferrer">Ver imagem ↗</a>` : ''}${!source && !application && !image ? '<span>Sem ligações adicionais.</span>' : ''}</div>
+        ${!pending && reviewDate ? `<small class="business-submission-reviewed">Revista em ${escapeHtml(reviewDate)}</small>` : ''}
+      </div>
+      ${pending ? `<div class="business-submission-actions"><button class="btn btn-primary-soft" type="button" data-business-review="approve" data-opportunity-id="${escapeHtml(item.id)}">Aceitar e publicar</button><button class="automation-remove" type="button" data-business-review="reject" data-opportunity-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : ''}
+    </article>`;
+  }).join('');
+}
+
+async function loadBusinessSubmissions() {
+  if (!isAdmin) return;
+  const target = $('#businessSubmissionList');
+  target.innerHTML = '<div class="empty-state"><b>A carregar submissões empresariais…</b></div>';
+  const fields = 'id,title,description,public_summary,category,province,municipality,application_deadline,source_name,source_url,application_url,image_url,created_at,published_at,reviewed_at,status,verification_status,review_note,organization_id,submitted_by_user_id,submission_kind,organization:organizations(id,name)';
+  const rows = [];
+  let offset = 0;
+  let error = null;
+  while (true) {
+    const page = await supabaseClient.from('opportunities').select(fields)
+      .eq('submission_kind', 'business').in('status', ['pending_review', 'published', 'rejected'])
+      .order('created_at', { ascending: true }).order('id', { ascending: true })
+      .range(offset, offset + 499);
+    if (page.error) { error = page.error; break; }
+    const pageRows = page.data || [];
+    rows.push(...pageRows);
+    if (pageRows.length < 500) break;
+    offset += 500;
+  }
+  if (error) {
+    console.error('PULSO business submissions could not be loaded', error);
+    target.innerHTML = `<div class="empty-state" role="alert"><b>Não foi possível carregar as publicações empresariais.</b>${escapeHtml(error.message || 'Confirma as permissões administrativas e tenta novamente.')}</div>`;
+    $('#businessSubmissionCount').textContent = 'Indisponível';
+    return;
+  }
+
+  const submitterIds = [...new Set(rows.map(item => item.submitted_by_user_id).filter(Boolean))];
+  const profileResult = submitterIds.length
+    ? await supabaseClient.from('profiles').select('id,full_name').in('id', submitterIds)
+    : { data: [], error: null };
+  if (profileResult.error) console.warn('PULSO submitter profiles unavailable', profileResult.error.message);
+  const names = new Map((profileResult.data || []).map(item => [item.id, item.full_name]));
+  businessSubmissions = rows.map(item => ({ ...item, submitter_name: names.get(item.submitted_by_user_id) || '' }))
+    .sort((a, b) => Number(b.status === 'pending_review') - Number(a.status === 'pending_review')
+      || Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0));
+  renderBusinessSubmissions();
+}
+
+async function reviewBusinessSubmission(id, action, button) {
+  if (!isAdmin) return;
+  const item = businessSubmissions.find(row => row.id === id);
+  if (!item || item.status !== 'pending_review') {
+    notify('Esta publicação já não está pendente de revisão. Actualiza a lista.');
+    await loadBusinessSubmissions();
+    return;
+  }
+  const approving = action === 'approve';
+  const organization = organizationRecord(item);
+  const company = organization.name || item.source_name || 'empresa por identificar';
+  const confirmation = approving
+    ? `Confirmas que reveste a publicação “${item.title}”, submetida por ${company}? Ao aceitar, ficará verificada e visível no dashboard normal.`
+    : `Confirmas que pretendes rejeitar a publicação “${item.title}”, submetida por ${company}?`;
+  if (!window.confirm(confirmation)) return;
+
+  const reviewedAt = new Date().toISOString();
+  const update = approving
+    ? { status: 'published', verification_status: 'verified', published_at: reviewedAt, published_by: currentUser.id, posted_at: reviewedAt, reviewed_by: currentUser.id, reviewed_at: reviewedAt, review_note: null }
+    : { status: 'rejected', verification_status: 'unverified', reviewed_by: currentUser.id, reviewed_at: reviewedAt, review_note: 'Rejeitada pela administração PULSO.' };
+  if (button) button.disabled = true;
+  const { data, error } = await supabaseClient.from('opportunities').update(update)
+    .eq('id', id).eq('submission_kind', 'business').eq('status', 'pending_review').select('id').maybeSingle();
+  if (error) {
+    console.error('PULSO business opportunity review failed', error);
+    notify(error.message || 'Não foi possível guardar a revisão. Tenta novamente.');
+    if (button) button.disabled = false;
+    return;
+  }
+  if (!data) {
+    notify('A publicação já foi revista por outro administrador. A lista foi actualizada.');
+    await loadBusinessSubmissions();
+    return;
+  }
+  notify(approving ? 'Publicação aceite e publicada no dashboard normal.' : 'Publicação rejeitada e mantida fora do catálogo.');
+  await Promise.allSettled([loadBusinessSubmissions(), loadOpportunities(), loadStats()]);
 }
 
 function importKey(value) {
@@ -1248,6 +1364,11 @@ function bindEvents() {
     if (remove) void deleteAdminOpportunity(remove.dataset.deleteOpportunity);
   });
   $('#refreshAdminAssets').addEventListener('click', () => void loadAdminAssets());
+  $('#refreshBusinessSubmissions').addEventListener('click', () => void loadBusinessSubmissions());
+  $('#businessSubmissionList').addEventListener('click', event => {
+    const action = event.target.closest('[data-business-review]');
+    if (action) void reviewBusinessSubmission(action.dataset.opportunityId, action.dataset.businessReview, action);
+  });
   $('#refreshAutomationAdmin').addEventListener('click', () => void loadAutomationAdmin());
   $('#runPulsoCollection').addEventListener('click', () => void runPulsoCollection());
   $('#automationSourceList').addEventListener('submit', saveAutomationSource);
