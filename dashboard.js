@@ -38,6 +38,7 @@ const CATEGORY_ASSETS = {
 const AVATAR_ASSETS = {
   male: 'assets/profile/avatar-male.jpg',
   female: 'assets/profile/avatar-female.jpg',
+  admin: 'assets/profile/admin/pulso-comunidade-avatar.png',
   extra1: 'assets/profile/extra/avatar-extra-1.jpg',
   extra2: 'assets/profile/extra/avatar-extra-2.jpg',
   extra3: 'assets/profile/extra/avatar-extra-3.jpg',
@@ -45,7 +46,10 @@ const AVATAR_ASSETS = {
   extra5: 'assets/profile/extra/avatar-extra-5.jpg',
   extra6: 'assets/profile/extra/avatar-extra-6.jpg',
 };
-const AVATAR_LABELS = { male: 'masculino', female: 'feminino', extra1: 'avatar 1', extra2: 'avatar 2', extra3: 'avatar 3', extra4: 'avatar 4', extra5: 'avatar 5', extra6: 'avatar 6' };
+const AVATAR_LABELS = { male: 'masculino', female: 'feminino', admin: 'Pulso Comunidade', extra1: 'avatar 1', extra2: 'avatar 2', extra3: 'avatar 3', extra4: 'avatar 4', extra5: 'avatar 5', extra6: 'avatar 6' };
+const PULSO_ADMIN_USER_ID = 'b6d8e061-1bf5-4b4e-81e8-e65245a562a7';
+const PULSO_ADMIN_NAME = 'Pulso Comunidade';
+const PULSO_ADMIN_BANNER = 'assets/publications/community/pulso-comunidade-banner.jpg';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 let supabaseClient = null;
@@ -91,6 +95,7 @@ function initials(value) {
 }
 
 function userName() {
+  if (isPulsoAdminUser(currentUser?.id)) return PULSO_ADMIN_NAME;
   return String(profile.full_name || currentUser?.user_metadata?.full_name || '').trim()
     || currentUser?.email?.split('@')[0] || 'Utilizador PULSO';
 }
@@ -99,8 +104,12 @@ function avatarKey(value) {
   return Object.prototype.hasOwnProperty.call(AVATAR_ASSETS, value) ? value : 'male';
 }
 
+function isPulsoAdminUser(userId) {
+  return userId === PULSO_ADMIN_USER_ID;
+}
+
 function renderAvatarTargets() {
-  const key = avatarKey(selectedAvatar);
+  const key = isPulsoAdminUser(currentUser?.id) ? 'admin' : avatarKey(selectedAvatar);
   const src = AVATAR_ASSETS[key];
   $$('[data-avatar-target]').forEach(target => {
     target.innerHTML = `<img src="${src}" alt="Avatar ${AVATAR_LABELS[key]}">`;
@@ -234,7 +243,7 @@ function updateIdentity() {
   $('#profileEmailField').value = displayEmail;
   const first = name.split(/\s+/)[0] || name;
   $('#welcomeHeading').textContent = `Olá, ${first}. O teu próximo passo começa aqui.`;
-  $('#profileForm [name="full_name"]').value = profile.full_name || currentUser?.user_metadata?.full_name || '';
+  $('#profileForm [name="full_name"]').value = isPulsoAdminUser(currentUser?.id) ? PULSO_ADMIN_NAME : (profile.full_name || currentUser?.user_metadata?.full_name || '');
   $('#profileForm [name="province"]').value = profile.province || '';
   $('#profileForm [name="municipality"]').value = profile.municipality || '';
   $('#profileForm [name="professional_area"]').value = profile.professional_area || '';
@@ -291,13 +300,24 @@ function communityRelativeTime(value) {
 
 function renderCommunityPost(post) {
   const author = post.author || {};
+  const adminPost = isPulsoAdminUser(post.author_id);
   const comments = (post.comments || []).slice(0, 3).map(comment => `<div class="community-comment"><b>${escapeHtml(comment.author?.full_name || 'Utilizador')}:</b> ${escapeHtml(comment.body)}</div>`).join('');
   const saved = communitySaved.has(post.id);
   const body = String(post.description || post.title || '').trim();
-  return `<article class="community-post-card" data-community-post="${escapeHtml(post.id)}">
-    <div class="community-card-top"><div class="community-post-author">${communityAvatar(author)}<span class="community-author-copy"><b>${escapeHtml(author.full_name || 'Utilizador PULSO')} <img class="community-verified-badge" src="assets/logos/verified-3d.png" alt="Perfil verificado"></b><small>${communityClockIconMarkup()} ${communityRelativeTime(post.created_at)} <i>•</i> ${communityPeopleIconMarkup()} Comunidade</small></span></div><button class="community-more-button" type="button" aria-label="Mais opções">•••</button></div>
-    <div class="community-card-main"><p class="community-post-description">${escapeHtml(body)}</p></div>
-    <div class="community-post-stats"><button class="community-social-action community-like-button ${communityLikes.has(post.id) ? 'liked' : ''}" type="button" data-community-like="${escapeHtml(post.id)}">${communitySocialIconMarkup('like')}<span>Gostar</span> <b>${safeCount(post.likes_count)}</b></button><button class="community-social-action" type="button" data-community-comment-toggle="${escapeHtml(post.id)}">${communitySocialIconMarkup('comment')}<span>Comentar</span> <b>${safeCount(post.comments_count)}</b></button><button class="community-social-action" type="button" data-community-share="${escapeHtml(post.id)}">${communitySocialIconMarkup('share')}<span>Partilhar</span></button><button class="community-social-action community-save-button ${saved ? 'saved' : ''}" type="button" data-community-save="${escapeHtml(post.id)}">${communitySocialIconMarkup('save')}<span>Guardar</span></button></div>
+  const avatar = adminPost
+    ? `<span class="community-author-avatar community-admin-avatar"><img src="${AVATAR_ASSETS.admin}" alt="Avatar de ${PULSO_ADMIN_NAME}"></span>`
+    : communityAvatar(author);
+  const authorName = adminPost ? PULSO_ADMIN_NAME : (author.full_name || 'Utilizador PULSO');
+  const context = adminPost
+    ? `<span class="community-admin-role">♛ Administrador</span><i>•</i> ${communityClockIconMarkup()} ${communityRelativeTime(post.created_at)} <i>•</i> ${communityPeopleIconMarkup()} Comunidade`
+    : `${communityClockIconMarkup()} ${communityRelativeTime(post.created_at)} <i>•</i> ${communityPeopleIconMarkup()} Comunidade`;
+  const summary = adminPost
+    ? `<div class="community-post-summary"><span>${communitySocialIconMarkup('like')} ${safeCount(post.likes_count)}</span><span>${communitySocialIconMarkup('comment')} ${safeCount(post.comments_count)} comentários</span></div>`
+    : '';
+  return `<article class="community-post-card${adminPost ? ' community-admin-post' : ''}" data-community-post="${escapeHtml(post.id)}">
+    <div class="community-card-top"><div class="community-post-author">${avatar}<span class="community-author-copy"><b>${escapeHtml(authorName)} <img class="community-verified-badge" src="assets/logos/verified-3d.png" alt="Perfil verificado"></b><small>${context}</small></span></div><button class="community-more-button" type="button" aria-label="Mais opções">•••</button></div>
+    <div class="community-card-main"><p class="community-post-description">${escapeHtml(body)}</p>${adminPost ? `<img class="community-admin-banner" src="${PULSO_ADMIN_BANNER}" alt="Imagem da comunidade PULSO" loading="lazy">` : ''}</div>
+    ${summary}<div class="community-post-stats"><button class="community-social-action community-like-button ${communityLikes.has(post.id) ? 'liked' : ''}" type="button" data-community-like="${escapeHtml(post.id)}">${communitySocialIconMarkup('like')}<span>Gostar</span> <b>${safeCount(post.likes_count)}</b></button><button class="community-social-action" type="button" data-community-comment-toggle="${escapeHtml(post.id)}">${communitySocialIconMarkup('comment')}<span>Comentar</span> <b>${safeCount(post.comments_count)}</b></button><button class="community-social-action" type="button" data-community-share="${escapeHtml(post.id)}">${communitySocialIconMarkup('share')}<span>Partilhar</span></button><button class="community-social-action community-save-button ${saved ? 'saved' : ''}" type="button" data-community-save="${escapeHtml(post.id)}">${communitySocialIconMarkup('save')}<span>Guardar</span></button></div>
     <div class="community-comments">${comments || ''}<form class="community-comment-form" data-community-comment-form="${escapeHtml(post.id)}"><input name="body" maxlength="600" placeholder="Pedir mais informações…" required><button type="submit">Enviar</button></form></div>
   </article>`;
 }
@@ -382,7 +402,10 @@ async function createCommunityPost(event) {
   if (!description) return;
   const submit = $('button[type="submit"]', form); submit.disabled = true;
   try {
-    const payload = { author_id: currentUser.id, title: 'Publicação da comunidade', category: 'other', type_label: 'Publicação', description, work_location: null, neighborhood: null, municipality: null, province: null };
+    const adminPost = isPulsoAdminUser(currentUser?.id);
+    const adminComments = 40 + Math.floor(Math.random() * 11);
+    const payload = { author_id: currentUser.id, title: adminPost ? PULSO_ADMIN_NAME : 'Publicação da comunidade', category: 'other', type_label: adminPost ? 'Administrador' : 'Publicação', description, work_location: null, neighborhood: null, municipality: null, province: null };
+    if (adminPost) { const adminLikes = 1000 + Math.floor(Math.random() * 4001); Object.assign(payload, { likes_count: adminLikes, like_seed_count: adminLikes, comments_count: adminComments, comment_seed_count: adminComments, shares_count: 0, saves_count: 0 }); }
     const { error } = await supabaseClient.from('community_posts').insert(payload); if (error) throw error;
     form.reset(); $('#communityComposer').hidden = true; notify('Publicação comunitária criada.'); await loadCommunityPosts();
   } catch (error) { console.error('PULSO community post create failed', error); }
