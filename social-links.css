@@ -1,0 +1,63 @@
+/* Botões sociais PULSO: acabamento 3D subtil, com os símbolos de marca preservados. */
+.pulso-social-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pulso-social-link {
+  position: relative;
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #ffffff48;
+  border-radius: 12px;
+  color: #fff;
+  font: 750 11px/1.1 Manrope, Inter, system-ui, sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 #07163224, 0 5px 11px #102a4b1c, inset 0 1px 0 #ffffff48;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.pulso-social-link.social-youtube { background: linear-gradient(145deg, #f04444, #d51f2a); }
+.pulso-social-link.social-instagram { background: linear-gradient(135deg, #7353d9 0%, #c13ea5 47%, #f07949 100%); }
+.pulso-social-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 #07163224, 0 8px 15px #102a4b25, inset 0 1px 0 #ffffff55;
+  filter: saturate(1.06);
+}
+.pulso-social-link:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #07163220, 0 2px 5px #102a4b18, inset 0 1px 0 #ffffff38;
+}
+.pulso-social-link:focus-visible { outline: 3px solid #f3bd37; outline-offset: 3px; }
+.pulso-social-link img { display: block; width: 17px; height: 17px; object-fit: contain; }
+.pulso-social-caption {
+  margin: 12px 0 7px;
+  color: #8592a8;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .11em;
+}
+.pulso-social-links--footer { justify-content: center; }
+.pulso-social-links--compact { gap: 7px; }
+.pulso-social-links--compact .pulso-social-link { min-height: 34px; gap: 7px; padding: 0 10px; border-radius: 10px; font-size: 10px; }
+.pulso-social-links--compact .pulso-social-link img { width: 15px; height: 15px; }
+.pulso-social-links--dashboard { margin-top: 10px; }
+.pulso-social-links--dashboard .pulso-social-link { flex: 1 1 auto; }
+.pulso-social-links--org { justify-content: center; margin-top: 12px; }
+.pulso-social-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 22px; }
+.pulso-social-footer .pulso-social-caption { margin: 0; }
+@media (max-width: 620px) {
+  .pulso-social-links { gap: 7px; }
+  .pulso-social-link { min-height: 36px; padding: 0 10px; font-size: 10px; }
+  .pulso-social-links--footer { justify-content: flex-start; }
+  .pulso-social-footer { justify-content: flex-start; gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulso-social-link { transition: none; }
+}
