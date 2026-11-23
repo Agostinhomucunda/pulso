@@ -35,7 +35,7 @@
   box-shadow: 0 1px 0 #07163220, 0 2px 5px #102a4b18, inset 0 1px 0 #ffffff38;
 }
 .pulso-social-link:focus-visible { outline: 3px solid #f3bd37; outline-offset: 3px; }
-.pulso-social-link img { display: block; width: 17px; height: 17px; object-fit: contain; }
+.pulso-social-link img { display: block; width: 17px; height: 17px; object-fit: contain; filter: brightness(0) invert(1); }
 .pulso-social-caption {
   margin: 12px 0 7px;
   color: #8592a8;
