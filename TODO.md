@@ -66,3 +66,25 @@
 - [x] Guardar dados e documentos em estruturas novas, com RLS de titular/administrador e bucket privado; não expor documentos publicamente; revisão/aprovação por responsáveis autorizados, sem alterar dashboard administrativo.
 - [x] Preparar espaços visuais distintos para empresa verificada, parceiro aprovado e pedido em análise; não criar dashboards, menus internos, publicação, estatísticas ou gestão de oportunidades.
 - [x] Não implementar API oficial sem documentação/autorização comprovada; preservar autenticação, contas normais, dashboards, oportunidades, páginas, configurações e restantes módulos existentes; não introduzir redireccionamentos automáticos.
+
+
+## Extensão — notificações Web Push (activada e publicada)
+
+### Resumo agregado de oportunidades
+- [x] Após cada lote importado e publicado com sucesso, enviar exactamente um aviso agregado para todos os utilizadores, com a quantidade de oportunidades confirmadas e acção “Ver agora”; não enviar um Push por oportunidade.
+- [x] Aplicar a mesma mensagem agregada quando uma oportunidade é publicada manualmente, aprovada na revisão empresarial ou criada pela recolha automática; não enviar quando só é importada para revisão, rejeitada, falha a publicação ou volta a ser revista depois da recolha já anunciada.
+- [x] Persistir cada resumo uma única vez por evento na caixa de notificações, incluindo utilizadores sem Push activo; não duplicar o aviso do service worker com os avisos locais do dashboard.
+
+### Aviso geral da administração
+- [x] Apresentar no painel administrativo um formulário de título e mensagem geral, confirmar antes do envio e permitir apenas administradores autenticados.
+- [x] Enviar uma só notificação geral a todos os utilizadores, persistir a mensagem na caixa do dashboard e encaminhar Push apenas aos dispositivos inscritos; não criar outros tipos de Push.
+
+### Subscrição, entrega e protecção
+- [x] Pedir permissão apenas após acção explícita; associar a subscrição do dispositivo à conta autenticada e permitir removê-la no mesmo botão; manter avisos locais quando Push não estiver disponível.
+- [x] Tratar o evento `push` e os cliques no service worker, usando o ícone PULSO e abrindo apenas destinos internos da aplicação.
+- [x] Preparar subscrições com RLS por utilizador; restringir broadcast a administradores e manter chaves privadas VAPID exclusivamente nos segredos do servidor.
+- [x] Expurgar subscrições expiradas/recusadas e coalescer reenvios pelo mesmo identificador de evento. A entrega depende do serviço Push e do TTL, pelo que não há garantia depois da expiração.
+
+### Activação concluída
+- [x] Migração aplicada; `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` guardados nos segredos do projecto; chave pública correspondente incluída no frontend; Edge Function `pulso-notifications` publicada com JWT obrigatório.
+- [x] Site publicado a partir de `main` no GitHub Pages. Não foi enviado qualquer aviso de teste aos utilizadores.

@@ -1,4 +1,5 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-config.js';
+import { PULSO_WEB_PUSH_PUBLIC_KEY } from './push-config.js';
 
 const PAGE_SIZE = 20;
 const CATEGORY_LABELS = {
@@ -61,6 +62,7 @@ let savedIds = new Set();
 let alerts = [];
 let notifications = [];
 let notificationIds = null;
+let activePushSubscription = null;
 let isAdmin = false;
 let automationSources = [];
 let businessSubmissions = [];
@@ -198,6 +200,74 @@ function setFeedback(element, message, kind = 'success') {
 
 function safeCount(value) {
   return new Intl.NumberFormat('pt-AO').format(Number(value || 0));
+}
+
+function newNotificationEventKey() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map(value => value.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+async function opportunityDigestEventKey(ids) {
+  if (!crypto.subtle) return newNotificationEventKey();
+  const content = `pulso-opportunity-digest-v1:${[...ids].sort().join(',')}`;
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content)));
+  const bytes = digest.slice(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map(value => value.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+async function invokeSystemNotification(body) {
+  if (!supabaseClient || !currentUser) throw new Error('Inicia sessão para enviar notificações.');
+  const { data, error } = await supabaseClient.functions.invoke('pulso-notifications', { body });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error || 'A função de notificações não confirmou o envio.');
+  return data;
+}
+
+async function sendOpportunityDigest(ids) {
+  const opportunityIds = [...new Set((ids || []).filter(id => typeof id === 'string' && id))];
+  if (!opportunityIds.length) return { ok: true, skipped: true };
+  if (opportunityIds.length > 1000) {
+    return { ok: false, error: 'O lote excede 1000 oportunidades; não foi possível criar um único resumo.' };
+  }
+  try {
+    const data = await invokeSystemNotification({
+      action: 'opportunity_digest',
+      event_key: await opportunityDigestEventKey(opportunityIds),
+      opportunity_ids: opportunityIds,
+    });
+    return { ok: true, data };
+  } catch (error) {
+    console.warn('PULSO opportunity digest could not be sent', error);
+    return { ok: false, error: error?.message || 'A função de notificações ainda não está disponível.' };
+  }
+}
+
+function localAlertsKey() {
+  return `pulso-browser-alerts-${currentUser?.id || ''}`;
+}
+
+function localStorageValue(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function setLocalStorageValue(key, value) {
+  try {
+    if (value == null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch { /* O navegador pode bloquear o armazenamento local. */ }
+}
+
+function publicKeyBytes(value) {
+  const base64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+  const decoded = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+  return Uint8Array.from(decoded, character => character.charCodeAt(0));
 }
 
 function activateView(view, { updateHash = true } = {}) {
@@ -652,7 +722,10 @@ async function reviewBusinessSubmission(id, action, button) {
     await loadBusinessSubmissions();
     return;
   }
-  notify(approving ? 'Publicação aceite e publicada no dashboard normal.' : 'Publicação rejeitada e mantida fora do catálogo.');
+  const digest = approving ? await sendOpportunityDigest([id]) : { ok: true };
+  notify(approving
+    ? digest.ok ? 'Publicação aceite e publicada no dashboard normal.' : 'Publicação aceite; não foi possível enviar o resumo aos utilizadores.'
+    : 'Publicação rejeitada e mantida fora do catálogo.');
   await Promise.allSettled([loadBusinessSubmissions(), loadOpportunities(), loadStats()]);
 }
 
@@ -762,10 +835,79 @@ async function ensureSmartImportSource(row) {
 }
 
 async function importSmartRows({ publish }) {
-  const rows = smartImportRows.filter(row => row.valid); if (!rows.length) { setFeedback($('#smartImportFeedback'), 'Não há cartões válidos para importar.', 'error'); return; } const button = publish ? $('#smartImportPublishButton') : $('#smartImportReviewButton'); button.disabled = true; let created = 0; const errors = [];
-  try { for (const row of rows) { try { const organizationId = await ensureSmartImportOrganization(row); const sourceId = await ensureSmartImportSource(row); const image = httpsUrl(row.image_url); const imageSource = image ? row.source_url : null; const payload = { organization_id: organizationId, source_id: sourceId, title: row.title, description: row.description || null, public_summary: row.description || null, category: row.category, province: row.province || null, municipality: row.municipality || null, application_deadline: row.application_deadline || null, source_name: row.source_name || row.organization, source_url: row.source_url, application_url: httpsUrl(row.application_url), candidate_image_url: image, candidate_image_source_url: imageSource, image_url: image, image_source_url: imageSource, image_rights_confirmed: Boolean(image), collection_method: 'manual', status: 'pending_review', verification_status: 'unverified' }; const inserted = await supabaseClient.from('opportunities').insert(payload).select('id').single(); if (inserted.error) throw inserted.error; if (publish) { const promoted = await supabaseClient.from('opportunities').update({ status: 'published', verification_status: 'verified', published_at: new Date().toISOString() }).eq('id', inserted.data.id); if (promoted.error) throw promoted.error; } created += 1; } catch (error) { errors.push(`${row.title}: ${error.message}`); } }
-    setFeedback($('#smartImportFeedback'), `${created} cartão(ões) ${publish ? 'importado(s) e publicado(s)' : 'importado(s) para revisão'}.${errors.length ? ` ${errors.length} com erro: ${errors[0]}` : ''}`, errors.length ? 'error' : 'success'); if (created) { smartImportRows = []; renderSmartImportPreview(); $('#smartImportFile').value = ''; await Promise.all([loadOpportunities(), loadStats(), loadAdminAssets()]); }
-  } finally { button.disabled = false; }
+  const rows = smartImportRows.filter(row => row.valid);
+  if (!rows.length) {
+    setFeedback($('#smartImportFeedback'), 'Não há cartões válidos para importar.', 'error');
+    return;
+  }
+  if (publish && rows.length > 1000) {
+    setFeedback($('#smartImportFeedback'), 'Para manter um único resumo agregado, cada lote pode publicar até 1000 oportunidades de cada vez.', 'error');
+    return;
+  }
+  const button = publish ? $('#smartImportPublishButton') : $('#smartImportReviewButton');
+  button.disabled = true;
+  let created = 0;
+  const publishedIds = [];
+  const errors = [];
+  try {
+    for (const row of rows) {
+      try {
+        const organizationId = await ensureSmartImportOrganization(row);
+        const sourceId = await ensureSmartImportSource(row);
+        const image = httpsUrl(row.image_url);
+        const imageSource = image ? row.source_url : null;
+        const payload = {
+          organization_id: organizationId,
+          source_id: sourceId,
+          title: row.title,
+          description: row.description || null,
+          public_summary: row.description || null,
+          category: row.category,
+          province: row.province || null,
+          municipality: row.municipality || null,
+          application_deadline: row.application_deadline || null,
+          source_name: row.source_name || row.organization,
+          source_url: row.source_url,
+          application_url: httpsUrl(row.application_url),
+          candidate_image_url: image,
+          candidate_image_source_url: imageSource,
+          image_url: image,
+          image_source_url: imageSource,
+          image_rights_confirmed: Boolean(image),
+          collection_method: 'manual',
+          status: 'pending_review',
+          verification_status: 'unverified',
+        };
+        const inserted = await supabaseClient.from('opportunities').insert(payload).select('id').single();
+        if (inserted.error) throw inserted.error;
+        if (publish) {
+          const promoted = await supabaseClient.from('opportunities')
+            .update({ status: 'published', verification_status: 'verified', published_at: new Date().toISOString() })
+            .eq('id', inserted.data.id).eq('status', 'pending_review').select('id').maybeSingle();
+          if (promoted.error) throw promoted.error;
+          if (!promoted.data) throw new Error('A oportunidade não foi confirmada como publicada.');
+          publishedIds.push(inserted.data.id);
+        }
+        created += 1;
+      } catch (error) {
+        errors.push(`${row.title}: ${error.message || 'erro ao importar'}`);
+      }
+    }
+
+    let digest = null;
+    if (publish && publishedIds.length) digest = await sendOpportunityDigest(publishedIds);
+    const summary = `${created} cartão(ões) ${publish ? 'importado(s) e publicado(s)' : 'importado(s) para revisão'}.`;
+    const digestNote = digest && !digest.ok ? ' O resumo para os utilizadores não foi enviado.' : '';
+    setFeedback($('#smartImportFeedback'), `${summary}${digestNote}${errors.length ? ` ${errors.length} com erro: ${errors[0]}` : ''}`, errors.length || (digest && !digest.ok) ? 'error' : 'success');
+    if (created) {
+      smartImportRows = [];
+      renderSmartImportPreview();
+      $('#smartImportFile').value = '';
+      await Promise.all([loadOpportunities(), loadStats(), loadAdminAssets()]);
+    }
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function bindSmartImport() {
@@ -963,6 +1105,7 @@ async function runPulsoCollection() {
   if (!isAdmin || !supabaseClient) return;
   const button = $('#runPulsoCollection');
   const status = $('#automationRunStatus');
+  const startedAt = new Date().toISOString();
   button.disabled = true;
   status.hidden = false;
   status.textContent = 'A recolher uma fonte activa. A IA irá criar rascunhos privados para revisão.';
@@ -973,6 +1116,22 @@ async function runPulsoCollection() {
     status.textContent = data?.processed_sources
       ? `Concluído: ${data.processed_sources} fonte(s), ${Number(data.items_seen || 0)} item(ns) analisado(s), ${queued} publicação(ões) criada(s).`
       : (data?.message || 'Não há fontes activas com feed configurado.');
+    if (queued > 0) {
+      const recent = await supabaseClient.from('opportunities').select('id')
+        .eq('collection_method', 'automatic').eq('status', 'published').eq('verification_status', 'verified')
+        .gte('created_at', startedAt).order('created_at', { ascending: true }).limit(1000);
+      if (recent.error) {
+        console.warn('PULSO could not identify newly collected opportunities for the digest', recent.error);
+        status.textContent += ' Não foi possível identificar com segurança as oportunidades para o resumo.';
+      } else if ((recent.data || []).length && Number(queued) <= recent.data.length) {
+        const digest = await sendOpportunityDigest(recent.data.map(row => row.id));
+        if (!digest.ok) status.textContent += ' O resumo aos utilizadores não foi enviado.';
+      } else if (!recent.data?.length) {
+        status.textContent += ' Não foi possível identificar as novas publicações para o resumo.';
+      } else if (Number(queued) > 1000) {
+        status.textContent += ' O lote excede o limite de um resumo agregado.';
+      }
+    }
     await loadAutomationAdmin();
   } catch (error) {
     console.error('PULSO collection run failed', error);
@@ -1095,6 +1254,7 @@ async function createManualOpportunity(event) {
   submit.disabled = true;
   let createdOrganizationId = null;
   let opportunityCreated = false;
+  let publishedOpportunityId = null;
   let existingOrganization = false;
   try {
     const organizationNameValue = String(values.get('organization')).trim();
@@ -1120,20 +1280,22 @@ async function createManualOpportunity(event) {
       source_name: organizationNameValue, source_url: source, application_url: application || source,
       image_url: image, status: 'published', verification_status: 'verified', published_at: new Date().toISOString(),
     };
-    const { error: opportunityError } = await supabaseClient.from('opportunities').insert(payload);
+    const { data: opportunity, error: opportunityError } = await supabaseClient.from('opportunities').insert(payload).select('id').single();
     if (opportunityError) throw opportunityError;
     opportunityCreated = true;
+    publishedOpportunityId = opportunity.id;
+    const digest = await sendOpportunityDigest([publishedOpportunityId]);
     form.reset();
     if (existingOrganization && logo) {
       const { error: organizationError } = await supabaseClient.from('organizations')
         .update({ logo_url: logo, logo_source_url: website, logo_rights_confirmed: true, verification_status: 'verified' }).eq('id', organization.id);
       if (organizationError) {
-        setFeedback(feedback, 'A oportunidade foi publicada, mas o logótipo ficou pendente. Completa-o na fila de cartões do painel.', 'error');
+        setFeedback(feedback, `A oportunidade foi publicada, mas o logótipo ficou pendente. Completa-o na fila de cartões do painel.${digest.ok ? '' : ' O resumo aos utilizadores não foi enviado.'}`, 'error');
         await Promise.all([loadAdminAssets(), loadOpportunities(), loadStats()]);
         return;
       }
     }
-    setFeedback(feedback, 'Oportunidade guardada e publicada. Confirma sempre a fonte oficial e o prazo.', 'success');
+    setFeedback(feedback, `Oportunidade guardada e publicada. Confirma sempre a fonte oficial e o prazo.${digest.ok ? '' : ' O resumo aos utilizadores não foi enviado.'}`, digest.ok ? 'success' : 'error');
     await Promise.all([loadAdminAssets(), loadOpportunities(), loadStats()]);
   } catch (error) {
     console.error('PULSO manual opportunity creation failed', error);
@@ -1153,6 +1315,47 @@ async function createManualOpportunity(event) {
       setFeedback(feedback, `${error.message || 'Não foi possível guardar a oportunidade. Verifica se a migration de permissões está activa.'}${cleanupNote}`, 'error');
     }
   } finally { submit.disabled = false; }
+}
+
+async function sendAdminBroadcast(event) {
+  event.preventDefault();
+  if (!isAdmin || !currentUser) {
+    notify('Apenas a administração pode enviar avisos gerais.');
+    return;
+  }
+  const form = event.currentTarget;
+  const values = new FormData(form);
+  const title = String(values.get('title') || '').trim();
+  const message = String(values.get('message') || '').trim();
+  const feedback = $('#adminBroadcastFeedback');
+  if (!title || title.length > 90 || !message || message.length > 500) {
+    setFeedback(feedback, 'Indica um título até 90 caracteres e uma mensagem até 500 caracteres.', 'error');
+    return;
+  }
+  if (!window.confirm(`Enviar a mensagem “${title}” a todos os utilizadores do PULSO?\n\n${message}`)) return;
+  const submit = $('button[type="submit"]', form);
+  submit.disabled = true;
+  setFeedback(feedback, 'A guardar a mensagem e a enviar aos dispositivos inscritos…', 'success');
+  try {
+    const data = await invokeSystemNotification({
+      action: 'admin_broadcast',
+      event_key: newNotificationEventKey(),
+      title,
+      message,
+    });
+    form.reset();
+    const deliveryNote = !data.push_configured
+      ? ' O aviso ficou na caixa; o Push ainda não está configurado no servidor.'
+      : Number(data.push_delivered) > 0
+        ? ` Push aceite por ${safeCount(data.push_delivered)} dispositivo(s).`
+        : ' O aviso ficou na caixa; não há dispositivos Push inscritos neste momento.';
+    setFeedback(feedback, `Aviso guardado para ${safeCount(data.recipients)} utilizador(es).${deliveryNote}`, 'success');
+  } catch (error) {
+    console.error('PULSO admin broadcast failed', error);
+    setFeedback(feedback, `Não foi possível enviar o aviso. ${error?.message || 'Confirma se a migration e a função foram activadas.'}`, 'error');
+  } finally {
+    submit.disabled = false;
+  }
 }
 
 async function loadOpportunities({ append = false } = {}) {
@@ -1315,6 +1518,24 @@ async function deleteAlert(id) {
   notify('Alerta removido.');
 }
 
+function openSystemNotificationTarget(value, fallbackView = 'notifications') {
+  const allowedViews = new Set(['opportunities', 'notifications']);
+  let view = fallbackView;
+  try {
+    const dashboardUrl = new URL('./dashboard.html', document.baseURI);
+    const target = new URL(value || `dashboard.html#${fallbackView}`, document.baseURI);
+    if (target.origin === dashboardUrl.origin && target.pathname === dashboardUrl.pathname) {
+      const requestedView = target.hash.slice(1);
+      if (allowedViews.has(requestedView)) view = requestedView;
+    }
+    dashboardUrl.hash = view;
+    if (location.pathname === dashboardUrl.pathname) activateView(view);
+    else location.assign(dashboardUrl.href);
+  } catch {
+    activateView(allowedViews.has(fallbackView) ? fallbackView : 'notifications');
+  }
+}
+
 function renderNotifications() {
   const target = $('#notificationList');
   const unread = notifications.filter(item => !item.read_at).length;
@@ -1328,40 +1549,56 @@ function renderNotifications() {
     target.innerHTML = '<div class="empty-state"><b>Ainda não tens notificações.</b>As notificações associadas à tua conta aparecem aqui quando estão disponíveis.</div>';
     return;
   }
-  target.innerHTML = notifications.map(item => `<article class="notification-item ${item.read_at ? '' : 'unread'}">
-    <span class="notification-icon" aria-hidden="true">${item.opportunity_id ? '▤' : '✦'}</span>
-    <div class="notification-copy"><b>${escapeHtml(item.title)}</b><p>${escapeHtml(item.message)}</p><small>${escapeHtml(formatDateTime(item.created_at))}</small></div>
-    <div class="notification-item-actions">${item.opportunity_id ? `<button class="notification-open" type="button" data-notification-opportunity="${escapeHtml(item.opportunity_id)}">Ver oportunidade</button>` : ''}${item.read_at ? '' : `<button class="notification-read" type="button" data-read-notification="${escapeHtml(item.id)}">Marcar como lida</button>`}</div>
-  </article>`).join('');
+  target.innerHTML = notifications.map(item => {
+    const digest = item.notification_type === 'opportunity_digest';
+    const broadcast = item.notification_type === 'admin_broadcast';
+    const systemNotice = digest || broadcast;
+    const action = systemNotice
+      ? `<button class="notification-open" type="button" data-notification-target="${escapeHtml(item.target_url || (digest ? 'dashboard.html#opportunities' : 'dashboard.html#notifications'))}">${digest ? 'Ver agora' : 'Abrir aviso'}</button>`
+      : (item.opportunity_id ? `<button class="notification-open" type="button" data-notification-opportunity="${escapeHtml(item.opportunity_id)}">Ver oportunidade</button>` : '');
+    return `<article class="notification-item ${item.read_at ? '' : 'unread'}">
+      <span class="notification-icon" aria-hidden="true">${digest ? '▤' : broadcast ? '✦' : item.opportunity_id ? '▤' : '✦'}</span>
+      <div class="notification-copy"><b>${escapeHtml(item.title)}</b><p>${escapeHtml(item.message)}</p><small>${escapeHtml(formatDateTime(item.created_at))}</small></div>
+      <div class="notification-item-actions">${action}${item.read_at ? '' : `<button class="notification-read" type="button" data-read-notification="${escapeHtml(item.id)}">Marcar como lida</button>`}</div>
+    </article>`;
+  }).join('');
 }
 
 async function loadNotifications({ poll = false } = {}) {
   if (!supabaseClient || !currentUser) return;
-  const { data, error } = await supabaseClient.from('notifications')
-    .select('id,title,message,opportunity_id,read_at,created_at')
+  let result = await supabaseClient.from('notifications')
+    .select('id,title,message,opportunity_id,read_at,created_at,notification_type,target_url')
     .eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(50);
-  if (error) {
-    console.error('PULSO notifications failed', error);
+  if (result.error && ['42703', 'PGRST204'].includes(result.error.code)) {
+    result = await supabaseClient.from('notifications')
+      .select('id,title,message,opportunity_id,read_at,created_at')
+      .eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(50);
+  }
+  if (result.error) {
+    console.error('PULSO notifications failed', result.error);
     $('#notificationList').innerHTML = '<div class="empty-state" role="alert"><b>Não foi possível carregar as notificações.</b>Verifica a ligação e tenta novamente.</div>';
     return;
   }
-  notifications = data || [];
+  notifications = (result.data || []).map(item => ({ ...item, notification_type: item.notification_type || 'personal_alert' }));
   const newItems = notificationIds === null ? [] : notifications.filter(item => !notificationIds.has(item.id));
   notificationIds = new Set(notifications.map(item => item.id));
   renderNotifications();
   if (poll && newItems.length) {
-    notify(newItems.length === 1 ? 'Tens uma nova notificação de oportunidade.' : `Tens ${newItems.length} novas notificações.`);
-    if (window.Notification?.permission === 'granted' && localStorage.getItem(`pulso-browser-alerts-${currentUser.id}`) === 'on') {
-      newItems.forEach(item => {
+    notify(newItems.length === 1 ? 'Tens uma nova actualização no PULSO.' : `Tens ${newItems.length} novas actualizações no PULSO.`);
+    const systemItems = newItems.filter(item => ['opportunity_digest', 'admin_broadcast'].includes(item.notification_type));
+    const useLocalFallback = !activePushSubscription
+      && window.Notification?.permission === 'granted'
+      && localStorageValue(localAlertsKey()) === 'on';
+    if (useLocalFallback) {
+      systemItems.forEach(item => {
         const browserNotice = new Notification(item.title, {
           body: item.message,
-          icon: './assets/pulso-mark-3d-small.png',
+          icon: './assets/pwa-icon-192-v2.png',
           tag: `pulso-${item.id}`,
         });
         browserNotice.onclick = () => {
           window.focus();
-          if (item.opportunity_id) void openOpportunity(item.opportunity_id);
-          else activateView('notifications');
+          openSystemNotificationTarget(item.target_url, item.notification_type === 'opportunity_digest' ? 'opportunities' : 'notifications');
           browserNotice.close();
         };
       });
@@ -1460,36 +1697,141 @@ async function saveProfile(event) {
   }
 }
 
+async function getPushRegistration() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+  const existing = await navigator.serviceWorker.getRegistration();
+  return existing || navigator.serviceWorker.register(new URL('./sw.js', document.baseURI), {
+    scope: new URL('./', document.baseURI).pathname,
+    updateViaCache: 'none',
+  });
+}
+
+async function refreshPushSubscriptionStatus() {
+  activePushSubscription = null;
+  try {
+    const registration = await getPushRegistration();
+    activePushSubscription = registration ? await registration.pushManager.getSubscription() : null;
+  } catch (error) {
+    console.warn('PULSO could not inspect this device push subscription', error);
+  }
+  updateBrowserAlertButtons();
+}
+
+function updateBrowserAlertButtons() {
+  const localActive = window.Notification?.permission === 'granted'
+    && localStorageValue(localAlertsKey()) === 'on';
+  const active = Boolean(activePushSubscription) || localActive;
+  const label = activePushSubscription ? 'Avisos Push activos' : localActive ? 'Avisos locais activos' : 'Activar avisos';
+  $('#browserAlertLabel').textContent = label;
+  $('#browserAlertInline').textContent = active ? 'Desactivar' : 'Activar';
+  $('#browserAlertButton').setAttribute('aria-label', active ? 'Desactivar notificações neste dispositivo' : 'Activar notificações neste dispositivo');
+}
+
 async function enableBrowserAlerts() {
+  if (!currentUser) return;
+  if (activePushSubscription || localStorageValue(localAlertsKey()) === 'on') {
+    let unsubscribeError = null;
+    if (activePushSubscription) {
+      const endpoint = activePushSubscription.endpoint;
+      try { await activePushSubscription.unsubscribe(); } catch (error) { unsubscribeError = error; }
+      try {
+        const { error } = await supabaseClient.from('push_subscriptions').delete()
+          .eq('user_id', currentUser.id).eq('endpoint', endpoint);
+        if (error) console.warn('PULSO could not remove the saved push subscription', error);
+      } catch (error) { console.warn('PULSO could not remove the saved push subscription', error); }
+    }
+    activePushSubscription = null;
+    setLocalStorageValue(localAlertsKey(), null);
+    updateBrowserAlertButtons();
+    notify(unsubscribeError ? 'Avisos desactivados neste dispositivo; confirma a ligação para limpar a subscrição guardada.' : 'Notificações desactivadas neste dispositivo.');
+    return;
+  }
+  const appleMobile = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if (appleMobile && !standalone) {
+    notify('No iPhone, primeiro adiciona o PULSO ao ecrã principal pelo menu Partilhar; depois activa as notificações na aplicação.');
+    return;
+  }
   if (!('Notification' in window)) {
-    notify('Este navegador não suporta avisos do PULSO. As notificações continuam disponíveis no dashboard.');
+    notify('Este navegador não suporta notificações. As actualizações continuam disponíveis no sino do dashboard.');
     return;
   }
   if (window.Notification.permission === 'denied') {
-    notify('Os avisos foram bloqueados neste navegador. Altera a permissão nas definições do site.');
+    notify('As notificações foram bloqueadas neste navegador. Altera a permissão nas definições do site.');
     return;
   }
   const permission = window.Notification.permission === 'granted'
     ? 'granted'
     : await window.Notification.requestPermission();
   if (permission !== 'granted') {
-    notify('Os avisos do navegador não foram activados. Podes continuar a consultar o sino no dashboard.');
+    notify('As notificações não foram activadas. Podes continuar a consultar o sino no dashboard.');
     return;
   }
-  localStorage.setItem(`pulso-browser-alerts-${currentUser.id}`, 'on');
-  $('#browserAlertLabel').textContent = 'Avisos activos';
-  $('#browserAlertInline').textContent = 'Activo';
-  notify('Avisos activados neste navegador enquanto o dashboard estiver aberto.');
-}
 
-function updateBrowserAlertButtons() {
-  const active = window.Notification?.permission === 'granted'
-    && localStorage.getItem(`pulso-browser-alerts-${currentUser.id}`) === 'on';
-  $('#browserAlertLabel').textContent = active ? 'Avisos activos' : 'Activar avisos';
-  $('#browserAlertInline').textContent = active ? 'Activo' : 'Activar';
+  setLocalStorageValue(localAlertsKey(), 'on');
+  if (!PULSO_WEB_PUSH_PUBLIC_KEY || !('PushManager' in window) || !('serviceWorker' in navigator)) {
+    updateBrowserAlertButtons();
+    notify('Avisos locais activados enquanto o dashboard estiver aberto. O Push em segundo plano depende da configuração do servidor.');
+    return;
+  }
+
+  let newlyCreated = null;
+  try {
+    const registration = await getPushRegistration();
+    if (!registration) throw new Error('Este navegador não suporta o service worker necessário para Push.');
+    let subscription = await registration.pushManager.getSubscription();
+    if (subscription) {
+      const configuredKey = publicKeyBytes(PULSO_WEB_PUSH_PUBLIC_KEY);
+      const existingKey = subscription.options.applicationServerKey;
+      if (existingKey && (existingKey.byteLength !== configuredKey.byteLength
+          || configuredKey.some((value, index) => value !== new Uint8Array(existingKey)[index]))) {
+        await subscription.unsubscribe();
+        subscription = null;
+      }
+    }
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: publicKeyBytes(PULSO_WEB_PUSH_PUBLIC_KEY),
+      });
+      newlyCreated = subscription;
+    }
+    const keys = subscription.toJSON().keys || {};
+    if (!subscription.endpoint || !keys.p256dh || !keys.auth) throw new Error('O navegador não devolveu uma subscrição Push válida.');
+    const { error } = await supabaseClient.from('push_subscriptions').upsert({
+      user_id: currentUser.id,
+      endpoint: subscription.endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+    }, { onConflict: 'endpoint' });
+    if (error) throw error;
+    activePushSubscription = subscription;
+    setLocalStorageValue(localAlertsKey(), null);
+    updateBrowserAlertButtons();
+    notify('Notificações Push activadas neste dispositivo.');
+  } catch (error) {
+    if (newlyCreated) {
+      try { await newlyCreated.unsubscribe(); } catch { /* A subscrição não ficou guardada na conta. */ }
+    }
+    console.warn('PULSO Web Push subscription could not be saved', error);
+    updateBrowserAlertButtons();
+    notify('Não foi possível guardar o Push. Os avisos locais ficam activos enquanto o dashboard estiver aberto.');
+  }
 }
 
 async function signOut() {
+  if (activePushSubscription) {
+    const endpoint = activePushSubscription.endpoint;
+    try { await activePushSubscription.unsubscribe(); } catch (error) { console.warn('PULSO push unsubscribe during sign-out failed', error); }
+    try {
+      const { error } = await supabaseClient.from('push_subscriptions').delete()
+        .eq('user_id', currentUser.id).eq('endpoint', endpoint);
+      if (error) console.warn('PULSO push row cleanup during sign-out failed', error);
+    } catch (error) { console.warn('PULSO push row cleanup during sign-out failed', error); }
+    activePushSubscription = null;
+  }
+  setLocalStorageValue(localAlertsKey(), null);
   const { error } = await supabaseClient.auth.signOut();
   if (error) {
     notify('Não foi possível terminar a sessão. Tenta novamente.');
@@ -1571,6 +1913,7 @@ function bindEvents() {
     button.innerHTML = expanded ? 'Ver mais avatares <span>⌄</span>' : 'Ver menos avatares <span>⌃</span>';
   });
   $('#manualOpportunityForm').addEventListener('submit', createManualOpportunity);
+  $('#adminBroadcastForm').addEventListener('submit', sendAdminBroadcast);
   $('#adminAssetList').addEventListener('submit', saveAdminAssets);
   $('#adminAssetList').addEventListener('click', event => {
     const remove = event.target.closest('[data-delete-opportunity]');
@@ -1624,6 +1967,7 @@ function bindEvents() {
     const rating = event.target.closest('[data-rate-opportunity]');
     const read = event.target.closest('[data-read-notification]');
     const notificationOpportunity = event.target.closest('[data-notification-opportunity]');
+    const notificationTarget = event.target.closest('[data-notification-target]');
     const retry = event.target.closest('[data-retry-opportunities]');
     const card = event.target.closest('[data-opportunity]');
     if (save) void toggleSavedOpportunity(save.dataset.saveOpportunity);
@@ -1632,6 +1976,8 @@ function bindEvents() {
     if (detail) void openOpportunity(detail.dataset.detailOpportunity);
     if (read) void markNotificationRead(read.dataset.readNotification);
     if (notificationOpportunity) void openOpportunity(notificationOpportunity.dataset.notificationOpportunity);
+    if (notificationTarget) openSystemNotificationTarget(notificationTarget.dataset.notificationTarget,
+      notificationTarget.dataset.notificationTarget?.includes('#opportunities') ? 'opportunities' : 'notifications');
     if (retry) void loadOpportunities();
     if (card && !save && !remove && !detail && !card.closest('.community-post-card')) void openOpportunity(card.dataset.opportunity);
   });
@@ -1678,8 +2024,10 @@ async function initializeDashboard() {
       else {
         currentUser = session.user;
         if (profile.full_name) updateIdentity();
+        void refreshPushSubscriptionStatus();
       }
     });
+    await refreshPushSubscriptionStatus();
     const hashView = location.hash.slice(1);
     const firstView = $(`[data-panel="${hashView}"]`) ? hashView : 'overview';
     void Promise.allSettled([

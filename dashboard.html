@@ -8,11 +8,11 @@
   <title>O teu painel — PULSO</title>
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=20261121-18">
-  <link rel="stylesheet" href="dashboard.css?v=20261122-01">
-  <link rel="stylesheet" href="community.css?v=20261122-08">
+  <link rel="stylesheet" href="dashboard.css?v=20261125-01">
+  <link rel="stylesheet" href="community.css?v=20261124-09">
   <link rel="stylesheet" href="automation.css?v=20261120-20">
   <link rel="stylesheet" href="whatsapp-alerts.css?v=20261121-04">
-  <script type="module" src="dashboard.js?v=20261122-08"></script>
+  <script type="module" src="dashboard.js?v=20261125-01"></script>
   <script type="module" src="whatsapp-alerts.js?v=20261121-04"></script>
   <link rel="manifest" href="./manifest.webmanifest?v=20261121-07">
   <link rel="apple-touch-icon" href="./assets/pwa-icon-192-v2.png">
@@ -29,7 +29,7 @@
       <span><strong>PULSO</strong><small>Oportunidades em movimento.</small></span>
     </a>
     <div class="dash-top-actions">
-      <button class="browser-alert-btn" id="browserAlertButton" type="button" aria-label="Activar avisos neste navegador"><svg class="browser-alert-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span id="browserAlertLabel">Activar avisos</span></button>
+      <button class="browser-alert-btn" id="browserAlertButton" type="button" aria-label="Activar notificações neste dispositivo"><svg class="browser-alert-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span id="browserAlertLabel">Activar avisos</span></button>
       <button class="dash-bell" id="notificationBell" type="button" aria-label="Abrir notificações">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
         <span class="notification-count" id="notificationCount" hidden>0</span>
@@ -158,7 +158,7 @@
             <div class="dashboard-feedback" id="alertFeedback" role="status" aria-live="polite" hidden></div>
             <button class="btn btn-primary" type="submit">Guardar alerta <span>→</span></button>
           </form>
-          <section class="dash-panel alert-list-panel"><div class="panel-heading"><div><span class="section-kicker">AS TUAS PREFERÊNCIAS</span><h2>Alertas configurados.</h2></div><span class="alert-total" id="alertTotal">0</span></div><div id="alertList"><div class="empty-state"><b>A carregar alertas…</b></div></div><div class="browser-notice-card"><span class="notice-bell">♧</span><div><b>Notificações neste navegador</b><small>Activar avisos enquanto o dashboard estiver aberto.</small></div><button id="browserAlertInline" type="button">Activar</button></div></section>
+          <section class="dash-panel alert-list-panel"><div class="panel-heading"><div><span class="section-kicker">AS TUAS PREFERÊNCIAS</span><h2>Alertas configurados.</h2></div><span class="alert-total" id="alertTotal">0</span></div><div id="alertList"><div class="empty-state"><b>A carregar alertas…</b></div></div><div class="browser-notice-card"><span class="notice-bell">♧</span><div><b>Notificações neste dispositivo</b><small>Activa os avisos. No iPhone, adiciona o PULSO ao ecrã principal para receber Push.</small></div><button id="browserAlertInline" type="button">Activar</button></div></section>
         </div>
       </section>
 
@@ -236,12 +236,22 @@
         </form>
         <section class="dash-panel smart-import-panel" id="smartImportPanel">
           <div class="panel-heading"><div><span class="section-kicker">CARREGAMENTO INTELIGENTE</span><h2>Importar vários cartões.</h2><p>Carrega um TXT, CSV, JSON ou ZIP. O PULSO extrai os campos, mostra uma pré-visualização e só publica depois da tua confirmação.</p></div><span class="smart-import-badge">BETA</span></div>
-          <div class="smart-import-dropzone" id="smartImportDropzone"><input id="smartImportFile" type="file" accept=".txt,.md,.csv,.json,.zip,text/plain,text/csv,application/json,application/zip"><div class="smart-import-drop-icon">↑</div><b>Escolher ficheiro ou arrastar para aqui</b><small>Formatos: TXT, CSV, JSON e ZIP até 10 MB. No ZIP, usa um ficheiro de dados no interior.</small></div>
+          <div class="smart-import-dropzone" id="smartImportDropzone"><input id="smartImportFile" type="file" accept=".txt,.md,.csv,.json,.zip,text/plain,text/csv,application/json,application/zip"><div class="smart-import-drop-icon">↑</div><b>Escolher ficheiro ou arrastar para aqui</b><small>Formatos: TXT, CSV, JSON e ZIP até 10 MB. No ZIP, usa um ficheiro de dados no interior. Até 1000 oportunidades publicadas por lote para gerar um único resumo.</small></div>
           <div class="smart-import-format-help"><b>Campos reconhecidos:</b> título, categoria, organização, site oficial, link da fonte, candidatura, província, município, prazo, descrição, imagem e logótipo. No TXT, separa cartões por linhas vazias e usa <code>campo: valor</code>.</div>
           <div class="smart-import-toolbar" id="smartImportToolbar" hidden><span id="smartImportFileName"></span><span id="smartImportSummary"></span><button class="filter-reset" type="button" id="clearSmartImport">Limpar</button></div>
           <div class="smart-import-preview" id="smartImportPreview" hidden></div>
           <div class="dashboard-feedback" id="smartImportFeedback" role="status" aria-live="polite" hidden></div>
           <div class="smart-import-actions" id="smartImportActions" hidden><button class="btn btn-primary-soft" type="button" id="smartImportReviewButton">Importar para revisão</button><button class="btn btn-primary" type="button" id="smartImportPublishButton">Importar e publicar tudo <span>→</span></button></div>
+        </section>
+        <section class="dash-panel admin-system-notification-panel" id="adminSystemNotifications">
+          <div class="panel-heading"><div><span class="section-kicker">AVISO GERAL · TODOS OS UTILIZADORES</span><h2>Enviar uma actualização.</h2><p>A mensagem fica também na caixa de notificações. O aviso de sistema é enviado por Push apenas aos dispositivos que activaram as notificações.</p></div></div>
+          <form class="admin-system-notification-form" id="adminBroadcastForm">
+            <label>Título<input name="title" maxlength="90" placeholder="Ex.: Actualização importante do PULSO" required></label>
+            <label>Mensagem<textarea name="message" maxlength="500" rows="4" placeholder="Escreve a informação que todos os utilizadores devem receber…" required></textarea></label>
+            <small class="admin-system-notification-help">O envio exige confirmação. Não incluas dados pessoais ou informação que não deva aparecer no ecrã bloqueado do dispositivo.</small>
+            <div class="dashboard-feedback" id="adminBroadcastFeedback" role="status" aria-live="polite" hidden></div>
+            <button class="btn btn-primary" type="submit">Enviar a todos os utilizadores <span>→</span></button>
+          </form>
         </section>
         <section class="dash-panel pulso-automation-panel" id="adminAutomationPanel">
           <div class="panel-heading automation-heading"><div><span class="section-kicker">RECOLHA AUTOMÁTICA</span><h2>Fontes e publicações automáticas.</h2><p>As fontes começam desactivadas. A recolha publica oportunidades encontradas; revê-as depois e retira qualquer erro.</p></div><div class="automation-header-actions"><button class="btn btn-primary" type="button" id="runPulsoCollection">Recolher agora</button><button class="filter-reset" type="button" id="refreshAutomationAdmin">Actualizar</button></div></div>
@@ -258,6 +268,6 @@
 
   <dialog class="opportunity-dialog" id="opportunityDialog" aria-labelledby="detailTitle"><button class="detail-close" id="detailClose" type="button" aria-label="Fechar detalhe">×</button><div id="opportunityDetail"></div></dialog>
   <div class="dash-toast" id="dashboardToast" role="status" aria-live="polite"></div>
-  <script src="./pwa.js?v=20261121-05" defer></script>
+  <script src="./pwa.js?v=20261125-01" defer></script>
 </body>
 </html>

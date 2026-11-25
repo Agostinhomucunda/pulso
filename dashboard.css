@@ -435,3 +435,16 @@
   .business-submission-actions{display:flex;flex-direction:row;flex-wrap:wrap;min-width:0}
   .business-submission-actions .btn,.business-submission-actions .automation-remove{flex:1 1 135px}
 }
+
+
+/* Notificações de sistema: formulário administrativo isolado e responsivo. */
+.admin-system-notification-panel{margin:0 0 18px;padding:20px}
+.admin-system-notification-panel .panel-heading p{max-width:720px;margin:6px 0 0;color:#77859d;font-size:10px;line-height:1.6}
+.admin-system-notification-form{display:grid;gap:12px}
+.admin-system-notification-form label{display:grid;gap:6px;color:#5e6d89;font-size:9px;font-weight:800}
+.admin-system-notification-form input,.admin-system-notification-form textarea{width:100%;padding:10px;border:1px solid #e2e8f1;border-radius:9px;outline:none;background:#fff;color:#273957;font:inherit;font-size:10px}
+.admin-system-notification-form input{height:39px}
+.admin-system-notification-form textarea{min-height:110px;resize:vertical;line-height:1.55}
+.admin-system-notification-form input:focus,.admin-system-notification-form textarea:focus{border-color:#88aef2;box-shadow:0 0 0 3px #1559da10}
+.admin-system-notification-form .dashboard-feedback{margin-top:2px}
+.admin-system-notification-help{color:#8692a7;font-size:8px;line-height:1.6}

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pulso-shell-v11';
+const CACHE_NAME = 'pulso-shell-v12';
 const SCOPE_URL = new URL(self.registration.scope);
 const CORE_FILES = [
   'index.html',
@@ -8,6 +8,7 @@ const CORE_FILES = [
   'manifest.webmanifest',
   'pwa.css',
   'pwa.js',
+  'push-config.js',
   'styles.css',
   'dashboard.css',
   'automation.css',
@@ -122,4 +123,52 @@ self.addEventListener('fetch', event => {
   }).catch(() => null);
   event.waitUntil(networkUpdate.then(() => undefined));
   event.respondWith(cachedPromise.then(cached => cached || networkUpdate).then(response => response || Response.error()));
+});
+
+self.addEventListener('push', event => {
+  event.waitUntil((async () => {
+    let payload = {};
+    try { payload = event.data?.json() || {}; } catch { /* Push vazio ou malformado. */ }
+    const title = String(payload.title || 'PULSO').slice(0, 100);
+    const body = String(payload.body || 'Tens uma nova actualização no PULSO.').slice(0, 500);
+    const fallbackIcon = new URL('assets/pwa-icon-192-v2.png', SCOPE_URL).href;
+    const internalAsset = value => {
+      try {
+        const url = new URL(String(value || ''), SCOPE_URL);
+        return url.origin === self.location.origin && url.pathname.startsWith(SCOPE_URL.pathname)
+          ? url.href : fallbackIcon;
+      } catch { return fallbackIcon; }
+    };
+    await self.registration.showNotification(title, {
+      body,
+      icon: internalAsset(payload.icon),
+      badge: internalAsset(payload.badge),
+      tag: String(payload.tag || 'pulso-system-notification').slice(0, 80),
+      renotify: false,
+      data: { url: String(payload.url || 'dashboard.html#notifications') },
+    });
+  })());
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    let target;
+    try { target = new URL(event.notification.data?.url || 'dashboard.html#notifications', SCOPE_URL); }
+    catch { target = new URL('dashboard.html#notifications', SCOPE_URL); }
+    if (target.origin !== self.location.origin || !target.pathname.startsWith(SCOPE_URL.pathname)) {
+      target = new URL('dashboard.html#notifications', SCOPE_URL);
+    }
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      try {
+        const clientUrl = new URL(client.url);
+        if (clientUrl.origin === target.origin && clientUrl.pathname.startsWith(SCOPE_URL.pathname)) {
+          await client.navigate(target.href);
+          return client.focus();
+        }
+      } catch { /* Ignorar uma janela que já tenha sido fechada. */ }
+    }
+    return self.clients.openWindow(target.href);
+  })());
 });
