@@ -280,7 +280,7 @@ function activateView(view, { updateHash = true } = {}) {
   $('#profileMenu').hidden = true;
   $('#profileMenuButton').setAttribute('aria-expanded', 'false');
   if (updateHash) history.replaceState(null, '', `#${view}`);
-  if (view === 'notifications') void loadNotifications({ poll: true });
+  if (view === 'notifications') void loadNotifications({ poll: true }).then(() => markAllNotificationsRead());
   if (view === 'saved') void loadSavedOpportunities();
   if (view === 'publications') void loadCommunityPosts();
   if (view === 'alerts') void loadAlerts();
@@ -1608,13 +1608,10 @@ function renderNotifications() {
     const digest = item.notification_type === 'opportunity_digest';
     const broadcast = item.notification_type === 'admin_broadcast';
     const systemNotice = digest || broadcast;
-    const action = systemNotice
-      ? `<button class="notification-open" type="button" data-notification-target="${escapeHtml(item.target_url || (digest ? 'dashboard.html#opportunities' : 'dashboard.html#notifications'))}">${digest ? 'Ver agora' : 'Abrir aviso'}</button>`
-      : (item.opportunity_id ? `<button class="notification-open" type="button" data-notification-opportunity="${escapeHtml(item.opportunity_id)}">Ver oportunidade</button>` : '');
-    return `<article class="notification-item ${item.read_at ? '' : 'unread'}">
-      <span class="notification-icon" aria-hidden="true">${digest ? '▤' : broadcast ? '✦' : item.opportunity_id ? '▤' : '✦'}</span>
-      <div class="notification-copy"><b>${escapeHtml(item.title)}</b><p>${escapeHtml(item.message)}</p><small>${escapeHtml(formatDateTime(item.created_at))}</small></div>
-      <div class="notification-item-actions">${action}${item.read_at ? '' : `<button class="notification-read" type="button" data-read-notification="${escapeHtml(item.id)}">Marcar como lida</button>`}</div>
+    return `<article class="notification-item ${item.read_at ? '' : 'unread'}" data-notification-card="${escapeHtml(item.id)}">
+      <span class="notification-icon" aria-hidden="true"><img src="assets/pulso-mark-3d-small.png" alt="PULSO"></span>
+      <div class="notification-copy"><b>${escapeHtml(item.title)}</b><p class="notification-preview">${escapeHtml(item.message)}</p><p class="notification-full" data-notification-full="${escapeHtml(item.id)}" hidden>${escapeHtml(item.message)}</p><small>${escapeHtml(formatDateTime(item.created_at))}</small></div>
+      <div class="notification-item-actions"><button class="notification-open" type="button" data-toggle-notification="${escapeHtml(item.id)}">${systemNotice ? 'Abrir aviso' : 'Ver aviso'}</button>${item.read_at ? '' : `<button class="notification-read" type="button" data-read-notification="${escapeHtml(item.id)}">Marcar como lida</button>`}</div>
     </article>`;
   }).join('');
 }
@@ -1670,6 +1667,35 @@ async function markNotificationRead(id) {
     return;
   }
   await loadNotifications();
+}
+
+async function markAllNotificationsRead() {
+  if (!currentUser) return;
+  const unreadIds = notifications.filter(item => !item.read_at).map(item => item.id);
+  if (!unreadIds.length) return;
+  const { error } = await supabaseClient.from('notifications').update({ read_at: new Date().toISOString() })
+    .in('id', unreadIds).eq('user_id', currentUser.id);
+  if (error) {
+    console.error('PULSO could not mark all notifications as read', error);
+    return;
+  }
+  notifications = notifications.map(item => unreadIds.includes(item.id) ? { ...item, read_at: new Date().toISOString() } : item);
+  renderNotifications();
+}
+
+async function deleteAllNotifications() {
+  if (!currentUser || !notifications.length) return;
+  if (!window.confirm('Eliminar todas as notificações desta conta?')) return;
+  const { error } = await supabaseClient.from('notifications').delete().eq('user_id', currentUser.id);
+  if (error) {
+    console.error('PULSO could not delete notifications', error);
+    notify('Não foi possível eliminar as notificações.');
+    return;
+  }
+  notifications = [];
+  notificationIds = new Set();
+  renderNotifications();
+  notify('Notificações eliminadas.');
 }
 
 async function openOpportunity(id) {
@@ -2000,6 +2026,7 @@ function bindEvents() {
   $('#browserAlertButton').addEventListener('click', () => void enableBrowserAlerts());
   $('#browserAlertInline').addEventListener('click', () => void enableBrowserAlerts());
   $('#refreshNotifications').addEventListener('click', () => void loadNotifications());
+  $('#deleteAllNotifications').addEventListener('click', () => void deleteAllNotifications());
   $('#loadMoreOpportunities').addEventListener('click', () => void loadOpportunities({ append: true }));
   $('#clearOpportunityFilters').addEventListener('click', () => {
     $('#opportunitySearch').value = '';
@@ -2028,6 +2055,7 @@ function bindEvents() {
     const read = event.target.closest('[data-read-notification]');
     const notificationOpportunity = event.target.closest('[data-notification-opportunity]');
     const notificationTarget = event.target.closest('[data-notification-target]');
+    const notificationToggle = event.target.closest('[data-toggle-notification]');
     const retry = event.target.closest('[data-retry-opportunities]');
     const card = event.target.closest('[data-opportunity]');
     if (save) void toggleSavedOpportunity(save.dataset.saveOpportunity);
@@ -2038,6 +2066,15 @@ function bindEvents() {
     if (notificationOpportunity) void openOpportunity(notificationOpportunity.dataset.notificationOpportunity);
     if (notificationTarget) openSystemNotificationTarget(notificationTarget.dataset.notificationTarget,
       notificationTarget.dataset.notificationTarget?.includes('#opportunities') ? 'opportunities' : 'notifications');
+    if (notificationToggle) {
+      const id = notificationToggle.dataset.toggleNotification;
+      const full = document.querySelector(`[data-notification-full="${id}"]`);
+      if (full) {
+        const opening = full.hidden;
+        full.hidden = !opening;
+        notificationToggle.textContent = opening ? 'Fechar aviso' : 'Abrir aviso';
+      }
+    }
     if (retry) void loadOpportunities();
     if (card && !save && !remove && !detail && !card.closest('.community-post-card')) void openOpportunity(card.dataset.opportunity);
   });
