@@ -1,6 +1,11 @@
 .dash-wa-shortcut{min-height:39px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border:1px solid #bfe8d9;border-radius:11px;background:linear-gradient(120deg,#edfbf5,#f7fffb);color:#147553;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 5px 14px #12644510;transition:.2s ease}
 .dash-wa-shortcut>span{font-size:15px}
 .dash-wa-shortcut:hover{transform:translateY(-1px);border-color:#69c5a3;background:#e6f8f0}
+@property --pulso-wa-ring-angle{syntax:"<angle>";inherits:false;initial-value:0deg}
+.dash-wa-shortcut{position:relative;isolation:isolate}
+.dash-wa-shortcut::after{content:"";position:absolute;inset:-3px;z-index:1;padding:2px;border-radius:inherit;background:conic-gradient(from 310deg,transparent 0deg 280deg,#18a76b 296deg,#31d88c 320deg,#baffd6 334deg,#31d88c 345deg,transparent 360deg);background:conic-gradient(from var(--pulso-wa-ring-angle),transparent 0deg 280deg,#18a76b 296deg,#31d88c 320deg,#baffd6 334deg,#31d88c 345deg,transparent 360deg);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;filter:drop-shadow(0 0 3px #32d990);pointer-events:none;animation:pulso-wa-ring-orbit 2.8s linear infinite}
+@keyframes pulso-wa-ring-orbit{to{--pulso-wa-ring-angle:360deg}}
+@media(prefers-reduced-motion:reduce){.dash-wa-shortcut::after{animation:none;--pulso-wa-ring-angle:310deg}}
 .wa-user-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(270px,.85fr);align-items:start;gap:16px}
 .wa-preferences-form{display:grid;gap:12px;padding:20px}
 .wa-preferences-form .panel-heading{margin-bottom:3px}
