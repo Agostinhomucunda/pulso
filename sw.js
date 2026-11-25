@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pulso-shell-v12';
+const CACHE_NAME = 'pulso-shell-v13';
 const SCOPE_URL = new URL(self.registration.scope);
 const CORE_FILES = [
   'index.html',
@@ -20,6 +20,10 @@ const CORE_FILES = [
   'empresas-parceiros.js',
   'account-type-choice.js',
   'whatsapp-alerts.js',
+  'organizational-dashboard.js',
+  'organizational-dashboard.css',
+  'parceiro-dashboard.html',
+  'empresa-dashboard.html',
   'supabase-config.js',
   'assets/pwa-icon-192-v2.png',
   'assets/pwa-icon-512-v2.png',
