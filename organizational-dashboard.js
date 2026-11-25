@@ -16,7 +16,7 @@ const PARTNER_LABELS = { received:'Recebido', under_review:'Em análise', additi
 const OPPORTUNITY_LABELS = { draft:'Rascunho', pending_review:'Em análise', rejected:'Rejeitada', published:'Publicada', expired:'Expirada' };
 const OPPORTUNITY_IMAGE_BUCKET = 'pulso-opportunity-submissions';
 const PROFILE_PHOTO_BUCKET = 'pulso-organizational-profile-photos';
-const MIN_PROFILE_PHOTO_SIZE = 2 * 1024 * 1024;
+const MAX_PROFILE_PHOTO_INPUT_SIZE = 3 * 1024 * 1024;
 const MAX_PROFILE_PHOTO_SIZE = 900 * 1024;
 const MAX_OPPORTUNITY_IMAGE_SIZE = 3 * 1024 * 1024;
 const OPPORTUNITY_IMAGE_TYPES = new Map([['image/jpeg','jpg'],['image/png','png'],['image/webp','webp']]);
@@ -62,8 +62,8 @@ function entityInitials(value) {
 }
 function profilePhotoEditorMarkup(suffix = 'profile') {
   return `<form class="org-profile-photo-form" id="orgProfilePhotoForm-${suffix}">
-    <div class="org-profile-photo-copy"><span class="org-kicker">FOTOGRAFIA DE PERFIL</span><b>Actualiza a imagem apresentada no teu espaço.</b><small>Escolhe uma imagem JPG, PNG ou WEBP com pelo menos 2 MB. O PULSO comprime-a antes de a guardar.</small></div>
-    <label class="org-profile-photo-input">Escolher fotografia<input type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp" required><small>Mínimo: 2 MB · será convertida para WEBP optimizado.</small></label>
+    <div class="org-profile-photo-copy"><span class="org-kicker">FOTOGRAFIA DE PERFIL</span><b>Actualiza a imagem apresentada no teu espaço.</b><small>Escolhe uma imagem JPG, PNG ou WEBP até 3 MB. Acima de 900 KB, o PULSO comprime-a antes de a guardar.</small></div>
+    <label class="org-profile-photo-input">Escolher fotografia<input type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp" required><small>Máximo: 3 MB · imagens acima de 900 KB serão optimizadas automaticamente.</small></label>
     <button class="org-button org-button-secondary" type="submit">Guardar fotografia</button>
     <p class="org-profile-photo-feedback" role="status" aria-live="polite" hidden></p>
   </form>`;
@@ -337,6 +337,7 @@ async function submitDraft(id) {
   await loadWorkspaceData();
 }
 async function compressProfilePhoto(file) {
+  if (file.size <= MAX_PROFILE_PHOTO_SIZE) return file;
   const image = await createImageBitmap(file, { imageOrientation: 'from-image' });
   const scale = Math.min(1, 640 / Math.max(image.width, image.height));
   const canvas = document.createElement('canvas');
@@ -358,14 +359,15 @@ async function handleProfilePhotoUpload(form) {
   const submit = form.querySelector('button[type="submit"]');
   const showFeedback = (message, kind='info') => { feedback.hidden = false; feedback.dataset.kind = kind; feedback.textContent = message; };
   if (!file) { showFeedback('Escolhe uma fotografia primeiro.', 'error'); return; }
-  if (file.size < MIN_PROFILE_PHOTO_SIZE) { showFeedback('A fotografia original deve ter pelo menos 2 MB.', 'error'); return; }
+  if (file.size > MAX_PROFILE_PHOTO_INPUT_SIZE) { showFeedback('A fotografia não pode ultrapassar 3 MB.', 'error'); return; }
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { showFeedback('Usa uma fotografia JPG, PNG ou WEBP.', 'error'); return; }
   submit.disabled = true;
   try {
     showFeedback('A comprimir a fotografia antes de guardar…');
     const compressed = await compressProfilePhoto(file);
-    const path = `${user.id}/${crypto.randomUUID()}.webp`;
-    const { error: uploadError } = await supabase.storage.from(PROFILE_PHOTO_BUCKET).upload(path, compressed, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+    const extension = file.size <= MAX_PROFILE_PHOTO_SIZE ? ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' })[file.type] : 'webp';
+    const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabase.storage.from(PROFILE_PHOTO_BUCKET).upload(path, compressed, { contentType: compressed.type || file.type, cacheControl: '31536000', upsert: false });
     if (uploadError) throw uploadError;
     const url = safeHttpsUrl(supabase.storage.from(PROFILE_PHOTO_BUCKET).getPublicUrl(path).data?.publicUrl);
     if (!url) throw new Error('O Storage não devolveu um endereço público válido.');
