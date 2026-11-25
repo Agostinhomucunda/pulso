@@ -64,7 +64,7 @@
         <button class="dash-nav-link" type="button" data-view="whatsapp-alerts"><span>◉</span> Alertas WhatsApp</button>
         <button class="dash-nav-link" type="button" data-view="notifications"><span>♧</span> Notificações <span class="nav-count nav-alert-count" id="notificationNavCount" hidden>0</span></button>
         <button class="dash-nav-link" type="button" data-view="profile"><span>◉</span> Meu perfil</button>
-        <button class="dash-nav-link admin-nav-link" type="button" data-view="admin" id="adminNavLink" hidden><span>⚙</span> Administração <span class="nav-count nav-alert-count" id="adminMissingCount" hidden>0</span></button>
+        <button class="dash-nav-link admin-nav-link" type="button" data-view="admin" id="adminNavLink" hidden><span>⚙</span> Administração <span class="nav-count nav-alert-count" id="adminMissingCount" hidden>0</span><span class="nav-count nav-alert-count" id="adminPartnershipCount" hidden>0</span></button>
       </nav>
       <div class="sidebar-alert-card">
         <span class="sidebar-alert-icon">✦</span>
@@ -216,6 +216,10 @@
 
       <section class="dash-view" data-panel="admin" hidden>
         <div class="page-intro"><span class="section-kicker">PAINEL RESTRITO</span><h1>Administração PULSO.</h1><p>Completa imagens em falta e regista oportunidades que o colector não encontrou.</p></div>
+        <section class="dash-panel partnership-requests-panel" id="partnershipRequestsPanel">
+          <div class="panel-heading"><div><span class="section-kicker">PEDIDOS RECEBIDOS</span><h2>Pedidos de parceria.</h2></div><div class="admin-panel-actions"><span class="admin-request-count" id="partnershipRequestCount">—</span><button class="filter-reset" type="button" id="refreshPartnershipRequests">Actualizar</button></div></div>
+          <div id="partnershipRequestList"><div class="empty-state"><b>A carregar pedidos de parceria…</b></div></div>
+        </section>
         <section class="dash-panel business-submissions-panel" id="businessSubmissionsPanel">
           <div class="panel-heading business-submissions-heading"><div><span class="section-kicker">REVISÃO EMPRESARIAL</span><h2>Publicações empresariais.</h2><p>Vê a empresa e a conta que submeteu cada oportunidade. Ao aceitar, a publicação fica verificada e entra no dashboard normal.</p></div><div class="business-submissions-controls"><span class="automation-count" id="businessSubmissionCount">A carregar…</span><button class="filter-reset" type="button" id="refreshBusinessSubmissions">Actualizar</button></div></div>
           <div id="businessSubmissionList"><div class="empty-state"><b>A carregar submissões empresariais…</b></div></div>

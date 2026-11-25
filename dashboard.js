@@ -65,6 +65,7 @@ let notificationIds = null;
 let activePushSubscription = null;
 let isAdmin = false;
 let automationSources = [];
+let partnershipRequests = [];
 let businessSubmissions = [];
 let smartImportRows = [];
 let selectedAvatar = 'male';
@@ -285,6 +286,7 @@ function activateView(view, { updateHash = true } = {}) {
   if (view === 'alerts') void loadAlerts();
   if (view === 'whatsapp-alerts') window.dispatchEvent(new CustomEvent('pulso:whatsapp-view'));
   if (view === 'admin' && isAdmin) {
+    void loadPartnershipRequests();
     void loadAdminAssets();
     void loadAutomationAdmin();
   }
@@ -607,7 +609,60 @@ async function loadAdminAccess() {
   $('#adminNavLink').hidden = false;
   window.dispatchEvent(new CustomEvent('pulso:whatsapp-admin-access', { detail: { isAdmin: true } }));
   renderOpportunityLists();
-  await Promise.all([loadAdminAssets(), loadAutomationAdmin(), loadBusinessSubmissions()]);
+  await Promise.all([loadPartnershipRequests(), loadAdminAssets(), loadAutomationAdmin(), loadBusinessSubmissions()]);
+}
+
+function partnershipStatusLabel(status) {
+  return ({ received: 'Recebido', under_review: 'Em análise', additional_information_requested: 'Informação adicional', approved: 'Aprovado', rejected: 'Rejeitado', suspended: 'Suspenso' })[status] || 'Estado desconhecido';
+}
+
+function renderPartnershipRequests() {
+  const target = $('#partnershipRequestList');
+  const pending = partnershipRequests.filter(item => !['approved', 'rejected', 'suspended'].includes(item.status));
+  $('#partnershipRequestCount').textContent = `${safeCount(pending.length)} pendente(s)`;
+  $('#adminPartnershipCount').textContent = safeCount(pending.length);
+  $('#adminPartnershipCount').hidden = pending.length === 0;
+  if (!partnershipRequests.length) {
+    target.innerHTML = '<div class="empty-state"><b>Não há pedidos de parceria.</b>Quando uma organização enviar um pedido, ele aparecerá aqui para análise.</div>';
+    return;
+  }
+  target.innerHTML = partnershipRequests.map(item => {
+    const pendingItem = !['approved', 'rejected', 'suspended'].includes(item.status);
+    const website = httpsUrl(item.website_or_social_links);
+    const details = [item.province, item.municipality].filter(Boolean).join(' · ');
+    return `<article class="partnership-request-card ${pendingItem ? '' : 'is-reviewed'}"><div class="partnership-request-copy"><div class="partnership-request-title"><span class="automation-state ${pendingItem ? '' : 'is-active'}">${escapeHtml(partnershipStatusLabel(item.status))}</span><h3>${escapeHtml(item.organization_name)}</h3></div><p><b>Representante:</b> ${escapeHtml(item.representative_name)} · ${escapeHtml(item.representative_email)}${item.representative_phone ? ` · ${escapeHtml(item.representative_phone)}` : ''}</p>${details ? `<p><b>Localização:</b> ${escapeHtml(details)}</p>` : ''}<div class="partnership-request-details"><span><b>Colaboração:</b> ${escapeHtml(item.collaboration_type)}</span><span><b>Motivo:</b> ${escapeHtml(item.collaboration_reason)}</span>${item.activity_description ? `<span><b>Actividade:</b> ${escapeHtml(item.activity_description)}</span>` : ''}${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Abrir site ou rede ↗</a>` : ''}<small>Enviado em ${escapeHtml(formatDateTime(item.submitted_at || item.created_at))}</small></div></div>${pendingItem ? `<div class="partnership-request-actions"><button class="btn btn-primary-soft" type="button" data-partnership-review="approved" data-partnership-id="${escapeHtml(item.id)}">Aprovar</button><button class="automation-remove" type="button" data-partnership-review="rejected" data-partnership-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : `<small class="automation-reviewed-date">Revisto em ${escapeHtml(formatDateTime(item.reviewed_at))}</small>`}</article>`;
+  }).join('');
+}
+
+async function loadPartnershipRequests() {
+  if (!isAdmin) return;
+  const target = $('#partnershipRequestList');
+  target.innerHTML = '<div class="empty-state"><b>A carregar pedidos de parceria…</b></div>';
+  const { data, error } = await supabaseClient.from('partnership_requests').select('id,organization_name,activity_description,representative_name,representative_email,representative_phone,province,municipality,website_or_social_links,collaboration_type,collaboration_reason,status,reviewed_at,submitted_at,created_at').order('submitted_at', { ascending: false }).limit(50);
+  if (error) {
+    console.error('PULSO partnership requests failed', error);
+    $('#partnershipRequestCount').textContent = 'Indisponível';
+    target.innerHTML = '<div class="empty-state" role="alert"><b>Não foi possível carregar os pedidos.</b>Confirma as permissões administrativas de partnership_requests.</div>';
+    return;
+  }
+  partnershipRequests = data || [];
+  renderPartnershipRequests();
+}
+
+async function reviewPartnershipRequest(id, status, button) {
+  if (!isAdmin || !id || !['approved', 'rejected'].includes(status)) return;
+  const actionLabel = status === 'approved' ? 'aprovar' : 'rejeitar';
+  if (!window.confirm(`Confirmas ${actionLabel} este pedido de parceria?`)) return;
+  button.disabled = true;
+  const { error } = await supabaseClient.rpc('review_pulso_partnership_request', { p_request_id: id, p_status: status, p_status_note: null, p_allow_opportunity_submissions: status === 'approved' });
+  if (error) {
+    console.error('PULSO partnership request review failed', error);
+    button.disabled = false;
+    notify(error.message || 'Não foi possível rever este pedido.');
+    return;
+  }
+  notify(status === 'approved' ? 'Pedido de parceria aprovado.' : 'Pedido de parceria rejeitado.');
+  await loadPartnershipRequests();
 }
 
 function renderBusinessSubmissions() {
@@ -1913,6 +1968,11 @@ function bindEvents() {
     button.innerHTML = expanded ? 'Ver mais avatares <span>⌄</span>' : 'Ver menos avatares <span>⌃</span>';
   });
   $('#manualOpportunityForm').addEventListener('submit', createManualOpportunity);
+  $('#partnershipRequestList').addEventListener('click', event => {
+    const action = event.target.closest('[data-partnership-review]');
+    if (action) void reviewPartnershipRequest(action.dataset.partnershipId, action.dataset.partnershipReview, action);
+  });
+  $('#refreshPartnershipRequests').addEventListener('click', () => void loadPartnershipRequests());
   $('#adminBroadcastForm').addEventListener('submit', sendAdminBroadcast);
   $('#adminAssetList').addEventListener('submit', saveAdminAssets);
   $('#adminAssetList').addEventListener('click', event => {
