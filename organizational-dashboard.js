@@ -15,6 +15,9 @@ const BUSINESS_LABELS = { under_review:'Em análise', additional_documents_reque
 const PARTNER_LABELS = { received:'Recebido', under_review:'Em análise', additional_information_requested:'Informação adicional solicitada', approved:'Parceria aprovada', rejected:'Rejeitada', suspended:'Suspensa' };
 const OPPORTUNITY_LABELS = { draft:'Rascunho', pending_review:'Em análise', rejected:'Rejeitada', published:'Publicada', expired:'Expirada' };
 const OPPORTUNITY_IMAGE_BUCKET = 'pulso-opportunity-submissions';
+const PROFILE_PHOTO_BUCKET = 'pulso-organizational-profile-photos';
+const MIN_PROFILE_PHOTO_SIZE = 2 * 1024 * 1024;
+const MAX_PROFILE_PHOTO_SIZE = 900 * 1024;
 const MAX_OPPORTUNITY_IMAGE_SIZE = 3 * 1024 * 1024;
 const OPPORTUNITY_IMAGE_TYPES = new Map([['image/jpeg','jpg'],['image/png','png'],['image/webp','webp']]);
 const CATEGORY_LABELS = { employment:'Empregos', scholarship:'Bolsas', public_competition:'Concursos', internship:'Estágios', training:'Formações', recruitment_program:'Programas', other:'Outras oportunidades' };
@@ -56,6 +59,14 @@ function safeHttpsUrl(value) {
 function entityInitials(value) {
   return String(value || 'PULSO').trim().split(/\s+/).slice(0, 2)
     .map(part => part[0] || '').join('').toLocaleUpperCase('pt-AO') || 'P';
+}
+function profilePhotoEditorMarkup() {
+  return `<form class="org-profile-photo-form" id="orgProfilePhotoForm">
+    <div class="org-profile-photo-copy"><span class="org-kicker">FOTOGRAFIA DE PERFIL</span><b>Actualiza a imagem apresentada no teu espaço.</b><small>Escolhe uma imagem JPG, PNG ou WEBP com pelo menos 2 MB. O PULSO comprime-a antes de a guardar.</small></div>
+    <label class="org-profile-photo-input">Escolher fotografia<input type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp" required><small>Mínimo: 2 MB · será convertida para WEBP optimizado.</small></label>
+    <button class="org-button org-button-secondary" type="submit">Guardar fotografia</button>
+    <p class="org-profile-photo-feedback" id="orgProfilePhotoFeedback" role="status" aria-live="polite" hidden></p>
+  </form>`;
 }
 function entityAvatarMarkup(name, logoUrl) {
   const logo = safeHttpsUrl(logoUrl);
@@ -146,7 +157,7 @@ function renderWorkspace() {
   const entityName = esc(entityNameRaw);
   const logoUrl = isBusiness && organization?.logo_rights_confirmed === true
     && safeHttpsUrl(organization.logo_source_url) ? safeHttpsUrl(organization.logo_url) : '';
-  const avatarMarkup = entityAvatarMarkup(entityNameRaw, logoUrl);
+  const avatarMarkup = entityAvatarMarkup(entityNameRaw, safeHttpsUrl(request.profile_photo_url) || logoUrl);
 
   workspace.innerHTML = `
     <header class="org-topbar"><a class="org-brand" href="./index.html"><img src="assets/pulso-mark-3d-small.png" alt=""><span><strong>PULSO</strong><small>${isBusiness ? 'ESPAÇO EMPRESARIAL' : 'PARCEIRO PULSO'}</small></span></a><div class="org-top-entity">${avatarMarkup}<span><small>${identity}</small><b>${entityName}</b></span></div><div class="org-top-actions"><a href="./dashboard.html">Dashboard normal</a><button type="button" class="org-signout" id="orgSignOut">Terminar sessão</button></div></header>
@@ -162,7 +173,7 @@ function renderWorkspace() {
           <div class="org-stat-row"><article class="org-stat"><span class="org-stat-icon" aria-hidden="true">▤</span><small>Oportunidades acompanhadas</small><b id="orgStatTotal">0</b></article><article class="org-stat"><span class="org-stat-icon org-stat-icon-gold" aria-hidden="true">◷</span><small>Em análise</small><b id="orgStatPending">0</b></article><article class="org-stat"><span class="org-stat-icon org-stat-icon-green" aria-hidden="true">✓</span><small>Publicadas</small><b id="orgStatPublished">0</b></article></div>
           <div class="org-grid"><section class="org-card org-card-wide"><h2>Publicações recentes</h2><div class="org-list" id="orgOpportunityList"><div class="org-empty">A carregar…</div></div></section><section class="org-card"><h2>${isBusiness?'Verificação empresarial':'Estado da parceria'}</h2><p>${esc(BUSINESS_LABELS[request.status] || PARTNER_LABELS[request.status])} · Pedido recebido ${esc(dateLabel(request.submitted_at || request.created_at))}</p>${request.status_note?`<p><strong>Nota do PULSO:</strong> ${esc(request.status_note)}</p>`:''}</section><section class="org-card"><h2>Próximo passo</h2><p>${canSubmit?'Submete uma oportunidade com os dados da fonte oficial. O envio será revisto e não fica público automaticamente.':'A permissão de submissão deve ser concedida por um administrador PULSO.'}</p><button type="button" class="org-button org-button-secondary" data-org-view="${canSubmit?'submit':'status'}">${canSubmit?'Preparar submissão':'Consultar permissão'}</button></section></div>
         </section>
-        <section class="org-page" data-org-page="profile" hidden><div class="org-page-intro"><span class="org-kicker">IDENTIFICAÇÃO</span><h1>${isBusiness?'Perfil da empresa.':'Perfil do parceiro.'}</h1><p>Dados apresentados a partir do pedido original. Para corrigir informação, contacta a equipa PULSO.</p></div><div class="org-profile-identity">${avatarMarkup}<span><small>${identity} · ${esc(BUSINESS_LABELS[request.status] || PARTNER_LABELS[request.status])}</small><b>${entityName}</b></span></div><div class="org-card"><div class="org-field-grid">${(isBusiness?[["Entidade",name],["Nome legal",request.legal_name],["NIF",request.tax_id],["Sector",request.sector],["Província",request.province],["Município",request.municipality],["Website",request.website],["E-mail institucional",request.institutional_email],["Representante",request.representative_full_name],["Cargo",request.representative_role]]:[["Organização",request.organization_name],["Tipo de colaboração",request.collaboration_type],["Actividade",request.activity_description],["Província",request.province],["Município",request.municipality],["Website/redes sociais",request.website_or_social_links],["Responsável",request.representative_name],["E-mail",request.representative_email],["Telefone",request.representative_phone]]).map(([label,value])=>`<div><small class="org-kicker">${esc(label)}</small><p>${esc(value || '—')}</p></div>`).join('')}</div></div></section>
+        <section class="org-page" data-org-page="profile" hidden><div class="org-page-intro"><span class="org-kicker">IDENTIFICAÇÃO</span><h1>${isBusiness?'Perfil da empresa.':'Perfil do parceiro.'}</h1><p>Dados apresentados a partir do pedido original. Para corrigir informação, contacta a equipa PULSO.</p></div><div class="org-profile-identity">${avatarMarkup}<span><small>${identity} · ${esc(BUSINESS_LABELS[request.status] || PARTNER_LABELS[request.status])}</small><b>${entityName}</b></span></div>${profilePhotoEditorMarkup()}<div class="org-card"><div class="org-field-grid">${(isBusiness?[["Entidade",name],["Nome legal",request.legal_name],["NIF",request.tax_id],["Sector",request.sector],["Província",request.province],["Município",request.municipality],["Website",request.website],["E-mail institucional",request.institutional_email],["Representante",request.representative_full_name],["Cargo",request.representative_role]]:[["Organização",request.organization_name],["Tipo de colaboração",request.collaboration_type],["Actividade",request.activity_description],["Província",request.province],["Município",request.municipality],["Website/redes sociais",request.website_or_social_links],["Responsável",request.representative_name],["E-mail",request.representative_email],["Telefone",request.representative_phone]]).map(([label,value])=>`<div><small class="org-kicker">${esc(label)}</small><p>${esc(value || '—')}</p></div>`).join('')}</div></div></section>
         <section class="org-page" data-org-page="status" hidden><div class="org-page-intro"><span class="org-kicker">ESTADO DA CONTA</span><h1>${isBusiness?'Verificação empresarial.':'Parceria PULSO.'}</h1><p>${esc(statusDescription)}</p></div><div class="org-card"><h2>${esc(BUSINESS_LABELS[request.status] || PARTNER_LABELS[request.status])}</h2><p>Submetido em ${esc(dateLabel(request.submitted_at || request.created_at))}</p>${request.status_note?`<p><strong>Última nota:</strong> ${esc(request.status_note)}</p>`:''}${!isBusiness?`<p>Permissão para submeter oportunidades: <strong>${canSubmit?'Concedida':'Ainda não concedida'}</strong>.</p>`:''}<h2>Histórico do processo</h2><div id="orgAccountHistory"></div></div></section>
         <section class="org-page" data-org-page="opportunities" hidden><div class="org-page-intro"><span class="org-kicker">ACOMPANHAMENTO</span><h1>As tuas oportunidades.</h1><p>Consulta estado, notas de revisão e histórico das publicações desta conta.</p></div><section class="org-card"><div class="org-list" id="orgOpportunityListAll"></div></section></section>
         <section class="org-page" data-org-page="submit" hidden><div class="org-page-intro"><span class="org-kicker">SUBMISSÃO MODERADA</span><h1>Submeter oportunidade.</h1><p>A verificação da empresa ou a aprovação da parceria não publica automaticamente. A equipa PULSO revê cada proposta e confirma a entidade, a fonte e os direitos das imagens.</p></div>${submissionFormMarkup(canSubmit, entityName, request)}</section>
@@ -324,6 +335,52 @@ async function submitDraft(id) {
   showToast('Rascunho submetido para revisão.');
   await loadWorkspaceData();
 }
+async function compressProfilePhoto(file) {
+  const image = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const scale = Math.min(1, 640 / Math.max(image.width, image.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(image.width * scale));
+  canvas.height = Math.max(1, Math.round(image.height * scale));
+  canvas.getContext('2d', { alpha: false }).drawImage(image, 0, 0, canvas.width, canvas.height);
+  image.close();
+  for (const quality of [0.84, 0.72, 0.6, 0.48]) {
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', quality));
+    if (blob && blob.size <= MAX_PROFILE_PHOTO_SIZE) return blob;
+  }
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.35));
+  if (!blob) throw new Error('Não foi possível preparar a fotografia.');
+  return blob;
+}
+async function handleProfilePhotoUpload(form) {
+  const file = form.elements.profile_photo.files?.[0];
+  const feedback = $('#orgProfilePhotoFeedback');
+  const submit = form.querySelector('button[type="submit"]');
+  const showFeedback = (message, kind='info') => { feedback.hidden = false; feedback.dataset.kind = kind; feedback.textContent = message; };
+  if (!file) { showFeedback('Escolhe uma fotografia primeiro.', 'error'); return; }
+  if (file.size < MIN_PROFILE_PHOTO_SIZE) { showFeedback('A fotografia original deve ter pelo menos 2 MB.', 'error'); return; }
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { showFeedback('Usa uma fotografia JPG, PNG ou WEBP.', 'error'); return; }
+  submit.disabled = true;
+  try {
+    showFeedback('A comprimir a fotografia antes de guardar…');
+    const compressed = await compressProfilePhoto(file);
+    const path = `${user.id}/${crypto.randomUUID()}.webp`;
+    const { error: uploadError } = await supabase.storage.from(PROFILE_PHOTO_BUCKET).upload(path, compressed, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+    if (uploadError) throw uploadError;
+    const url = safeHttpsUrl(supabase.storage.from(PROFILE_PHOTO_BUCKET).getPublicUrl(path).data?.publicUrl);
+    if (!url) throw new Error('O Storage não devolveu um endereço público válido.');
+    const { error: saveError } = await supabase.rpc('save_organizational_profile_photo', { p_request_id: request.id, p_profile_photo_url: url, p_profile_photo_path: path });
+    if (saveError) { await supabase.storage.from(PROFILE_PHOTO_BUCKET).remove([path]); throw saveError; }
+    if (request.profile_photo_path && request.profile_photo_path !== path) await supabase.storage.from(PROFILE_PHOTO_BUCKET).remove([request.profile_photo_path]);
+    request.profile_photo_url = url;
+    request.profile_photo_path = path;
+    showToast('Fotografia de perfil guardada.');
+    renderWorkspace();
+  } catch (error) {
+    console.error('PULSO profile photo upload failed', error);
+    showFeedback(error.message || 'Não foi possível guardar a fotografia.', 'error');
+    submit.disabled = false;
+  }
+}
 function bindWorkspaceEvents() {
   if (workspace.dataset.eventsBound === 'true') return;
   workspace.dataset.eventsBound = 'true';
@@ -335,6 +392,8 @@ function bindWorkspaceEvents() {
     if (event.target.closest('#orgSignOut') || event.target.closest('#orgSignOutSettings')) void supabase.auth.signOut().then(()=>location.replace('./index.html'));
   });
   workspace.addEventListener('submit', event => {
+    const photoForm = event.target.closest('#orgProfilePhotoForm');
+    if (photoForm) { event.preventDefault(); void handleProfilePhotoUpload(photoForm); return; }
     const form = event.target.closest('#orgSubmissionForm');
     if (!form) return;
     event.preventDefault();
@@ -353,8 +412,8 @@ function bindWorkspaceEvents() {
 async function loadWorkspaceData() {
   const table = isBusiness ? 'business_verification_requests' : 'partnership_requests';
   const select = isBusiness
-    ? 'id,user_id,legal_name,trade_name,tax_id,sector,province,municipality,website,institutional_email,representative_full_name,representative_role,status,status_note,organization_id,submitted_at,created_at'
-    : 'id,user_id,organization_name,activity_description,representative_name,representative_email,representative_phone,province,municipality,website_or_social_links,collaboration_type,collaboration_reason,status,status_note,allow_opportunity_submissions,submitted_at,created_at';
+    ? 'id,user_id,legal_name,trade_name,tax_id,sector,province,municipality,website,institutional_email,representative_full_name,representative_role,status,status_note,organization_id,profile_photo_url,profile_photo_path,submitted_at,created_at'
+    : 'id,user_id,organization_name,activity_description,representative_name,representative_email,representative_phone,province,municipality,website_or_social_links,collaboration_type,collaboration_reason,status,status_note,allow_opportunity_submissions,profile_photo_url,profile_photo_path,submitted_at,created_at';
   const { data: rows, error } = await supabase.from(table).select(select).eq('user_id', user.id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(10);
   if (error) throw error;
   request = rows?.[0];
