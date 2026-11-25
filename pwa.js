@@ -1,9 +1,11 @@
 (() => {
   const INSTALLED_KEY = 'pulso-pwa-installed-v1';
   const DISMISSED_KEY = 'pulso-pwa-install-dismissed-v3';
+  const PUSH_TABLE = 'push_subscriptions';
   const displayMode = window.matchMedia('(display-mode: standalone)');
   let deferredInstallPrompt = null;
   let isOnline = navigator.onLine;
+  let serviceWorkerRegistration = null;
 
   const networkBanner = document.createElement('aside');
   networkBanner.className = 'pwa-network-banner';
@@ -88,6 +90,78 @@
   function safeStorageSet(storageName, key, value) {
     try { window[storageName].setItem(key, value); } catch { /* O armazenamento pode estar bloqueado pelo navegador. */ }
   }
+
+  function urlBase64ToUint8Array(value) {
+    const padding = '='.repeat((4 - (value.length % 4)) % 4);
+    const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = window.atob(base64);
+    return Uint8Array.from([...raw].map(character => character.charCodeAt(0)));
+  }
+
+  async function getPushRegistration() {
+    if (!serviceWorkerRegistration && 'serviceWorker' in navigator) {
+      serviceWorkerRegistration = await navigator.serviceWorker.ready;
+    }
+    return serviceWorkerRegistration;
+  }
+
+  async function getVapidPublicKey(client) {
+    const { data, error } = await client.auth.getSession();
+    const accessToken = data.session?.access_token;
+    if (error || !accessToken) throw new Error('A sessão do PULSO expirou.');
+    const response = await fetch('https://jspdbfteqackaksvslms.supabase.co/functions/v1/pulso-push-config', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error('A configuração de notificações push ainda não está disponível.');
+    const payload = await response.json();
+    if (!payload.publicKey) throw new Error('A chave pública VAPID não está configurada.');
+    return payload.publicKey;
+  }
+
+  async function enablePushNotifications({ client, user }) {
+    if (!client || !user || !('PushManager' in window) || !('serviceWorker' in navigator)) {
+      throw new Error('Este dispositivo não suporta notificações push.');
+    }
+    const registration = await getPushRegistration();
+    if (!registration) throw new Error('O serviço de notificações do PULSO ainda não está pronto.');
+    const publicKey = await getVapidPublicKey(client);
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+    }
+    const json = subscription.toJSON();
+    const { error } = await client.from(PUSH_TABLE).upsert({
+      user_id: user.id,
+      endpoint: subscription.endpoint,
+      p256dh: json.keys?.p256dh || '',
+      auth: json.keys?.auth || '',
+      expiration_time: subscription.expirationTime || null,
+      user_agent: navigator.userAgent.slice(0, 500),
+    }, { onConflict: 'endpoint' });
+    if (error) throw error;
+    safeStorageSet('localStorage', `pulso-push-${user.id}`, 'on');
+    return subscription;
+  }
+
+  async function disablePushNotifications({ client, user }) {
+    const registration = await getPushRegistration();
+    const subscription = await registration?.pushManager.getSubscription();
+    if (subscription) {
+      await client.from(PUSH_TABLE).delete().eq('user_id', user.id).eq('endpoint', subscription.endpoint);
+      await subscription.unsubscribe();
+    }
+    try { window.localStorage.removeItem(`pulso-push-${user.id}`); } catch { /* storage opcional */ }
+  }
+
+  window.PulsoPush = {
+    enable: enablePushNotifications,
+    disable: disablePushNotifications,
+    isSupported: () => 'PushManager' in window && 'serviceWorker' in navigator,
+  };
 
   function isAppleMobile() {
     return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -204,10 +278,14 @@
   });
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    navigator.serviceWorker.register(new URL('./sw.js', document.baseURI), {
+    serviceWorkerRegistration = navigator.serviceWorker.register(new URL('./sw.js', document.baseURI), {
       scope: new URL('./', document.baseURI).pathname,
       updateViaCache: 'none'
-    }).catch(error => console.warn('PULSO PWA: service worker não registado.', error));
+    }).catch(error => {
+      console.warn('PULSO PWA: service worker não registado.', error);
+      serviceWorkerRegistration = null;
+      return null;
+    });
   }
 
   updateInstallUi();
