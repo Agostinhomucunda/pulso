@@ -1,3 +1,5 @@
+import { showPulsoAlert, showPulsoConfirm } from './pulso-dialogs.js';
+
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const CATEGORY_LABELS = {
@@ -151,7 +153,7 @@ async function saveSubscription(event) {
 
 async function deleteSubscription() {
   if (!supabase || !currentUser) return;
-  if (!window.confirm('Apagar o teu número e todos os alertas WhatsApp guardados?')) return;
+  if (!await showPulsoConfirm({ title: 'Apagar alertas WhatsApp?', message: 'O teu número e todas as preferências guardadas serão removidos desta conta.', confirmLabel: 'Apagar alertas', variant: 'danger' })) return;
   const { error } = await supabase.from('whatsapp_alert_subscriptions').delete().eq('user_id', currentUser.id);
   if (error) {
     setFeedback($('#whatsappAlertFeedback'), 'Não foi possível apagar o pedido. Tenta novamente.', 'error');
@@ -302,7 +304,7 @@ async function updateDispatchStatus(button) {
   });
   if (error || data !== true) {
     button.disabled = false;
-    window.alert('Não foi possível actualizar este pedido. Actualiza a fila e tenta novamente.');
+    await showPulsoAlert('Não foi possível actualizar este pedido. Actualiza a fila e tenta novamente.', { title: 'Actualização não concluída' });
     return;
   }
   await loadAdminQueue();

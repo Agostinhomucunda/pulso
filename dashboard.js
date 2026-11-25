@@ -1,5 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-config.js';
 import { PULSO_WEB_PUSH_PUBLIC_KEY } from './push-config.js';
+import { showPulsoConfirm } from './pulso-dialogs.js';
 
 const PAGE_SIZE = 20;
 const CATEGORY_LABELS = {
@@ -652,7 +653,7 @@ async function loadPartnershipRequests() {
 async function reviewPartnershipRequest(id, status, button) {
   if (!isAdmin || !id || !['approved', 'rejected'].includes(status)) return;
   const actionLabel = status === 'approved' ? 'aprovar' : 'rejeitar';
-  if (!window.confirm(`Confirmas ${actionLabel} este pedido de parceria?`)) return;
+  if (!await showPulsoConfirm({ title: `Confirmar ${actionLabel} pedido?`, message: `Queres ${actionLabel} este pedido de parceria?`, confirmLabel: status === 'approved' ? 'Aprovar pedido' : 'Rejeitar pedido', variant: status === 'rejected' ? 'danger' : 'confirm' })) return;
   button.disabled = true;
   const { error } = await supabaseClient.rpc('review_pulso_partnership_request', { p_request_id: id, p_status: status, p_status_note: null, p_allow_opportunity_submissions: status === 'approved' });
   if (error) {
@@ -757,7 +758,7 @@ async function reviewBusinessSubmission(id, action, button) {
   const confirmation = approving
     ? `Confirmas que reveste a publicação “${item.title}”, submetida por ${company}? Ao aceitar, ficará verificada e visível no dashboard normal.`
     : `Confirmas que pretendes rejeitar a publicação “${item.title}”, submetida por ${company}?`;
-  if (!window.confirm(confirmation)) return;
+  if (!await showPulsoConfirm({ title: approving ? 'Aceitar publicação?' : 'Rejeitar publicação?', message: confirmation, confirmLabel: approving ? 'Aceitar e publicar' : 'Rejeitar', variant: approving ? 'confirm' : 'danger' })) return;
 
   const reviewedAt = new Date().toISOString();
   const update = approving
@@ -966,7 +967,7 @@ async function importSmartRows({ publish }) {
 }
 
 function bindSmartImport() {
-  const input = $('#smartImportFile'); const dropzone = $('#smartImportDropzone'); input.addEventListener('change', () => void handleSmartImportFile(input.files[0])); ['dragenter', 'dragover'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.add('is-dragging'); })); ['dragleave', 'drop'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.remove('is-dragging'); })); dropzone.addEventListener('drop', event => void handleSmartImportFile(event.dataTransfer.files[0])); $('#clearSmartImport').addEventListener('click', () => { smartImportRows = []; input.value = ''; renderSmartImportPreview(); $('#smartImportFileName').textContent = ''; $('#smartImportSummary').textContent = ''; $('#smartImportFeedback').hidden = true; }); $('#smartImportReviewButton').addEventListener('click', () => void importSmartRows({ publish: false })); $('#smartImportPublishButton').addEventListener('click', () => { if (window.confirm('Confirmas os dados e queres publicar os cartões válidos agora?')) void importSmartRows({ publish: true }); });
+  const input = $('#smartImportFile'); const dropzone = $('#smartImportDropzone'); input.addEventListener('change', () => void handleSmartImportFile(input.files[0])); ['dragenter', 'dragover'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.add('is-dragging'); })); ['dragleave', 'drop'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.remove('is-dragging'); })); dropzone.addEventListener('drop', event => void handleSmartImportFile(event.dataTransfer.files[0])); $('#clearSmartImport').addEventListener('click', () => { smartImportRows = []; input.value = ''; renderSmartImportPreview(); $('#smartImportFileName').textContent = ''; $('#smartImportSummary').textContent = ''; $('#smartImportFeedback').hidden = true; }); $('#smartImportReviewButton').addEventListener('click', () => void importSmartRows({ publish: false })); $('#smartImportPublishButton').addEventListener('click', async () => { const confirmed = await showPulsoConfirm({ title: 'Publicar oportunidades?', message: 'Confirma os dados e publica agora os cartões válidos da importação.', confirmLabel: 'Publicar agora' }); if (confirmed) void importSmartRows({ publish: true }); });
 }
 
 async function loadAdminAssets() {
@@ -1131,7 +1132,7 @@ async function setAutomationSource(id, action) {
   if (!isAdmin) return;
   const source = automationSources.find(item => item.id === id);
   if (!source) return;
-  if (action === 'remove' && !window.confirm(`Remover “${source.name}” do catálogo de fontes? As publicações já guardadas mantêm o título e a origem textual.`)) return;
+  if (action === 'remove' && !await showPulsoConfirm({ title: 'Remover fonte?', message: `Queres remover “${source.name}” do catálogo? As publicações já guardadas mantêm o título e a origem textual.`, confirmLabel: 'Remover fonte', variant: 'danger' })) return;
   if (action === 'activate' && (!source.collection_endpoint || !source.collection_format)) {
     notify('Guarda primeiro um endpoint e o formato do feed.');
     return;
@@ -1205,7 +1206,7 @@ async function reviewAutomaticPublication(id, action, button) {
     return;
   }
   const imageRights = Boolean(approving && card?.querySelector('[data-auto-image-rights]')?.checked);
-  if (approving && !window.confirm('Confirmas que reveste a fonte e os dados desta publicação? A oportunidade já está online.')) return;
+  if (approving && !await showPulsoConfirm({ title: 'Confirmar revisão?', message: 'Confirma que verificaste a fonte e os dados desta publicação. A oportunidade já está online.', confirmLabel: 'Confirmar revisão' })) return;
   const { error } = await supabaseClient.rpc('pulso_review_automatic_opportunity', {
     p_opportunity_id: id,
     p_action: approving ? 'approve' : 'dismiss',
@@ -1277,7 +1278,7 @@ async function saveAdminAssets(event) {
 
 async function deleteAdminOpportunity(id) {
   if (!isAdmin || !id) return;
-  if (!window.confirm('Eliminar esta publicação definitivamente? A organização e a fonte serão mantidas.')) return;
+  if (!await showPulsoConfirm({ title: 'Eliminar publicação?', message: 'Esta acção é definitiva. A organização e a fonte serão mantidas.', confirmLabel: 'Eliminar publicação', variant: 'danger' })) return;
   try {
     const { error } = await supabaseClient.from('opportunities').delete().eq('id', id);
     if (error) throw error;
@@ -1387,7 +1388,7 @@ async function sendAdminBroadcast(event) {
     setFeedback(feedback, 'Indica um título até 90 caracteres e uma mensagem até 500 caracteres.', 'error');
     return;
   }
-  if (!window.confirm(`Enviar a mensagem “${title}” a todos os utilizadores do PULSO?\n\n${message}`)) return;
+  if (!await showPulsoConfirm({ title: 'Enviar aviso a todos?', message: `Enviar “${title}” a todos os utilizadores do PULSO?\n\n${message}`, confirmLabel: 'Enviar aviso' })) return;
   const submit = $('button[type="submit"]', form);
   submit.disabled = true;
   setFeedback(feedback, 'A guardar a mensagem e a enviar aos dispositivos inscritos…', 'success');
@@ -1685,7 +1686,7 @@ async function markAllNotificationsRead() {
 
 async function deleteAllNotifications() {
   if (!currentUser || !notifications.length) return;
-  if (!window.confirm('Eliminar todas as notificações desta conta?')) return;
+  if (!await showPulsoConfirm({ title: 'Eliminar notificações?', message: 'Queres eliminar todas as notificações desta conta? Esta acção não pode ser anulada.', confirmLabel: 'Eliminar todas', variant: 'danger' })) return;
   const { error } = await supabaseClient.from('notifications').delete().eq('user_id', currentUser.id);
   if (error) {
     console.error('PULSO could not delete notifications', error);
