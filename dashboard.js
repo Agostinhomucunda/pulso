@@ -653,7 +653,7 @@ function renderPartnershipRequests() {
     const pendingItem = !['approved', 'rejected', 'suspended'].includes(item.status);
     const website = httpsUrl(item.website_or_social_links);
     const details = [item.province, item.municipality].filter(Boolean).join(' · ');
-    return `<article class="partnership-request-card ${pendingItem ? '' : 'is-reviewed'}"><div class="partnership-request-copy"><div class="partnership-request-title"><span class="automation-state ${pendingItem ? '' : 'is-active'}">${escapeHtml(partnershipStatusLabel(item.status))}</span><h3>${escapeHtml(item.organization_name)}</h3></div><p><b>Representante:</b> ${escapeHtml(item.representative_name)} · ${escapeHtml(item.representative_email)}${item.representative_phone ? ` · ${escapeHtml(item.representative_phone)}` : ''}</p>${details ? `<p><b>Localização:</b> ${escapeHtml(details)}</p>` : ''}<div class="partnership-request-details"><span><b>Colaboração:</b> ${escapeHtml(item.collaboration_type)}</span><span><b>Motivo:</b> ${escapeHtml(item.collaboration_reason)}</span>${item.activity_description ? `<span><b>Actividade:</b> ${escapeHtml(item.activity_description)}</span>` : ''}${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Abrir site ou rede ↗</a>` : ''}<small>Enviado em ${escapeHtml(formatDateTime(item.submitted_at || item.created_at))}</small></div></div>${pendingItem ? `<div class="partnership-request-actions"><button class="btn btn-primary-soft" type="button" data-partnership-review="approved" data-partnership-id="${escapeHtml(item.id)}">Aprovar</button><button class="automation-remove" type="button" data-partnership-review="rejected" data-partnership-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : `<small class="automation-reviewed-date">Revisto em ${escapeHtml(formatDateTime(item.reviewed_at))}</small>`}</article>`;
+    return `<article class="partnership-request-card ${pendingItem ? '' : 'is-reviewed'}"><div class="partnership-request-copy"><div class="partnership-request-title"><span class="automation-state ${pendingItem ? '' : 'is-active'}">${escapeHtml(partnershipStatusLabel(item.status))}</span><h3>${escapeHtml(item.organization_name)}</h3></div><p><b>Representante:</b> ${escapeHtml(item.representative_name)} · ${escapeHtml(item.representative_email)}${item.representative_phone ? ` · ${escapeHtml(item.representative_phone)}` : ''}</p>${details ? `<p><b>Localização:</b> ${escapeHtml(details)}</p>` : ''}<div class="partnership-request-details"><span><b>Colaboração:</b> ${escapeHtml(item.collaboration_type)}</span><span><b>Motivo:</b> ${escapeHtml(item.collaboration_reason)}</span>${item.activity_description ? `<span><b>Actividade:</b> ${escapeHtml(item.activity_description)}</span>` : ''}${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Abrir site ou rede ↗</a>` : ''}<small>Enviado em ${escapeHtml(formatDateTime(item.submitted_at || item.created_at))}</small></div></div>${pendingItem ? `<div class="partnership-request-actions"><button class="btn btn-primary-soft" type="button" data-partnership-review="approved" data-partnership-id="${escapeHtml(item.id)}">Aprovar</button><button class="automation-remove" type="button" data-partnership-review="rejected" data-partnership-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : `<div class="partnership-request-actions"><small class="automation-reviewed-date">Revisto em ${escapeHtml(formatDateTime(item.reviewed_at))}</small>${['approved', 'rejected'].includes(item.status) ? `<button class="admin-history-delete" type="button" data-delete-partnership-request="${escapeHtml(item.id)}">Eliminar</button>` : ''}</div>`}</article>`;
   }).join('');
 }
 
@@ -685,6 +685,28 @@ async function reviewPartnershipRequest(id, status, button) {
     return;
   }
   notify(status === 'approved' ? 'Pedido de parceria aprovado.' : 'Pedido de parceria rejeitado.');
+  await loadPartnershipRequests();
+}
+
+async function deleteReviewedPartnershipRequest(id, button) {
+  if (!isAdmin || !id) return;
+  const item = partnershipRequests.find(row => row.id === id);
+  if (!item || !['approved', 'rejected'].includes(item.status)) {
+    notify('Só podes eliminar pedidos de parceria aprovados ou rejeitados. Actualiza a lista.');
+    await loadPartnershipRequests();
+    return;
+  }
+  if (!await showPulsoConfirm({ title: 'Eliminar pedido revisto?', message: `O pedido de parceria de “${item.organization_name}” será eliminado permanentemente. Isto não elimina oportunidades publicadas no catálogo.`, confirmLabel: 'Eliminar pedido', variant: 'danger' })) return;
+  button.disabled = true;
+  const { data, error } = await supabaseClient.from('partnership_requests').delete()
+    .eq('id', id).in('status', ['approved', 'rejected']).select('id').maybeSingle();
+  if (error || !data) {
+    console.error('PULSO reviewed partnership request delete failed', error);
+    button.disabled = false;
+    notify(error?.message || 'O pedido já não está num estado eliminável. Actualiza a lista.');
+    return;
+  }
+  notify('Pedido de parceria eliminado.');
   await loadPartnershipRequests();
 }
 
@@ -723,7 +745,7 @@ function renderBusinessSubmissions() {
         <div class="business-submission-links">${source ? `<a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir publicação original ↗</a>` : ''}${application ? `<a href="${escapeHtml(application)}" target="_blank" rel="noopener noreferrer">Abrir candidatura ↗</a>` : ''}${image ? `<a href="${escapeHtml(image)}" target="_blank" rel="noopener noreferrer">Ver imagem ↗</a>` : ''}${!source && !application && !image ? '<span>Sem ligações adicionais.</span>' : ''}</div>
         ${!pending && reviewDate ? `<small class="business-submission-reviewed">Revista em ${escapeHtml(reviewDate)}</small>` : ''}
       </div>
-      ${pending ? `<div class="business-submission-actions"><button class="btn btn-primary-soft" type="button" data-business-review="approve" data-opportunity-id="${escapeHtml(item.id)}">Aceitar e publicar</button><button class="automation-remove" type="button" data-business-review="reject" data-opportunity-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : ''}
+      ${pending ? `<div class="business-submission-actions"><button class="btn btn-primary-soft" type="button" data-business-review="approve" data-opportunity-id="${escapeHtml(item.id)}">Aceitar e publicar</button><button class="automation-remove" type="button" data-business-review="reject" data-opportunity-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : rejected ? `<div class="business-submission-actions"><button class="admin-history-delete" type="button" data-delete-rejected-business="${escapeHtml(item.id)}">Eliminar rejeitada</button></div>` : ''}
     </article>`;
   }).join('');
 }
@@ -764,6 +786,28 @@ async function loadBusinessSubmissions() {
     .sort((a, b) => Number(b.status === 'pending_review') - Number(a.status === 'pending_review')
       || Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0));
   renderBusinessSubmissions();
+}
+
+async function deleteRejectedBusinessSubmission(id, button) {
+  if (!isAdmin || !id) return;
+  const item = businessSubmissions.find(row => row.id === id);
+  if (!item || item.status !== 'rejected' || item.submission_kind !== 'business') {
+    notify('Só podes eliminar submissões empresariais rejeitadas. As publicadas ficam intactas no catálogo.');
+    await loadBusinessSubmissions();
+    return;
+  }
+  if (!await showPulsoConfirm({ title: 'Eliminar submissão rejeitada?', message: `A submissão “${item.title}” será eliminada permanentemente. Só é permitido eliminar registos rejeitados; oportunidades publicadas no catálogo não são afectadas.`, confirmLabel: 'Eliminar rejeitada', variant: 'danger' })) return;
+  button.disabled = true;
+  const { data, error } = await supabaseClient.from('opportunities').delete()
+    .eq('id', id).eq('submission_kind', 'business').eq('status', 'rejected').select('id').maybeSingle();
+  if (error || !data) {
+    console.error('PULSO rejected business submission delete failed', error);
+    button.disabled = false;
+    notify(error?.message || 'A submissão já não está rejeitada. Actualiza a lista.');
+    return;
+  }
+  notify('Submissão rejeitada eliminada; o catálogo público não foi alterado.');
+  await loadBusinessSubmissions();
 }
 
 async function reviewBusinessSubmission(id, action, button) {
@@ -2030,6 +2074,8 @@ function bindEvents() {
   });
   $('#manualOpportunityForm').addEventListener('submit', createManualOpportunity);
   $('#partnershipRequestList').addEventListener('click', event => {
+    const remove = event.target.closest('[data-delete-partnership-request]');
+    if (remove) { void deleteReviewedPartnershipRequest(remove.dataset.deletePartnershipRequest, remove); return; }
     const action = event.target.closest('[data-partnership-review]');
     if (action) void reviewPartnershipRequest(action.dataset.partnershipId, action.dataset.partnershipReview, action);
   });
@@ -2043,6 +2089,8 @@ function bindEvents() {
   $('#refreshAdminAssets').addEventListener('click', () => void loadAdminAssets());
   $('#refreshBusinessSubmissions').addEventListener('click', () => void loadBusinessSubmissions());
   $('#businessSubmissionList').addEventListener('click', event => {
+    const remove = event.target.closest('[data-delete-rejected-business]');
+    if (remove) { void deleteRejectedBusinessSubmission(remove.dataset.deleteRejectedBusiness, remove); return; }
     const action = event.target.closest('[data-business-review]');
     if (action) void reviewBusinessSubmission(action.dataset.opportunityId, action.dataset.businessReview, action);
   });
