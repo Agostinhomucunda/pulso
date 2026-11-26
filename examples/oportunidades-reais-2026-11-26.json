@@ -1,0 +1,42 @@
+{
+  "exported_at": "2026-11-26",
+  "verification_note": "Oportunidades verificadas em 26/11/2026 em páginas oficiais. Confirmar novamente os prazos antes de publicar.",
+  "opportunities": [
+    {
+      "title": "Administração Pública — Ministério do Turismo",
+      "category": "concurso",
+      "organization": "Ministério do Turismo de Angola",
+      "official_website": "",
+      "source_name": "Portal SEPE — Serviços Públicos Electrónicos",
+      "source_url": "https://sepe.gov.ao/emprego/1023",
+      "application_url": "https://sepe.gov.ao/emprego/1023",
+      "province": "Luanda",
+      "municipality": "Luanda",
+      "application_deadline": "2026-11-26",
+      "description": "O portal SEPE apresenta esta oportunidade de Administração Pública no Ministério do Turismo. A página indica candidaturas até 26/11/2026, na província de Luanda, com experiência mínima de 0 anos e escolaridade mínima do II Ciclo do Ensino Secundário Geral ou técnico.",
+      "application_instructions": "Abrir a página oficial do SEPE, consultar os requisitos completos e seguir as instruções de candidatura apresentadas no portal.",
+      "contact_phone": "",
+      "contact_email": "",
+      "image_url": "https://sepe.gov.ao/sepelogo.png",
+      "logo_url": "https://sepe.gov.ao/sepelogo.png"
+    },
+    {
+      "title": "Concurso Público de Ingresso Externo 2026 — Ministério da Saúde",
+      "category": "concurso",
+      "organization": "Ministério da Saúde de Angola",
+      "official_website": "",
+      "source_name": "Portal oficial de candidatura do Ministério da Saúde",
+      "source_url": "https://concurso-minsa.ao/",
+      "application_url": "https://concurso-minsa.ao/",
+      "province": "Angola",
+      "municipality": "Várias províncias",
+      "application_deadline": "",
+      "description": "O portal oficial do Ministério da Saúde mantém disponível o acompanhamento do Concurso Público de Ingresso Externo 2026. A página apresenta os resultados provisórios dos exames escritos realizados de 21 a 26 de Setembro e permite consultar resultados, acompanhar a candidatura e consultar as vagas e categorias por província.",
+      "application_instructions": "Abrir o portal oficial para consultar os resultados provisórios, acompanhar a candidatura e verificar as etapas actualmente disponíveis. Esta publicação é de acompanhamento do concurso; o portal deve ser consultado antes de qualquer candidatura ou entrega de documentos.",
+      "contact_phone": "",
+      "contact_email": "",
+      "image_url": "https://concurso-minsa.ao/assets/img/logo_minsa_dnrh.png",
+      "logo_url": "https://concurso-minsa.ao/assets/img/logo_minsa_dnrh.png"
+    }
+  ]
+}
