@@ -102,3 +102,9 @@ html[data-theme="night"] .wa-admin-section .panel-heading p,html[data-theme="nig
 html[data-theme="night"] .wa-match-copy>b,html[data-theme="night"] .wa-request-heading h3{color:#e7efff}
 html[data-theme="night"] .wa-admin-privacy-note{border-color:#5b5131;background:#2a271b;color:#d8c58b}
 html[data-theme="night"] .wa-no-match{background:#302124;color:#ffaaa1}
+
+/* Copy compacta e centrada, preservando a estrutura 3D e os elementos visuais do cartão. */
+.wa-process-card .wa-card-inner{text-align:center}
+.wa-process-card .wa-process-top{justify-content:center}
+.wa-process-card .wa-flow-step>span{text-align:center}
+.wa-process-card .wa-process-footer{justify-content:center}
