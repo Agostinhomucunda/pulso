@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pulso-shell-v16';
+const CACHE_NAME = 'pulso-shell-v17';
 const SCOPE_URL = new URL(self.registration.scope);
 const CORE_FILES = [
   'index.html',
@@ -28,6 +28,7 @@ const CORE_FILES = [
   'assets/pwa-icon-192-v2.png',
   'assets/pwa-icon-512-v2.png',
   'assets/pulso-mark-3d-small.png',
+  'assets/whatsapp-alert-card.png',
   'assets/luanda-hero.jpg'
 ];
 const PAGE_FILES = new Set([
