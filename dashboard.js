@@ -537,6 +537,9 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
   ].filter(Boolean).join('');
   const saved = savedIds.has(item.id);
   const source = safeUrl(item.source_url);
+  const application = safeUrl(item.application_url);
+  const hasLink = Boolean(source || application);
+  const hasInformation = Boolean(item.description || item.application_instructions || item.contact_phone || item.contact_email || item.province || item.municipality);
   return `<article class="dash-op-card" data-opportunity="${id}">
     <span class="dash-op-visual" aria-hidden="true">${image ? `<img class="dash-op-image" src="${escapeHtml(image)}" alt="" loading="lazy">` : '<span class="dash-op-image dash-op-image-empty">P·</span>'}</span>
     <div class="dash-op-content">
@@ -546,7 +549,7 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
     </div>
     <div class="dash-op-actions">
       ${isAdmin ? `<button class="dash-op-delete" type="button" data-delete-opportunity="${id}">Eliminar</button>` : ''}
-      ${source ? `<button class="source-3d-btn dash-source-3d-btn" type="button" data-detail-opportunity="${id}">Fonte oficial <span>↗</span></button>` : ''}
+      ${hasLink ? `<button class="source-3d-btn dash-source-3d-btn" type="button" data-detail-opportunity="${id}">${source ? 'Fonte oficial' : 'Aceder à candidatura'} <span>↗</span></button>` : (hasInformation ? `<button class="source-3d-btn dash-source-3d-btn info-fallback-btn" type="button" data-detail-opportunity="${id}">Ver informações <span>⌄</span></button>` : '')}
       <button class="dash-op-save ${saved ? 'saved' : ''}" type="button" data-save-opportunity="${id}" aria-label="${saved ? 'Remover dos guardados' : 'Guardar'}: ${escapeHtml(item.title)}">${saved ? '♥' : '♡'}</button>
       ${savedPage ? '' : `<button class="dash-op-detail" type="button" data-detail-opportunity="${id}" aria-label="Ver detalhe: ${escapeHtml(item.title)}">↗</button>`}
     </div>
@@ -775,7 +778,7 @@ async function loadBusinessSubmissions() {
   if (!isAdmin) return;
   const target = $('#businessSubmissionList');
   target.innerHTML = '<div class="empty-state"><b>A carregar submissões empresariais…</b></div>';
-  const fields = 'id,title,description,public_summary,category,province,municipality,application_deadline,source_name,source_url,application_url,image_url,created_at,published_at,reviewed_at,status,verification_status,review_note,organization_id,submitted_by_user_id,submission_kind,organization:organizations(id,name)';
+  const fields = 'id,title,description,public_summary,category,province,municipality,application_deadline,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,created_at,published_at,reviewed_at,status,verification_status,review_note,organization_id,submitted_by_user_id,submission_kind,organization:organizations(id,name)';
   const rows = [];
   let offset = 0;
   let error = null;
@@ -877,7 +880,7 @@ function importKey(value) {
 }
 
 const IMPORT_FIELD_ALIASES = {
-  title: ['title', 'titulo', 'nome', 'name', 'oportunidade', 'cargo'], category: ['category', 'categoria', 'tipo'], organization: ['organization', 'organizacao', 'entidade', 'empresa', 'organizationname'], official_website: ['officialwebsite', 'siteoficial', 'website', 'site'], source_url: ['sourceurl', 'linkdafonte', 'fonte', 'link', 'url', 'publicationurl'], application_url: ['applicationurl', 'candidatura', 'linkdacandidatura', 'applyurl'], province: ['province', 'provincia'], municipality: ['municipality', 'municipio'], application_deadline: ['applicationdeadline', 'prazo', 'deadline', 'datalimite'], description: ['description', 'descricao', 'detalhes', 'summary', 'resumo'], image_url: ['imageurl', 'imagem', 'fotografia', 'photo', 'image'], logo_url: ['logourl', 'logotipo', 'logo'], source_name: ['sourcename', 'nomedafonte'],
+  title: ['title', 'titulo', 'nome', 'name', 'oportunidade', 'cargo'], category: ['category', 'categoria', 'tipo'], organization: ['organization', 'organizacao', 'entidade', 'empresa', 'organizationname'], official_website: ['officialwebsite', 'siteoficial', 'website', 'site'], source_url: ['sourceurl', 'linkdafonte', 'fonte', 'link', 'url', 'publicationurl'], application_url: ['applicationurl', 'candidatura', 'linkdacandidatura', 'applyurl'], contact_phone: ['contactphone', 'telefone', 'telemovel', 'celular', 'phone', 'whatsapp'], contact_email: ['contactemail', 'email', 'emailcontacto', 'correio'], application_instructions: ['applicationinstructions', 'instrucoes', 'instrucoesdecandidatura', 'contactinstructions', 'como candidatar', 'onde se dirigir', 'localdecandidatura'], province: ['province', 'provincia'], municipality: ['municipality', 'municipio'], application_deadline: ['applicationdeadline', 'prazo', 'deadline', 'datalimite'], description: ['description', 'descricao', 'detalhes', 'summary', 'resumo'], image_url: ['imageurl', 'imagem', 'fotografia', 'photo', 'image'], logo_url: ['logourl', 'logotipo', 'logo'], source_name: ['sourcename', 'nomedafonte'],
 };
 const IMPORT_CATEGORY_ALIASES = {
   emprego: 'employment', empregos: 'employment', trabalho: 'employment', vaga: 'employment', vagas: 'employment', job: 'employment', jobs: 'employment',
@@ -905,8 +908,10 @@ function normalizeImportRecord(record) {
   Object.entries(IMPORT_FIELD_ALIASES).forEach(([field, aliases]) => { const found = Object.entries(source).find(([key]) => aliases.includes(importKey(key))); normalized[field] = String(found?.[1] ?? '').trim(); });
   normalized.category = normalizeImportCategory(normalized.category);
   normalized.source_name ||= normalized.organization; normalized.application_url ||= normalized.source_url;
-  normalized.valid = Boolean(normalized.title && normalized.organization && normalized.category && /^https:\/\//i.test(normalized.source_url));
-  normalized.issue = normalized.valid ? '' : (!normalized.category ? 'Categoria não reconhecida. Usa bolsa, emprego, concurso, estágio, formação ou programa.' : 'Falta título, organização ou link HTTPS da fonte.');
+  const hasOfficialLink = /^https:\/\//i.test(normalized.source_url) || /^https:\/\//i.test(normalized.application_url);
+  const hasFallbackInformation = Boolean(normalized.description || normalized.application_instructions || normalized.contact_phone || normalized.contact_email || normalized.province || normalized.municipality);
+  normalized.valid = Boolean(normalized.title && normalized.organization && normalized.category && (hasOfficialLink || hasFallbackInformation));
+  normalized.issue = normalized.valid ? '' : (!normalized.category ? 'Categoria não reconhecida. Usa bolsa, emprego, concurso, estágio, formação ou programa.' : 'Falta título, organização e um link HTTPS ou informação de contacto/candidatura.');
   return normalized;
 }
 
@@ -973,6 +978,7 @@ async function ensureSmartImportOrganization(row) {
 }
 
 async function ensureSmartImportSource(row) {
+  if (!/^https:\/\//i.test(row.source_url)) return null;
   const existing = await supabaseClient.from('sources').select('id').eq('source_url', row.source_url).maybeSingle(); if (existing.error) throw existing.error; if (existing.data) return existing.data.id;
   const created = await supabaseClient.from('sources').insert({ name: row.source_name || row.organization, source_url: row.source_url, source_type: 'manual', access_status: 'authorized', active: true, visible_publicly: true }).select('id').single(); if (created.error) throw created.error; return created.data.id;
 }
@@ -998,7 +1004,7 @@ async function importSmartRows({ publish }) {
         const organizationId = await ensureSmartImportOrganization(row);
         const sourceId = await ensureSmartImportSource(row);
         const image = httpsUrl(row.image_url);
-        const imageSource = image ? row.source_url : null;
+        const imageSource = image ? (row.source_url || image) : null;
         const payload = {
           organization_id: organizationId,
           source_id: sourceId,
@@ -1010,8 +1016,11 @@ async function importSmartRows({ publish }) {
           municipality: row.municipality || null,
           application_deadline: row.application_deadline || null,
           source_name: row.source_name || row.organization,
-          source_url: row.source_url,
+          source_url: row.source_url || null,
           application_url: httpsUrl(row.application_url),
+          contact_phone: row.contact_phone || null,
+          contact_email: row.contact_email || null,
+          application_instructions: row.application_instructions || null,
           candidate_image_url: image,
           candidate_image_source_url: imageSource,
           image_url: image,
@@ -1153,7 +1162,7 @@ async function loadAutomationAdmin() {
   reviewTarget.innerHTML = '<div class="empty-state"><b>A carregar publicações automáticas…</b></div>';
   const [sourceResult, reviewResult] = await Promise.all([
     supabaseClient.from('sources').select('id,name,source_url,source_type,source_group,source_class,terms_url,access_status,active,collection_enabled,collection_endpoint,collection_format,collection_allowed_hosts,last_scanned_at,last_scan_status,last_scan_error').order('source_group').order('name'),
-    supabaseClient.from('opportunities').select('id,title,description,public_summary,category,application_deadline,published_at,source_name,source_url,application_url,image_url,candidate_image_url,candidate_image_source_url,organization_id,status,auto_review_status,auto_reviewed_at,organization:organizations(id,name,official_website,verification_status)').eq('collection_method', 'automatic').order('published_at', { ascending: false, nullsFirst: false }).limit(100),
+    supabaseClient.from('opportunities').select('id,title,description,public_summary,category,application_deadline,published_at,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,candidate_image_url,candidate_image_source_url,organization_id,status,auto_review_status,auto_reviewed_at,organization:organizations(id,name,official_website,verification_status)').eq('collection_method', 'automatic').order('published_at', { ascending: false, nullsFirst: false }).limit(100),
   ]);
   if (sourceResult.error) {
     sourceTarget.innerHTML = '<div class="empty-state" role="alert"><b>Configuração automática ainda não aplicada.</b>Aplica a migration <code>20261120180000_pulso_ai_automation.sql</code> no Supabase. O registo manual continua disponível.</div>';
@@ -1388,12 +1397,18 @@ async function createManualOpportunity(event) {
   const form = event.currentTarget;
   const values = new FormData(form);
   const feedback = $('#adminFormFeedback');
-  const website = httpsUrl(String(values.get('official_website') || ''), true);
-  const source = httpsUrl(String(values.get('source_url') || ''), true);
+  const websiteText = String(values.get('official_website') || '').trim();
+  const sourceText = String(values.get('source_url') || '').trim();
+  const website = websiteText ? httpsUrl(websiteText, true) : null;
+  const source = sourceText ? httpsUrl(sourceText, true) : null;
   const application = httpsUrl(String(values.get('application_url') || ''));
+  const contactPhone = String(values.get('contact_phone') || '').trim();
+  const contactEmail = String(values.get('contact_email') || '').trim();
+  const applicationInstructions = String(values.get('application_instructions') || '').trim();
   const image = httpsUrl(String(values.get('image_url') || ''));
   const logo = httpsUrl(String(values.get('logo_url') || ''));
-  if (!website || !source || (values.get('application_url') && !application)
+  if ((websiteText && !website) || (sourceText && !source) || (values.get('application_url') && !application)
+      || (!source && !application && !applicationInstructions && !contactPhone && !contactEmail)
       || (values.get('image_url') && !image) || (values.get('logo_url') && !logo)) {
     setFeedback(feedback, 'Os links devem ser HTTPS válidos e apontar para fontes oficiais.', 'error'); return;
   }
@@ -1405,8 +1420,10 @@ async function createManualOpportunity(event) {
   let existingOrganization = false;
   try {
     const organizationNameValue = String(values.get('organization')).trim();
-    let { data: organization, error } = await supabaseClient.from('organizations')
-      .select('id').eq('official_website', website).maybeSingle();
+    let organizationResult = website
+      ? await supabaseClient.from('organizations').select('id').eq('official_website', website).maybeSingle()
+      : await supabaseClient.from('organizations').select('id').eq('name', organizationNameValue).maybeSingle();
+    let { data: organization, error } = organizationResult;
     if (error) throw error;
     if (!organization) {
       const inserted = await supabaseClient.from('organizations').insert({
@@ -1424,7 +1441,7 @@ async function createManualOpportunity(event) {
       province: String(values.get('province') || '').trim() || null,
       municipality: String(values.get('municipality') || '').trim() || null,
       application_deadline: String(values.get('application_deadline') || '') || null,
-      source_name: organizationNameValue, source_url: source, application_url: application || source,
+      source_name: organizationNameValue, source_url: source, application_url: application || source, contact_phone: contactPhone || null, contact_email: contactEmail || null, application_instructions: applicationInstructions || null,
       image_url: image, status: 'published', verification_status: 'verified', published_at: new Date().toISOString(),
     };
     const { data: opportunity, error: opportunityError } = await supabaseClient.from('opportunities').insert(payload).select('id').single();
@@ -1516,7 +1533,7 @@ async function loadOpportunities({ append = false } = {}) {
   const from = append ? opportunitiesOffset : 0;
   const to = from + PAGE_SIZE - 1;
   const { data, error } = await supabaseClient.from('opportunities')
-    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
+    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
     .eq('status', 'published').eq('verification_status', 'verified')
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false }).range(from, to);
@@ -1539,7 +1556,7 @@ async function loadSavedOpportunities() {
   const target = $('#savedOpportunityList');
   target.innerHTML = '<div class="empty-state"><b>A carregar oportunidades guardadas…</b></div>';
   const { data, error } = await supabaseClient.from('saved_opportunities')
-    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url))')
+    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url))')
     .eq('user_id', currentUser.id).order('created_at', { ascending: false });
   if (error) {
     console.error('PULSO dashboard saved items failed', error);
@@ -1795,11 +1812,16 @@ async function deleteAllNotifications() {
   notify('Notificações eliminadas.');
 }
 
+async function copyOpportunityValue(button) {
+  const value = button.dataset.copyValue || '';
+  try { await navigator.clipboard.writeText(value); button.textContent = 'Copiado'; setTimeout(() => { button.textContent = 'Copiar'; }, 1600); }
+  catch { notify('Não foi possível copiar automaticamente.'); }
+}
 async function openOpportunity(id) {
   let item = opportunities.find(row => row.id === id) || savedRows.find(row => row.id === id);
   if (!item) {
     const { data, error } = await supabaseClient.from('opportunities')
-      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
+      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
       .eq('id', id).eq('status', 'published').eq('verification_status', 'verified').maybeSingle();
     if (error || !data) {
       notify('Esta oportunidade já não está disponível.');
@@ -1818,6 +1840,9 @@ function renderOpportunityDetail(item) {
   const details = [item.description, item.requirements ? `Requisitos: ${item.requirements}` : '',
     item.education_level ? `Escolaridade: ${item.education_level}` : '', item.experience ? `Experiência: ${item.experience}` : ''].filter(Boolean);
   const place = [item.municipality, item.province].filter(Boolean).join(', ') || 'Localização não indicada';
+  const fallback = [item.application_instructions ? `<div><b>Como candidatar-se</b><p>${escapeHtml(item.application_instructions)}</p></div>` : '',
+    item.contact_phone ? `<div class="detail-contact-row"><span><b>Telefone</b><br>${escapeHtml(item.contact_phone)}</span><button type="button" class="detail-copy-btn" data-copy-value="${escapeHtml(item.contact_phone)}">Copiar</button></div>` : '',
+    item.contact_email ? `<div class="detail-contact-row"><span><b>E-mail</b><br>${escapeHtml(item.contact_email)}</span><button type="button" class="detail-copy-btn" data-copy-value="${escapeHtml(item.contact_email)}">Copiar</button></div>` : ''].filter(Boolean);
   $('#opportunityDetail').innerHTML = `<div class="opportunity-detail-inner">
     ${image ? `<img class="detail-image" src="${escapeHtml(image)}" alt="Imagem de ${escapeHtml(item.title)}" loading="lazy">` : ''}
     <div class="detail-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> OPORTUNIDADE VERIFICADA</div>
@@ -1825,8 +1850,9 @@ function renderOpportunityDetail(item) {
     <p>${escapeHtml(organizationName(item))} · ${escapeHtml(place)}</p>
     <div class="detail-meta"><span class="detail-pill">${escapeHtml(categoryLabel(item.category))}</span>${item.application_deadline ? `<span class="detail-pill">Candidaturas até ${escapeHtml(formatDate(item.application_deadline))}</span>` : ''}</div><div class="detail-rating"><b>Classificação da oportunidade</b><div>${ratingMarkup(item, true)}</div><small>As avaliações dos utilizadores formam uma média.</small></div>
     ${details.length ? `<div class="detail-description">${details.map(escapeHtml).join('\n\n')}</div>` : ''}
-    <div class="detail-source"><b>Fonte:</b> ${escapeHtml(item.source_name || organizationName(item))}${source ? ` · <a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir publicação original ↗</a>` : ''}</div>
-    <div class="detail-links">${apply ? `<a href="${escapeHtml(apply)}" target="_blank" rel="noopener noreferrer">Aceder à candidatura <span>↗</span></a>` : ''}${source ? `<a class="secondary-link" href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Ver fonte original</a>` : ''}<button class="dash-op-save ${savedIds.has(item.id) ? 'saved' : ''}" type="button" data-save-opportunity="${escapeHtml(item.id)}">${savedIds.has(item.id) ? '♥ Remover dos guardados' : '♡ Guardar oportunidade'}</button></div>
+    ${fallback.length ? `<section class="detail-information"><b class="detail-information-title">Informações para candidatura</b>${fallback.join('')}</section>` : ''}
+    <div class="detail-source"><b>Fonte:</b> ${escapeHtml(item.source_name || organizationName(item))}${source ? ` · <a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir publicação original ↗</a>` : ' · informação fornecida pela organização'}</div>
+    <div class="detail-links">${apply ? `<a href="${escapeHtml(apply)}" target="_blank" rel="noopener noreferrer">${source ? 'Aceder à candidatura' : 'Abrir candidatura'} <span>↗</span></a>` : ''}${source ? `<a class="secondary-link" href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Ver fonte original</a>` : ''}<button class="dash-op-save ${savedIds.has(item.id) ? 'saved' : ''}" type="button" data-save-opportunity="${escapeHtml(item.id)}">${savedIds.has(item.id) ? '♥ Remover dos guardados' : '♡ Guardar oportunidade'}</button></div>
   </div>`;
   const dialog = $('#opportunityDialog');
   if (!dialog.open) dialog.showModal();
@@ -2165,6 +2191,7 @@ function bindEvents() {
     const notificationOpportunity = event.target.closest('[data-notification-opportunity]');
     const notificationTarget = event.target.closest('[data-notification-target]');
     const notificationToggle = event.target.closest('[data-toggle-notification]');
+    const copy = event.target.closest('[data-copy-value]');
     const retry = event.target.closest('[data-retry-opportunities]');
     const card = event.target.closest('[data-opportunity]');
     if (save) void toggleSavedOpportunity(save.dataset.saveOpportunity);
@@ -2184,6 +2211,7 @@ function bindEvents() {
         notificationToggle.textContent = opening ? 'Fechar aviso' : 'Abrir aviso';
       }
     }
+    if (copy) void copyOpportunityValue(copy);
     if (retry) void loadOpportunities();
     if (card && !save && !remove && !detail && !card.closest('.community-post-card')) void openOpportunity(card.dataset.opportunity);
   });

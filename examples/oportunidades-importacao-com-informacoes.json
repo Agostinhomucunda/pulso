@@ -1,0 +1,40 @@
+{
+  "opportunities": [
+    {
+      "title": "Bolsa de Estudos PULSO — Engenharia Informática",
+      "category": "bolsa",
+      "organization": "Instituto Superior Politécnico de Luanda",
+      "official_website": "https://www.isp.ao",
+      "source_name": "Instituto Superior Politécnico de Luanda",
+      "source_url": "https://www.isp.ao/bolsas/engenharia-informatica",
+      "application_url": "https://www.isp.ao/candidaturas",
+      "province": "Luanda",
+      "municipality": "Luanda",
+      "application_deadline": "2027-01-31",
+      "description": "Bolsa para estudantes com mérito académico que pretendam frequentar Engenharia Informática.",
+      "application_instructions": "Consultar os requisitos e submeter a candidatura através da página oficial.",
+      "contact_phone": "",
+      "contact_email": "bolsas@isp.ao",
+      "image_url": "https://images.example.org/oportunidades/bolsa-engenharia.jpg",
+      "logo_url": "https://images.example.org/logos/isp-luanda.png"
+    },
+    {
+      "title": "Assistente Administrativo — candidatura presencial",
+      "category": "emprego",
+      "organization": "Kwanza Serviços, Lda.",
+      "official_website": "",
+      "source_name": "Kwanza Serviços, Lda.",
+      "source_url": "",
+      "application_url": "",
+      "province": "Luanda",
+      "municipality": "Viana",
+      "application_deadline": "2026-12-20",
+      "description": "Vaga para assistente administrativo com domínio de informática, organização documental e disponibilidade imediata.",
+      "application_instructions": "Entregar o currículo impresso na recepção da empresa, no horário 08:00–15:30, de segunda a sexta-feira. Indicar no envelope: Assistente Administrativo.",
+      "contact_phone": "+244 923 000 111",
+      "contact_email": "recrutamento@kwanzaservicos.example",
+      "image_url": "https://images.example.org/oportunidades/assistente-administrativo.jpg",
+      "logo_url": "https://images.example.org/logos/kwanza-servicos.png"
+    }
+  ]
+}
