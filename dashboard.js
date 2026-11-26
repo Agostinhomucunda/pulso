@@ -124,6 +124,27 @@ function renderAvatarTargets() {
   });
 }
 
+const THEME_STORAGE_KEY = 'pulso-dashboard-theme';
+
+function applyDashboardTheme(theme, { persist = true } = {}) {
+  const isNight = theme === 'night';
+  document.documentElement.dataset.theme = isNight ? 'night' : 'light';
+  const toggle = $('#themeToggle');
+  if (toggle) {
+    toggle.setAttribute('aria-checked', String(isNight));
+    toggle.setAttribute('aria-label', isNight ? 'Desactivar modo noite' : 'Activar modo noite');
+  }
+  const status = $('#themeToggleStatus');
+  if (status) status.textContent = isNight ? 'Activado' : 'Desactivado';
+  const description = $('#themePreferenceDescription');
+  if (description) description.textContent = isNight ? 'Modo noite activo para uma navegação mais confortável.' : 'Uma experiência mais suave para navegar à noite.';
+  if (persist) setLocalStorageValue(THEME_STORAGE_KEY, isNight ? 'night' : 'light');
+}
+
+function initializeDashboardTheme() {
+  applyDashboardTheme(localStorageValue(THEME_STORAGE_KEY) === 'night' ? 'night' : 'light', { persist: false });
+}
+
 function categoryLabel(category) {
   return CATEGORY_LABELS[category] || 'Oportunidade';
 }
@@ -2015,6 +2036,8 @@ function activateStatsFilter(category) {
   renderOpportunityLists();
 }
 
+initializeDashboardTheme();
+
 function bindEvents() {
   $$('[data-view]').forEach(button => button.addEventListener('click', () => activateView(button.dataset.view)));
   $$('[data-admin-group-button]').forEach(button => button.addEventListener('click', () => setAdminGroup(button.dataset.adminGroupButton)));
@@ -2060,6 +2083,9 @@ function bindEvents() {
     if (save) toggleCommunitySave(save.dataset.communitySave);
   });
   $('#profileForm').addEventListener('submit', saveProfile);
+  $('#themeToggle')?.addEventListener('click', () => {
+    applyDashboardTheme(document.documentElement.dataset.theme === 'night' ? 'light' : 'night');
+  });
   $$('[data-avatar-choice]').forEach(input => input.addEventListener('change', () => {
     selectedAvatar = avatarKey(input.value);
     renderAvatarTargets();

@@ -65,3 +65,40 @@
 .wa-sent-history ul{display:grid;gap:4px;margin:8px 0 0;padding-left:18px}
 @media(max-width:900px){.wa-user-layout{grid-template-columns:1fr}.wa-process-card{order:-1}.dash-wa-shortcut{font-size:9px;padding:0 9px}}
 @media(max-width:600px){.wa-preferences-form,.wa-admin-section{padding:15px}.wa-form-actions{align-items:stretch;flex-direction:column}.wa-form-actions .btn-primary{width:100%}.wa-request-heading{gap:6px}.wa-match-row{align-items:flex-start;flex-direction:column}.wa-match-actions{justify-content:flex-start}.wa-open-link{white-space:normal;text-align:center}.dash-wa-shortcut{max-width:112px;min-height:35px;white-space:normal;line-height:1.1;text-align:center}}
+/* Cartão WhatsApp premium: mantém a coluna e a altura natural do fluxo, mas troca o painel por uma superfície 3D futurista. */
+.wa-process-card{position:relative;isolation:isolate;min-height:350px;overflow:hidden;padding:0;border:1px solid #275080;border-radius:22px;background:linear-gradient(145deg,#07172f 0%,#0b2851 48%,#08665f 100%);box-shadow:0 24px 38px #061b3b3d,0 5px 0 #041126,inset 0 1px #b6e6ff44;color:#fff;transform:perspective(1100px) rotateY(-2deg) rotateX(1deg);transition:transform .25s ease,box-shadow .25s ease}
+.wa-process-card:hover{transform:perspective(1100px) rotateY(0) rotateX(0) translateY(-3px);box-shadow:0 29px 43px #061b3b4d,0 5px 0 #041126,inset 0 1px #d4f5ff55}
+.wa-process-card:before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,#7de4ff18,transparent 35%,#7dffc514 72%,transparent);pointer-events:none}
+.wa-process-card:after{content:"";position:absolute;right:-68px;top:-78px;width:220px;height:220px;border:1px solid #a8eaff45;border-radius:50%;box-shadow:0 0 0 15px #8de9ff0c,0 0 0 35px #8de9ff08,0 0 0 67px #8de9ff05;pointer-events:none}
+.wa-card-grid{position:absolute;inset:0;opacity:.35;background-image:linear-gradient(#8cdfff12 1px,transparent 1px),linear-gradient(90deg,#8cdfff12 1px,transparent 1px);background-size:23px 23px;mask-image:linear-gradient(135deg,#000,transparent 74%);pointer-events:none}
+.wa-card-inner{position:relative;z-index:1;display:flex;flex-direction:column;min-height:350px;padding:21px 21px 18px;box-sizing:border-box}
+.wa-process-top{display:flex;align-items:center;gap:10px}
+.wa-process-icon{width:39px;height:39px;display:grid;place-items:center;flex:none;margin:0;border:1px solid #c7f6ff55;border-radius:13px;background:linear-gradient(145deg,#65e0db,#15968f);color:#efffff;font-size:19px;box-shadow:inset 0 1px #fff8,0 7px 15px #001b3942,0 3px 0 #075f65;transform:perspective(170px) rotateX(8deg) rotateY(-8deg)}
+.wa-process-top>div{display:grid;gap:6px}
+.wa-process-card .section-kicker{color:#9ddcff;font-size:8px}
+.wa-card-status{display:inline-flex;align-items:center;gap:5px;color:#91e8c6;font-size:7px;font-weight:800;letter-spacing:.1em}
+.wa-card-status i{width:5px;height:5px;border-radius:50%;background:#63efb0;box-shadow:0 0 0 4px #63efb020,0 0 11px #63efb0}
+.wa-process-card h2{position:relative;z-index:1;margin:15px 0 14px;color:#f7fdff;font:800 19px/1.2 'Manrope',sans-serif;letter-spacing:-.5px;text-shadow:0 2px 12px #00152755}
+.wa-process-card h2 em{color:#69e4d1;font-style:normal}
+.wa-flow-list{display:grid;gap:7px;margin:0}
+.wa-flow-step{display:grid;grid-template-columns:29px minmax(0,1fr);align-items:center;gap:9px;padding:8px 9px;border:1px solid #b4dcf52c;border-radius:11px;background:linear-gradient(105deg,#ffffff12,#ffffff05);box-shadow:inset 0 1px #ffffff12,0 5px 12px #001a3522;backdrop-filter:blur(5px)}
+.wa-flow-step>b{display:grid;place-items:center;width:27px;height:27px;border:1px solid #77e6dc55;border-radius:8px;background:#0c877e;color:#a7fff3;font:800 8px 'Manrope',sans-serif;box-shadow:inset 0 1px #ffffff40,0 3px 0 #07545a}
+.wa-flow-step>span{display:grid;gap:2px;min-width:0}
+.wa-flow-step strong{color:#f0fbff;font-size:9px;font-weight:800}
+.wa-flow-step small{color:#b9d2e1;font-size:8px;line-height:1.35}
+.wa-process-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:13px;border-top:1px solid #b6e5ef25;color:#8ee3d1;font-size:7px;font-weight:900;letter-spacing:.1em}
+.wa-process-footer small{color:#a6bfd0;font-size:8px;font-weight:500;letter-spacing:0;text-align:right}
+@media(max-width:600px){.wa-process-card{min-height:0;transform:none}.wa-card-inner{min-height:0;padding:18px 16px 16px}.wa-process-card h2{font-size:17px}.wa-flow-step small{font-size:7px}.wa-process-footer{align-items:flex-start;flex-direction:column;gap:4px}.wa-process-footer small{text-align:left}}
+
+/* Contraste nocturno dos componentes específicos do fluxo WhatsApp. */
+html[data-theme="night"] .wa-preferences-form>label:not(.wa-active-toggle):not(.wa-consent),html[data-theme="night"] .wa-active-toggle,html[data-theme="night"] .wa-consent{color:#a9b8cf}
+html[data-theme="night"] .wa-preferences-form>label input:not([type=checkbox]){border-color:#30425f;background:#111f34;color:#e5efff}
+html[data-theme="night"] .wa-category-grid label{border-color:#2c4a58;background:#132b33;color:#a8c8c4}
+html[data-theme="night"] .wa-category-grid label:has(input:checked){border-color:#2e8f78;background:#16433d;color:#bbf4dd}
+html[data-theme="night"] .wa-consent{border-color:#2b544a;background:#142e2a;color:#a9c7bd}
+html[data-theme="night"] .wa-delete-button{border-color:#633d42;background:#291d26;color:#ffaaa5}
+html[data-theme="night"] .wa-admin-section,html[data-theme="night"] .wa-admin-request,html[data-theme="night"] .wa-match-row{border-color:#2b405c;background:#111f34;color:#e5efff}
+html[data-theme="night"] .wa-admin-section .panel-heading p,html[data-theme="night"] .wa-request-heading p,html[data-theme="night"] .wa-request-criteria,html[data-theme="night"] .wa-match-copy>small,html[data-theme="night"] .wa-sent-history{color:#93a6c1}
+html[data-theme="night"] .wa-match-copy>b,html[data-theme="night"] .wa-request-heading h3{color:#e7efff}
+html[data-theme="night"] .wa-admin-privacy-note{border-color:#5b5131;background:#2a271b;color:#d8c58b}
+html[data-theme="night"] .wa-no-match{background:#302124;color:#ffaaa1}

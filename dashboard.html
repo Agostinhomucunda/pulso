@@ -8,12 +8,12 @@
   <title>O teu painel — PULSO</title>
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=20261121-18">
-  <link rel="stylesheet" href="dashboard.css?v=20261126-02">
+  <link rel="stylesheet" href="dashboard.css?v=20261126-03">
   <link rel="stylesheet" href="community.css?v=20261124-09">
   <link rel="stylesheet" href="pulso-dialogs.css?v=20261125-01">
   <link rel="stylesheet" href="automation.css?v=20261120-20">
-  <link rel="stylesheet" href="whatsapp-alerts.css?v=20261126-01">
-  <script type="module" src="dashboard.js?v=20261126-02"></script>
+  <link rel="stylesheet" href="whatsapp-alerts.css?v=20261126-02">
+  <script type="module" src="dashboard.js?v=20261126-03"></script>
   <script type="module" src="whatsapp-alerts.js?v=20261126-01"></script>
   <link rel="manifest" href="./manifest.webmanifest?v=20261121-07">
   <link rel="apple-touch-icon" href="./assets/pwa-icon-192-v2.png">
@@ -22,6 +22,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="stylesheet" href="./pwa.css?v=20261121-07">
   <link rel="stylesheet" href="social-links.css?v=20261123-01">
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem('pulso-dashboard-theme');
+        if (savedTheme === 'night') document.documentElement.dataset.theme = 'night';
+      } catch {}
+    })();
+  </script>
 </head>
 <body class="dashboard-body">
   <header class="dash-topbar">
@@ -184,7 +192,15 @@
             <div class="wa-form-actions"><button class="btn btn-primary" type="submit">Guardar preferências <span>→</span></button><button class="wa-delete-button" id="whatsappAlertDelete" type="button" hidden>Apagar o meu número e pedido</button></div>
             <small class="wa-privacy-note" id="whatsappAlertState">Ainda não configuraste alertas WhatsApp.</small>
           </form>
-          <aside class="wa-process-card"><span class="wa-process-icon">◉</span><span class="section-kicker">SEM ENVIO AUTOMÁTICO</span><h2>Tu defines. O PULSO encontra. A equipa envia.</h2><ol><li>Guardamos os teus critérios e o número com consentimento.</li><li>Quando surgir uma oportunidade publicada e verificada que corresponda, aparece na fila da equipa.</li><li>O administrador abre o WhatsApp com a mensagem pré-preenchida e envia manualmente.</li></ol><p>O PULSO não envia mensagens sem confirmação humana e não usa a API do WhatsApp.</p></aside>
+          <aside class="wa-process-card">
+            <div class="wa-card-grid" aria-hidden="true"></div><div class="wa-card-inner">
+              <div class="wa-process-top"><span class="wa-process-icon">◉</span><span class="wa-card-status"><i></i> FLUXO VERIFICADO</span></div>
+              <span class="section-kicker">ALERTAS COM CURADORIA HUMANA</span>
+              <h2>Oportunidades certas.<br><em>No momento certo.</em></h2>
+              <ol class="wa-flow-list"><li class="wa-flow-step"><b>01</b><span><strong>Tu defines</strong><small>Critérios, localização e contacto.</small></span></li><li class="wa-flow-step"><b>02</b><span><strong>O PULSO encontra</strong><small>Correspondências publicadas e verificadas.</small></span></li><li class="wa-flow-step"><b>03</b><span><strong>A equipa envia</strong><small>Mensagem aberta e confirmada manualmente.</small></span></li></ol>
+              <div class="wa-process-footer"><span>SEM ROBÔS. SEM SURPRESAS.</span><b>WhatsApp <i>↗</i></b></div>
+            </div>
+          </aside>
         </div>
       </section>
 
@@ -197,7 +213,11 @@
         <div class="page-intro"><span class="section-kicker">A TUA IDENTIDADE PULSO</span><h1>O teu perfil.</h1><p>Mantém os teus dados actualizados para personalizar a procura.</p></div>
         <div class="profile-layout">
           <section class="profile-showcase"><span class="profile-showcase-avatar" id="profileAvatarLarge" data-avatar-target="showcase"><img src="assets/profile/avatar-male.jpg" alt="Avatar masculino"></span><span class="section-kicker">PERFIL DE UTILIZADOR</span><h2 id="profileShowcaseName">A carregar…</h2><p id="profileShowcaseEmail"></p><span class="member-chip"><i></i> Conta activa</span></section>
-          <form class="dash-panel profile-form" id="profileForm"><div class="panel-heading"><div><span class="section-kicker">INFORMAÇÃO PESSOAL</span><h2>Editar perfil.</h2></div></div><label>Nome completo<input name="full_name" maxlength="120" required></label><div class="profile-fields-two"><label>Província<input name="province" list="provinceOptions" placeholder="Ex.: Luanda"></label><label>Município<input name="municipality" placeholder="Ex.: Maianga"></label></div><div class="profile-fields-two"><label>Área profissional<input name="professional_area" maxlength="120" placeholder="Ex.: Administração"></label><label>Nível de escolaridade<input name="education_level" maxlength="120" placeholder="Ex.: Licenciatura"></label></div><fieldset class="avatar-choice"><legend>Imagem de perfil</legend><div class="avatar-choice-visible"><label><input type="radio" name="avatar" value="male" data-avatar-choice> <img src="assets/profile/avatar-male.jpg" alt="Avatar masculino"> <span>Masculino</span></label><label><input type="radio" name="avatar" value="female" data-avatar-choice> <img src="assets/profile/avatar-female.jpg" alt="Avatar feminino"> <span>Feminino</span></label></div><button class="avatar-more-button" id="toggleMoreAvatars" type="button" aria-expanded="false" aria-controls="extraAvatarChoices">Ver mais avatares <span>⌄</span></button><div class="avatar-choice-extra" id="extraAvatarChoices" hidden><label><input type="radio" name="avatar" value="extra1" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-1.jpg" alt="Avatar 1"> <span>Avatar 1</span></label><label><input type="radio" name="avatar" value="extra2" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-2.jpg" alt="Avatar 2"> <span>Avatar 2</span></label><label><input type="radio" name="avatar" value="extra3" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-3.jpg" alt="Avatar 3"> <span>Avatar 3</span></label><label><input type="radio" name="avatar" value="extra4" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-4.jpg" alt="Avatar 4"> <span>Avatar 4</span></label><label><input type="radio" name="avatar" value="extra5" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-5.jpg" alt="Avatar 5"> <span>Avatar 5</span></label><label><input type="radio" name="avatar" value="extra6" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-6.jpg" alt="Avatar 6"> <span>Avatar 6</span></label></div></fieldset><label class="readonly-field">E-mail da conta<input id="profileEmailField" type="email" readonly></label><div class="dashboard-feedback" id="profileFeedback" role="status" aria-live="polite" hidden></div><button class="btn btn-primary" type="submit">Guardar alterações <span>→</span></button></form>
+          <form class="dash-panel profile-form" id="profileForm"><div class="panel-heading"><div><span class="section-kicker">INFORMAÇÃO PESSOAL</span><h2>Editar perfil.</h2></div></div><label>Nome completo<input name="full_name" maxlength="120" required></label><div class="profile-fields-two"><label>Província<input name="province" list="provinceOptions" placeholder="Ex.: Luanda"></label><label>Município<input name="municipality" placeholder="Ex.: Maianga"></label></div><div class="profile-fields-two"><label>Área profissional<input name="professional_area" maxlength="120" placeholder="Ex.: Administração"></label><label>Nível de escolaridade<input name="education_level" maxlength="120" placeholder="Ex.: Licenciatura"></label></div><fieldset class="avatar-choice"><legend>Imagem de perfil</legend><div class="avatar-choice-visible"><label><input type="radio" name="avatar" value="male" data-avatar-choice> <img src="assets/profile/avatar-male.jpg" alt="Avatar masculino"> <span>Masculino</span></label><label><input type="radio" name="avatar" value="female" data-avatar-choice> <img src="assets/profile/avatar-female.jpg" alt="Avatar feminino"> <span>Feminino</span></label></div><button class="avatar-more-button" id="toggleMoreAvatars" type="button" aria-expanded="false" aria-controls="extraAvatarChoices">Ver mais avatares <span>⌄</span></button><div class="avatar-choice-extra" id="extraAvatarChoices" hidden><label><input type="radio" name="avatar" value="extra1" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-1.jpg" alt="Avatar 1"> <span>Avatar 1</span></label><label><input type="radio" name="avatar" value="extra2" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-2.jpg" alt="Avatar 2"> <span>Avatar 2</span></label><label><input type="radio" name="avatar" value="extra3" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-3.jpg" alt="Avatar 3"> <span>Avatar 3</span></label><label><input type="radio" name="avatar" value="extra4" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-4.jpg" alt="Avatar 4"> <span>Avatar 4</span></label><label><input type="radio" name="avatar" value="extra5" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-5.jpg" alt="Avatar 5"> <span>Avatar 5</span></label><label><input type="radio" name="avatar" value="extra6" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-6.jpg" alt="Avatar 6"> <span>Avatar 6</span></label></div></fieldset><section class="theme-preference-card" aria-labelledby="themePreferenceTitle">
+              <div><span class="section-kicker">CONFORTO VISUAL</span><h3 id="themePreferenceTitle">Modo noite</h3><p id="themePreferenceDescription">Uma experiência mais suave para navegar à noite.</p></div>
+              <button class="theme-toggle-3d" id="themeToggle" type="button" role="switch" aria-checked="false" aria-label="Activar modo noite"><span class="theme-toggle-orb"></span><span class="theme-toggle-track"><i></i></span></button>
+              <small class="theme-toggle-status" id="themeToggleStatus">Desactivado</small>
+            </section><label class="readonly-field">E-mail da conta<input id="profileEmailField" type="email" readonly></label><div class="dashboard-feedback" id="profileFeedback" role="status" aria-live="polite" hidden></div><button class="btn btn-primary" type="submit">Guardar alterações <span>→</span></button></form>
         </div>
       </section>
 
