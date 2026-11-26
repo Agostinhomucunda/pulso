@@ -532,3 +532,5 @@ html[data-theme="night"] .profile-showcase-theme-toggle .theme-toggle-orb{left:1
 .profile-showcase-theme-toggle>.theme-toggle-orb,.profile-showcase-theme-toggle>.theme-toggle-track{z-index:2}
 @keyframes pulso-profile-theme-ring-orbit{to{--pulso-profile-theme-ring-angle:360deg}}
 @media(prefers-reduced-motion:reduce){.profile-showcase-theme-toggle::after{animation:none;--pulso-profile-theme-ring-angle:310deg}}
+/* Compatibilidade com versões antigas em cache: este cartão não deve mostrar um segundo controlo. */
+.stat-card .dashboard-card-theme-toggle,#themeToggleOverview{display:none!important}
