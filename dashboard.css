@@ -532,3 +532,13 @@ html[data-theme="night"] .profile-showcase-theme-toggle .theme-toggle-orb{left:1
 .profile-showcase-theme-toggle>.theme-toggle-orb,.profile-showcase-theme-toggle>.theme-toggle-track{z-index:2}
 @keyframes pulso-profile-theme-ring-orbit{to{--pulso-profile-theme-ring-angle:360deg}}
 @media(prefers-reduced-motion:reduce){.profile-showcase-theme-toggle::after{animation:none;--pulso-profile-theme-ring-angle:310deg}}
+.stat-main{min-height:170px}
+.dashboard-card-theme-toggle{position:absolute;left:50%;bottom:13px;z-index:4;min-height:31px;gap:6px;padding:3px 7px 3px 4px;transform:translateX(-50%)}
+.dashboard-card-theme-toggle:hover{transform:translateX(-50%) translateY(-1px)}
+.dashboard-card-theme-toggle .theme-toggle-track{width:32px;height:19px}
+.dashboard-card-theme-toggle .theme-toggle-orb{top:3px;left:3px;width:13px;height:13px}
+html[data-theme="night"] .dashboard-card-theme-toggle .theme-toggle-orb{left:16px}
+.dashboard-card-theme-toggle::after{content:"";position:absolute;inset:-3px;z-index:1;padding:2px;border-radius:inherit;background:conic-gradient(from var(--pulso-profile-theme-ring-angle),transparent 0deg 280deg,#18a76b 296deg,#31d88c 320deg,#baffd6 334deg,#31d88c 345deg,transparent 360deg);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;filter:drop-shadow(0 0 3px #32d990);pointer-events:none;animation:pulso-profile-theme-ring-orbit 2.8s linear infinite}
+.dashboard-card-theme-toggle>.theme-toggle-orb,.dashboard-card-theme-toggle>.theme-toggle-track{z-index:2}
+@media(prefers-reduced-motion:reduce){.dashboard-card-theme-toggle::after{animation:none;--pulso-profile-theme-ring-angle:310deg}}
+@media(max-width:620px){.stat-main{min-height:158px}.dashboard-card-theme-toggle{bottom:11px}}
