@@ -114,3 +114,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .radar-orbit{display:grid;place-items:center;font-size:0}.radar-orbit .ui-icon{color:#8dbdff}.radar-node{font-size:0}.radar-node .ui-icon{width:14px;height:14px}.radar-node .ui-star{fill:currentColor}.cta-star{display:grid;place-items:center;font-size:0}.cta-star .ui-icon{width:28px;height:28px}
 .trust-strip i{display:inline-flex;align-items:center;font-size:0}.trust-strip i .ui-icon{color:var(--green)}
 @media(max-width:800px){.hero-bottom{padding-top:8px;padding-bottom:8px}.quick-category{transform:none;overflow:visible}.quick-category:hover{transform:none}}
+
+/* Setas dos cartões: largura fixa no mobile para não encolherem nem perderem o centro. */
+@media (max-width:800px){
+  .quick-category > span:nth-child(2){min-width:0;flex:1 1 auto}
+  .quick-category .cat-arrow{flex:0 0 17px;width:17px;height:17px;min-width:17px;margin-left:auto;align-self:center;display:inline-flex;align-items:center;justify-content:center}
+  .quick-category .cat-arrow .ui-icon{display:block;width:17px;height:17px;flex:none;margin:0;transform:none}
+}
