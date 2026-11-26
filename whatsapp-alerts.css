@@ -108,3 +108,18 @@ html[data-theme="night"] .wa-no-match{background:#302124;color:#ffaaa1}
 .wa-process-card .wa-process-top{justify-content:center}
 .wa-process-card .wa-flow-step>span{text-align:center}
 .wa-process-card .wa-process-footer{justify-content:center}
+
+/* Banner horizontal da explicação WhatsApp: mantém a proporção larga da referência
+   e evita que o cartão ocupe demasiado espaço vertical na coluna. */
+.wa-process-card{min-height:0;aspect-ratio:1847 / 851;border-radius:18px;transform:none}
+.wa-process-card:hover{transform:translateY(-2px)}
+.wa-card-inner{min-height:0;height:100%;justify-content:center;padding:18px 22px}
+.wa-process-top{position:absolute;top:17px;left:22px;right:22px}
+.wa-process-icon{width:32px;height:32px;border-radius:10px;font-size:16px}
+.wa-card-status{font-size:7px}
+.wa-card-message{position:relative;z-index:1;display:grid;justify-items:center;gap:7px;max-width:390px;margin:0 auto}
+.wa-card-message .section-kicker{font-size:7px}
+.wa-card-message h2{margin:0;color:#f7fdff;font-size:clamp(14px,1.7vw,19px);line-height:1.2}
+.wa-card-message p{max-width:350px;margin:0;color:#b9d2e1;font-size:9px;line-height:1.45}
+html[data-theme="night"] .wa-card-message p{color:#b9d2e1}
+@media(max-width:600px){.wa-process-card{aspect-ratio:1847 / 851}.wa-card-inner{padding:16px}.wa-process-top{top:14px;left:16px;right:16px}.wa-card-message{gap:5px}.wa-card-message h2{font-size:15px}.wa-card-message p{font-size:8px;max-width:290px}}
