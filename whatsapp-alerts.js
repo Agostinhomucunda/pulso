@@ -189,15 +189,40 @@ function buildWhatsAppUrl(subscription, opportunity) {
   return `https://wa.me/${number}?text=${encodeURIComponent(lines.join('\n'))}`;
 }
 
+function updateAdminMatchIndicators(count) {
+  const pending = Math.max(0, Number(count) || 0);
+  window.__pulsoWhatsappPending = pending;
+  const navBadge = $('#whatsappAdminNavCount');
+  if (navBadge) {
+    navBadge.textContent = String(pending);
+    navBadge.hidden = !isAdmin || pending === 0;
+  }
+  const bellBadge = $('#whatsappBellAlert');
+  if (bellBadge) {
+    bellBadge.textContent = pending > 99 ? '99+' : String(pending);
+    bellBadge.hidden = !isAdmin || pending === 0;
+  }
+  const bell = $('#notificationBell');
+  if (bell) {
+    const unread = Number($('#unreadInlineCount')?.textContent || 0);
+    const labels = [
+      unread ? `${unread} notificações por ler` : '',
+      isAdmin && pending ? `${pending} correspondência(s) WhatsApp por tratar` : '',
+    ].filter(Boolean);
+    bell.setAttribute('aria-label', labels.join('; ') || 'Abrir notificações');
+  }
+}
+
 function renderAdminQueue() {
   const target = $('#whatsappAdminQueue');
   if (!target) return;
+  const pendingCount = dispatches.filter(item => item.status === 'pending').length;
+  updateAdminMatchIndicators(pendingCount);
   if (!subscriptions.length) {
     target.innerHTML = '<div class="empty-state"><b>Não há pedidos WhatsApp activos.</b>Quando alguém configurar alertas, os pedidos aparecerão aqui.</div>';
     $('#whatsappAdminSummary').textContent = '0 pedidos';
     return;
   }
-  const pendingCount = dispatches.filter(item => item.status === 'pending').length;
   const noMatchCount = subscriptions.filter(subscription =>
     !dispatches.some(item => item.subscription_id === subscription.id && item.status === 'pending'),
   ).length;
@@ -259,6 +284,7 @@ async function loadAdminQueue() {
     .select('id,user_id,whatsapp_number,categories,sectors,provinces,keywords,active,updated_at')
     .eq('active', true).order('updated_at', { ascending: false }));
   if (subscriptionsError) {
+    updateAdminMatchIndicators(0);
     target.innerHTML = '<div class="empty-state" role="alert"><b>Não foi possível abrir a fila.</b>Confirma se a migração SQL de alertas WhatsApp foi aplicada e se tens acesso de administrador.</div>';
     adminLoading = false;
     return;
@@ -273,6 +299,7 @@ async function loadAdminQueue() {
       'subscription_id', ids, 'created_at',
     );
     if (dispatchError) {
+      updateAdminMatchIndicators(0);
       target.innerHTML = '<div class="empty-state" role="alert"><b>Não foi possível consultar a fila de correspondências.</b>Confirma se a migração SQL está instalada.</div>';
       adminLoading = false;
       return;
@@ -285,6 +312,7 @@ async function loadAdminQueue() {
         'id', opportunityIds, 'id',
       );
       if (opportunitiesError) {
+        updateAdminMatchIndicators(0);
         target.innerHTML = '<div class="empty-state" role="alert"><b>Não foi possível carregar os dados das oportunidades correspondentes.</b></div>';
         adminLoading = false;
         return;
@@ -325,13 +353,24 @@ function bindModuleEvents() {
   });
   window.addEventListener('pulso:whatsapp-view', () => {
     if (supabase && currentUser) void loadSubscription();
-    if (isAdmin) void loadAdminQueue();
+  });
+  window.addEventListener('pulso:whatsapp-admin-view', () => {
+    if (supabase && currentUser && isAdmin) void loadAdminQueue();
   });
   window.addEventListener('pulso:whatsapp-admin-access', event => {
     isAdmin = Boolean(event.detail?.isAdmin);
     const section = $('#whatsappAdminSection');
     if (section) section.hidden = !isAdmin;
-    if (isAdmin && location.hash === '#whatsapp-alerts') void loadAdminQueue();
+    const navLink = $('#whatsappAdminNavLink');
+    if (navLink) navLink.hidden = !isAdmin;
+    if (!isAdmin) updateAdminMatchIndicators(0);
+    if (isAdmin && supabase && currentUser) void loadAdminQueue();
+  });
+  window.setInterval(() => {
+    if (isAdmin && document.visibilityState === 'visible') void loadAdminQueue();
+  }, 45000);
+  document.addEventListener('visibilitychange', () => {
+    if (isAdmin && document.visibilityState === 'visible') void loadAdminQueue();
   });
 }
 
@@ -345,5 +384,6 @@ if (dashboardState?.client && dashboardState?.user) {
 if (window.__pulsoAdminAccess) {
   isAdmin = true;
   $('#whatsappAdminSection').hidden = false;
-  if (location.hash === '#whatsapp-alerts') void loadAdminQueue();
+  $('#whatsappAdminNavLink').hidden = false;
+  if (supabase && currentUser) void loadAdminQueue();
 }

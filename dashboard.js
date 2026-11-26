@@ -65,6 +65,7 @@ let notifications = [];
 let notificationIds = null;
 let activePushSubscription = null;
 let isAdmin = false;
+let activeAdminGroup = 'requests';
 let automationSources = [];
 let partnershipRequests = [];
 let businessSubmissions = [];
@@ -273,11 +274,12 @@ function publicKeyBytes(value) {
 }
 
 function activateView(view, { updateHash = true } = {}) {
-  if (view === 'admin' && !isAdmin) view = 'overview';
+  if (['admin', 'whatsapp-admin'].includes(view) && !isAdmin) view = 'overview';
   const panel = $(`[data-panel="${view}"]`);
   if (!panel) view = 'overview';
   $$('.dash-view').forEach(item => { item.hidden = item.dataset.panel !== view; });
   $$('.dash-nav-link').forEach(button => button.classList.toggle('active', button.dataset.view === view));
+  if (view === 'admin') setAdminGroup(activeAdminGroup);
   $('#profileMenu').hidden = true;
   $('#profileMenuButton').setAttribute('aria-expanded', 'false');
   if (updateHash) history.replaceState(null, '', `#${view}`);
@@ -286,12 +288,27 @@ function activateView(view, { updateHash = true } = {}) {
   if (view === 'publications') void loadCommunityPosts();
   if (view === 'alerts') void loadAlerts();
   if (view === 'whatsapp-alerts') window.dispatchEvent(new CustomEvent('pulso:whatsapp-view'));
+  if (view === 'whatsapp-admin' && isAdmin) window.dispatchEvent(new CustomEvent('pulso:whatsapp-admin-view'));
   if (view === 'admin' && isAdmin) {
     void loadPartnershipRequests();
     void loadAdminAssets();
     void loadAutomationAdmin();
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function setAdminGroup(group) {
+  if (!isAdmin) return;
+  activeAdminGroup = group;
+  $$('[data-admin-group]').forEach(panel => {
+    const hasContent = panel.id !== 'adminAssetAlert' || panel.dataset.hasItems === 'true';
+    panel.hidden = panel.dataset.adminGroup !== group || !hasContent;
+  });
+  $$('[data-admin-group-button]').forEach(button => {
+    const selected = button.dataset.adminGroupButton === group;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
 }
 
 function maskEmail(email = '') {
@@ -604,13 +621,18 @@ async function loadStats() {
 async function loadAdminAccess() {
   const { data, error } = await supabaseClient.from('admin_users').select('user_id')
     .eq('user_id', currentUser.id).maybeSingle();
-  if (error || !data) return;
+  if (error || !data) {
+    window.__pulsoAdminAccess = false;
+    window.dispatchEvent(new CustomEvent('pulso:whatsapp-admin-access', { detail: { isAdmin: false } }));
+    return;
+  }
   isAdmin = true;
   window.__pulsoAdminAccess = true;
   $('#adminNavLink').hidden = false;
+  $('#whatsappAdminNavLink').hidden = false;
   window.dispatchEvent(new CustomEvent('pulso:whatsapp-admin-access', { detail: { isAdmin: true } }));
   renderOpportunityLists();
-  await Promise.all([loadPartnershipRequests(), loadAdminAssets(), loadAutomationAdmin(), loadBusinessSubmissions()]);
+  void Promise.all([loadPartnershipRequests(), loadAdminAssets(), loadAutomationAdmin(), loadBusinessSubmissions()]);
 }
 
 function partnershipStatusLabel(status) {
@@ -980,6 +1002,9 @@ async function loadAdminAssets() {
     .order('published_at', { ascending: false, nullsFirst: false }).limit(150);
   if (error) {
     target.innerHTML = '<div class="empty-state" role="alert"><b>Não foi possível carregar a fila.</b>Confirma a migration inicial e as permissões de administrador.</div>';
+    $('#adminMissingCount').hidden = true;
+    $('#adminAssetAlert').dataset.hasItems = 'false';
+    $('#adminAssetAlert').hidden = true;
     return;
   }
   const rows = (data || []).filter(item => {
@@ -988,7 +1013,8 @@ async function loadAdminAssets() {
   });
   $('#adminMissingCount').textContent = safeCount(rows.length);
   $('#adminMissingCount').hidden = !rows.length;
-  $('#adminAssetAlert').hidden = !rows.length;
+  $('#adminAssetAlert').dataset.hasItems = String(rows.length > 0);
+  $('#adminAssetAlert').hidden = !rows.length || activeAdminGroup !== 'opportunities';
   $('#adminAssetAlertText').textContent = rows.length
     ? `${safeCount(rows.length)} oportunidade(s) sem fotografia do cartão e/ou logótipo oficial. Podes preencher só os links que faltam.`
     : 'Todos os cartões publicados têm imagem e logótipo definidos.';
@@ -1600,7 +1626,12 @@ function renderNotifications() {
   $('#notificationNavCount').hidden = unread === 0;
   $('#notificationCount').textContent = unread > 9 ? '9+' : String(unread);
   $('#notificationCount').hidden = unread === 0;
-  $('#notificationBell').setAttribute('aria-label', unread ? `${unread} notificações por ler` : 'Abrir notificações');
+  const whatsappPending = isAdmin ? Number(window.__pulsoWhatsappPending || 0) : 0;
+  const bellLabels = [
+    unread ? `${unread} notificações por ler` : '',
+    whatsappPending ? `${whatsappPending} correspondência(s) WhatsApp por tratar` : '',
+  ].filter(Boolean);
+  $('#notificationBell').setAttribute('aria-label', bellLabels.join('; ') || 'Abrir notificações');
   if (!notifications.length) {
     target.innerHTML = '<div class="empty-state"><b>Ainda não tens notificações.</b>As notificações associadas à tua conta aparecem aqui quando estão disponíveis.</div>';
     return;
@@ -1942,6 +1973,7 @@ function activateStatsFilter(category) {
 
 function bindEvents() {
   $$('[data-view]').forEach(button => button.addEventListener('click', () => activateView(button.dataset.view)));
+  $$('[data-admin-group-button]').forEach(button => button.addEventListener('click', () => setAdminGroup(button.dataset.adminGroupButton)));
   $$('[data-filter-category]').forEach(card => {
     const activate = () => activateStatsFilter(card.dataset.filterCategory || '');
     card.addEventListener('click', activate);
@@ -1963,7 +1995,9 @@ function bindEvents() {
       $('#profileMenuButton').setAttribute('aria-expanded', 'false');
     }
   });
-  $('#notificationBell').addEventListener('click', () => activateView('notifications'));
+  $('#notificationBell').addEventListener('click', () => {
+    activateView(isAdmin && Number(window.__pulsoWhatsappPending || 0) > 0 ? 'whatsapp-admin' : 'notifications');
+  });
   $('#signOutButton').addEventListener('click', () => void signOut());
   $('#alertForm').addEventListener('submit', createAlert);
   $('#communityPostForm').addEventListener('submit', createCommunityPost);
@@ -2130,8 +2164,9 @@ async function initializeDashboard() {
     const firstView = $(`[data-panel="${hashView}"]`) ? hashView : 'overview';
     void Promise.allSettled([
       loadProfile(), loadStats(), loadOpportunities(), loadSavedOpportunities(),
-      loadAlerts(), loadNotifications(), loadCommunityPosts(), loadAdminAccess(), loadWorkspaceSwitcher(),
+      loadAlerts(), loadNotifications(), loadCommunityPosts(), loadWorkspaceSwitcher(),
     ]);
+    await loadAdminAccess();
     updateIdentity();
     updateBrowserAlertButtons();
     $('#dashboardLoading').hidden = true;
