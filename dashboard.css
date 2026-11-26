@@ -319,7 +319,7 @@
 @media(max-width:620px){.avatar-choice-visible,.avatar-choice-extra{gap:6px}.avatar-more-button{margin-top:7px;padding:7px 10px;font-size:8px}}
 
 /* Portátil em movimento integrado no cartão de boas-vindas do dashboard. */
-.dashboard-device-video{right:230px;top:-2px;width:245px;height:188px;opacity:.96;z-index:1;filter:drop-shadow(0 16px 22px #00164240)}.dashboard-hero .dash-hero-copy{position:relative;z-index:3}.dashboard-hero .hero-action{position:relative;z-index:3}
+.dashboard-device-video{right:230px;top:-2px;width:245px;height:188px;opacity:.96;z-index:1;filter:none}@supports (-webkit-touch-callout:none){.dashboard-device-video{mix-blend-mode:screen;filter:none}}.dashboard-hero .dash-hero-copy{position:relative;z-index:3}.dashboard-hero .hero-action{position:relative;z-index:3}
 @media(max-width:900px){.dashboard-device-video{right:185px;top:4px;width:210px;height:155px;opacity:.84}}
 @media(max-width:620px){.dashboard-device-video{right:-4px;top:8px;width:170px;height:128px;opacity:.72}.dashboard-hero .dash-hero-copy{max-width:70%}}
 

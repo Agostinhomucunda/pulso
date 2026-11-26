@@ -1,6 +1,5 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-config.js';
 import { PULSO_WEB_PUSH_PUBLIC_KEY } from './push-config.js';
-import { showPulsoConfirm } from './pulso-dialogs.js';
 
 const PAGE_SIZE = 20;
 const CATEGORY_LABELS = {
@@ -25,7 +24,7 @@ const CATEGORY_ICONS = {
   employment: '▰',
   scholarship: '◇',
   public_competition: '✦',
-  internship: '↗',
+  internship: '↗︎︎',
   training: '▤',
   recruitment_program: '✧',
 };
@@ -65,7 +64,6 @@ let notifications = [];
 let notificationIds = null;
 let activePushSubscription = null;
 let isAdmin = false;
-let activeAdminGroup = 'requests';
 let automationSources = [];
 let partnershipRequests = [];
 let businessSubmissions = [];
@@ -122,27 +120,6 @@ function renderAvatarTargets() {
   $$('[data-avatar-choice]').forEach(input => {
     input.checked = input.value === key;
   });
-}
-
-const THEME_STORAGE_KEY = 'pulso-dashboard-theme';
-
-function applyDashboardTheme(theme, { persist = true } = {}) {
-  const isNight = theme === 'night';
-  document.documentElement.dataset.theme = isNight ? 'night' : 'light';
-  const toggle = $('#themeToggle');
-  if (toggle) {
-    toggle.setAttribute('aria-checked', String(isNight));
-    toggle.setAttribute('aria-label', isNight ? 'Desactivar modo noite' : 'Activar modo noite');
-  }
-  const status = $('#themeToggleStatus');
-  if (status) status.textContent = isNight ? 'Activado' : 'Desactivado';
-  const description = $('#themePreferenceDescription');
-  if (description) description.textContent = isNight ? 'Modo noite activo para uma navegação mais confortável.' : 'Uma experiência mais suave para navegar à noite.';
-  if (persist) setLocalStorageValue(THEME_STORAGE_KEY, isNight ? 'night' : 'light');
-}
-
-function initializeDashboardTheme() {
-  applyDashboardTheme(localStorageValue(THEME_STORAGE_KEY) === 'night' ? 'night' : 'light', { persist: false });
 }
 
 function categoryLabel(category) {
@@ -295,12 +272,11 @@ function publicKeyBytes(value) {
 }
 
 function activateView(view, { updateHash = true } = {}) {
-  if (['admin', 'whatsapp-admin'].includes(view) && !isAdmin) view = 'overview';
+  if (view === 'admin' && !isAdmin) view = 'overview';
   const panel = $(`[data-panel="${view}"]`);
   if (!panel) view = 'overview';
   $$('.dash-view').forEach(item => { item.hidden = item.dataset.panel !== view; });
   $$('.dash-nav-link').forEach(button => button.classList.toggle('active', button.dataset.view === view));
-  if (view === 'admin') setAdminGroup(activeAdminGroup);
   $('#profileMenu').hidden = true;
   $('#profileMenuButton').setAttribute('aria-expanded', 'false');
   if (updateHash) history.replaceState(null, '', `#${view}`);
@@ -309,27 +285,12 @@ function activateView(view, { updateHash = true } = {}) {
   if (view === 'publications') void loadCommunityPosts();
   if (view === 'alerts') void loadAlerts();
   if (view === 'whatsapp-alerts') window.dispatchEvent(new CustomEvent('pulso:whatsapp-view'));
-  if (view === 'whatsapp-admin' && isAdmin) window.dispatchEvent(new CustomEvent('pulso:whatsapp-admin-view'));
   if (view === 'admin' && isAdmin) {
     void loadPartnershipRequests();
     void loadAdminAssets();
     void loadAutomationAdmin();
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function setAdminGroup(group) {
-  if (!isAdmin) return;
-  activeAdminGroup = group;
-  $$('[data-admin-group]').forEach(panel => {
-    const hasContent = panel.id !== 'adminAssetAlert' || panel.dataset.hasItems === 'true';
-    panel.hidden = panel.dataset.adminGroup !== group || !hasContent;
-  });
-  $$('[data-admin-group-button]').forEach(button => {
-    const selected = button.dataset.adminGroupButton === group;
-    button.classList.toggle('is-active', selected);
-    button.setAttribute('aria-pressed', String(selected));
-  });
 }
 
 function maskEmail(email = '') {
@@ -537,9 +498,6 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
   ].filter(Boolean).join('');
   const saved = savedIds.has(item.id);
   const source = safeUrl(item.source_url);
-  const application = safeUrl(item.application_url);
-  const hasLink = Boolean(source || application);
-  const hasInformation = Boolean(item.description || item.application_instructions || item.contact_phone || item.contact_email || item.province || item.municipality);
   return `<article class="dash-op-card" data-opportunity="${id}">
     <span class="dash-op-visual" aria-hidden="true">${image ? `<img class="dash-op-image" src="${escapeHtml(image)}" alt="" loading="lazy">` : '<span class="dash-op-image dash-op-image-empty">P·</span>'}</span>
     <div class="dash-op-content">
@@ -549,9 +507,9 @@ function renderOpportunityCard(item, { savedPage = false } = {}) {
     </div>
     <div class="dash-op-actions">
       ${isAdmin ? `<button class="dash-op-delete" type="button" data-delete-opportunity="${id}">Eliminar</button>` : ''}
-      ${hasLink ? `<button class="source-3d-btn dash-source-3d-btn" type="button" data-detail-opportunity="${id}">${source ? 'Fonte oficial' : 'Aceder à candidatura'} <span>↗</span></button>` : (hasInformation ? `<button class="source-3d-btn dash-source-3d-btn info-fallback-btn" type="button" data-detail-opportunity="${id}">Ver informações <span>⌄</span></button>` : '')}
+      ${source ? `<button class="source-3d-btn dash-source-3d-btn" type="button" data-detail-opportunity="${id}">Fonte oficial <span>↗︎︎</span></button>` : ''}
       <button class="dash-op-save ${saved ? 'saved' : ''}" type="button" data-save-opportunity="${id}" aria-label="${saved ? 'Remover dos guardados' : 'Guardar'}: ${escapeHtml(item.title)}">${saved ? '♥' : '♡'}</button>
-      ${savedPage ? '' : `<button class="dash-op-detail" type="button" data-detail-opportunity="${id}" aria-label="Ver detalhe: ${escapeHtml(item.title)}">↗</button>`}
+      ${savedPage ? '' : `<button class="dash-op-detail" type="button" data-detail-opportunity="${id}" aria-label="Ver detalhe: ${escapeHtml(item.title)}">↗︎︎</button>`}
     </div>
   </article>`;
 }
@@ -645,18 +603,13 @@ async function loadStats() {
 async function loadAdminAccess() {
   const { data, error } = await supabaseClient.from('admin_users').select('user_id')
     .eq('user_id', currentUser.id).maybeSingle();
-  if (error || !data) {
-    window.__pulsoAdminAccess = false;
-    window.dispatchEvent(new CustomEvent('pulso:whatsapp-admin-access', { detail: { isAdmin: false } }));
-    return;
-  }
+  if (error || !data) return;
   isAdmin = true;
   window.__pulsoAdminAccess = true;
   $('#adminNavLink').hidden = false;
-  $('#whatsappAdminNavLink').hidden = false;
   window.dispatchEvent(new CustomEvent('pulso:whatsapp-admin-access', { detail: { isAdmin: true } }));
   renderOpportunityLists();
-  void Promise.all([loadPartnershipRequests(), loadAdminAssets(), loadAutomationAdmin(), loadBusinessSubmissions()]);
+  await Promise.all([loadPartnershipRequests(), loadAdminAssets(), loadAutomationAdmin(), loadBusinessSubmissions()]);
 }
 
 function partnershipStatusLabel(status) {
@@ -677,7 +630,7 @@ function renderPartnershipRequests() {
     const pendingItem = !['approved', 'rejected', 'suspended'].includes(item.status);
     const website = httpsUrl(item.website_or_social_links);
     const details = [item.province, item.municipality].filter(Boolean).join(' · ');
-    return `<article class="partnership-request-card ${pendingItem ? '' : 'is-reviewed'}"><div class="partnership-request-copy"><div class="partnership-request-title"><span class="automation-state ${pendingItem ? '' : 'is-active'}">${escapeHtml(partnershipStatusLabel(item.status))}</span><h3>${escapeHtml(item.organization_name)}</h3></div><p><b>Representante:</b> ${escapeHtml(item.representative_name)} · ${escapeHtml(item.representative_email)}${item.representative_phone ? ` · ${escapeHtml(item.representative_phone)}` : ''}</p>${details ? `<p><b>Localização:</b> ${escapeHtml(details)}</p>` : ''}<div class="partnership-request-details"><span><b>Colaboração:</b> ${escapeHtml(item.collaboration_type)}</span><span><b>Motivo:</b> ${escapeHtml(item.collaboration_reason)}</span>${item.activity_description ? `<span><b>Actividade:</b> ${escapeHtml(item.activity_description)}</span>` : ''}${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Abrir site ou rede ↗</a>` : ''}<small>Enviado em ${escapeHtml(formatDateTime(item.submitted_at || item.created_at))}</small></div></div>${pendingItem ? `<div class="partnership-request-actions"><button class="btn btn-primary-soft" type="button" data-partnership-review="approved" data-partnership-id="${escapeHtml(item.id)}">Aprovar</button><button class="automation-remove" type="button" data-partnership-review="rejected" data-partnership-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : `<div class="partnership-request-actions"><small class="automation-reviewed-date">Revisto em ${escapeHtml(formatDateTime(item.reviewed_at))}</small>${['approved', 'rejected'].includes(item.status) ? `<button class="admin-history-delete" type="button" data-delete-partnership-request="${escapeHtml(item.id)}">Eliminar</button>` : ''}</div>`}</article>`;
+    return `<article class="partnership-request-card ${pendingItem ? '' : 'is-reviewed'}"><div class="partnership-request-copy"><div class="partnership-request-title"><span class="automation-state ${pendingItem ? '' : 'is-active'}">${escapeHtml(partnershipStatusLabel(item.status))}</span><h3>${escapeHtml(item.organization_name)}</h3></div><p><b>Representante:</b> ${escapeHtml(item.representative_name)} · ${escapeHtml(item.representative_email)}${item.representative_phone ? ` · ${escapeHtml(item.representative_phone)}` : ''}</p>${details ? `<p><b>Localização:</b> ${escapeHtml(details)}</p>` : ''}<div class="partnership-request-details"><span><b>Colaboração:</b> ${escapeHtml(item.collaboration_type)}</span><span><b>Motivo:</b> ${escapeHtml(item.collaboration_reason)}</span>${item.activity_description ? `<span><b>Actividade:</b> ${escapeHtml(item.activity_description)}</span>` : ''}${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Abrir site ou rede ↗︎︎</a>` : ''}<small>Enviado em ${escapeHtml(formatDateTime(item.submitted_at || item.created_at))}</small></div></div>${pendingItem ? `<div class="partnership-request-actions"><button class="btn btn-primary-soft" type="button" data-partnership-review="approved" data-partnership-id="${escapeHtml(item.id)}">Aprovar</button><button class="automation-remove" type="button" data-partnership-review="rejected" data-partnership-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : `<small class="automation-reviewed-date">Revisto em ${escapeHtml(formatDateTime(item.reviewed_at))}</small>`}</article>`;
   }).join('');
 }
 
@@ -699,7 +652,7 @@ async function loadPartnershipRequests() {
 async function reviewPartnershipRequest(id, status, button) {
   if (!isAdmin || !id || !['approved', 'rejected'].includes(status)) return;
   const actionLabel = status === 'approved' ? 'aprovar' : 'rejeitar';
-  if (!await showPulsoConfirm({ title: `Confirmar ${actionLabel} pedido?`, message: `Queres ${actionLabel} este pedido de parceria?`, confirmLabel: status === 'approved' ? 'Aprovar pedido' : 'Rejeitar pedido', variant: status === 'rejected' ? 'danger' : 'confirm' })) return;
+  if (!window.confirm(`Confirmas ${actionLabel} este pedido de parceria?`)) return;
   button.disabled = true;
   const { error } = await supabaseClient.rpc('review_pulso_partnership_request', { p_request_id: id, p_status: status, p_status_note: null, p_allow_opportunity_submissions: status === 'approved' });
   if (error) {
@@ -709,28 +662,6 @@ async function reviewPartnershipRequest(id, status, button) {
     return;
   }
   notify(status === 'approved' ? 'Pedido de parceria aprovado.' : 'Pedido de parceria rejeitado.');
-  await loadPartnershipRequests();
-}
-
-async function deleteReviewedPartnershipRequest(id, button) {
-  if (!isAdmin || !id) return;
-  const item = partnershipRequests.find(row => row.id === id);
-  if (!item || !['approved', 'rejected'].includes(item.status)) {
-    notify('Só podes eliminar pedidos de parceria aprovados ou rejeitados. Actualiza a lista.');
-    await loadPartnershipRequests();
-    return;
-  }
-  if (!await showPulsoConfirm({ title: 'Eliminar pedido revisto?', message: `O pedido de parceria de “${item.organization_name}” será eliminado permanentemente. Isto não elimina oportunidades publicadas no catálogo.`, confirmLabel: 'Eliminar pedido', variant: 'danger' })) return;
-  button.disabled = true;
-  const { data, error } = await supabaseClient.from('partnership_requests').delete()
-    .eq('id', id).in('status', ['approved', 'rejected']).select('id').maybeSingle();
-  if (error || !data) {
-    console.error('PULSO reviewed partnership request delete failed', error);
-    button.disabled = false;
-    notify(error?.message || 'O pedido já não está num estado eliminável. Actualiza a lista.');
-    return;
-  }
-  notify('Pedido de parceria eliminado.');
   await loadPartnershipRequests();
 }
 
@@ -766,10 +697,10 @@ function renderBusinessSubmissions() {
         <p class="business-submission-meta">${escapeHtml(categoryLabel(item.category))}${place ? ` · ${place}` : ''}${item.application_deadline ? ` · prazo ${escapeHtml(formatDate(item.application_deadline))}` : ''}${timestamp ? ` · submetida ${escapeHtml(timestamp)}` : ''}</p>
         ${description ? `<p class="business-submission-description">${escapeHtml(description)}</p>` : ''}
         ${rejected && item.review_note ? `<p class="business-submission-note"><b>Nota de revisão:</b> ${escapeHtml(item.review_note)}</p>` : ''}
-        <div class="business-submission-links">${source ? `<a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir publicação original ↗</a>` : ''}${application ? `<a href="${escapeHtml(application)}" target="_blank" rel="noopener noreferrer">Abrir candidatura ↗</a>` : ''}${image ? `<a href="${escapeHtml(image)}" target="_blank" rel="noopener noreferrer">Ver imagem ↗</a>` : ''}${!source && !application && !image ? '<span>Sem ligações adicionais.</span>' : ''}</div>
+        <div class="business-submission-links">${source ? `<a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir publicação original ↗︎︎</a>` : ''}${application ? `<a href="${escapeHtml(application)}" target="_blank" rel="noopener noreferrer">Abrir candidatura ↗︎︎</a>` : ''}${image ? `<a href="${escapeHtml(image)}" target="_blank" rel="noopener noreferrer">Ver imagem ↗︎︎</a>` : ''}${!source && !application && !image ? '<span>Sem ligações adicionais.</span>' : ''}</div>
         ${!pending && reviewDate ? `<small class="business-submission-reviewed">Revista em ${escapeHtml(reviewDate)}</small>` : ''}
       </div>
-      ${pending ? `<div class="business-submission-actions"><button class="btn btn-primary-soft" type="button" data-business-review="approve" data-opportunity-id="${escapeHtml(item.id)}">Aceitar e publicar</button><button class="automation-remove" type="button" data-business-review="reject" data-opportunity-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : rejected ? `<div class="business-submission-actions"><button class="admin-history-delete" type="button" data-delete-rejected-business="${escapeHtml(item.id)}">Eliminar rejeitada</button></div>` : ''}
+      ${pending ? `<div class="business-submission-actions"><button class="btn btn-primary-soft" type="button" data-business-review="approve" data-opportunity-id="${escapeHtml(item.id)}">Aceitar e publicar</button><button class="automation-remove" type="button" data-business-review="reject" data-opportunity-id="${escapeHtml(item.id)}">Rejeitar</button></div>` : ''}
     </article>`;
   }).join('');
 }
@@ -778,7 +709,7 @@ async function loadBusinessSubmissions() {
   if (!isAdmin) return;
   const target = $('#businessSubmissionList');
   target.innerHTML = '<div class="empty-state"><b>A carregar submissões empresariais…</b></div>';
-  const fields = 'id,title,description,public_summary,category,province,municipality,application_deadline,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,created_at,published_at,reviewed_at,status,verification_status,review_note,organization_id,submitted_by_user_id,submission_kind,organization:organizations(id,name)';
+  const fields = 'id,title,description,public_summary,category,province,municipality,application_deadline,source_name,source_url,application_url,image_url,created_at,published_at,reviewed_at,status,verification_status,review_note,organization_id,submitted_by_user_id,submission_kind,organization:organizations(id,name)';
   const rows = [];
   let offset = 0;
   let error = null;
@@ -812,28 +743,6 @@ async function loadBusinessSubmissions() {
   renderBusinessSubmissions();
 }
 
-async function deleteRejectedBusinessSubmission(id, button) {
-  if (!isAdmin || !id) return;
-  const item = businessSubmissions.find(row => row.id === id);
-  if (!item || item.status !== 'rejected' || item.submission_kind !== 'business') {
-    notify('Só podes eliminar submissões empresariais rejeitadas. As publicadas ficam intactas no catálogo.');
-    await loadBusinessSubmissions();
-    return;
-  }
-  if (!await showPulsoConfirm({ title: 'Eliminar submissão rejeitada?', message: `A submissão “${item.title}” será eliminada permanentemente. Só é permitido eliminar registos rejeitados; oportunidades publicadas no catálogo não são afectadas.`, confirmLabel: 'Eliminar rejeitada', variant: 'danger' })) return;
-  button.disabled = true;
-  const { data, error } = await supabaseClient.from('opportunities').delete()
-    .eq('id', id).eq('submission_kind', 'business').eq('status', 'rejected').select('id').maybeSingle();
-  if (error || !data) {
-    console.error('PULSO rejected business submission delete failed', error);
-    button.disabled = false;
-    notify(error?.message || 'A submissão já não está rejeitada. Actualiza a lista.');
-    return;
-  }
-  notify('Submissão rejeitada eliminada; o catálogo público não foi alterado.');
-  await loadBusinessSubmissions();
-}
-
 async function reviewBusinessSubmission(id, action, button) {
   if (!isAdmin) return;
   const item = businessSubmissions.find(row => row.id === id);
@@ -848,7 +757,7 @@ async function reviewBusinessSubmission(id, action, button) {
   const confirmation = approving
     ? `Confirmas que reveste a publicação “${item.title}”, submetida por ${company}? Ao aceitar, ficará verificada e visível no dashboard normal.`
     : `Confirmas que pretendes rejeitar a publicação “${item.title}”, submetida por ${company}?`;
-  if (!await showPulsoConfirm({ title: approving ? 'Aceitar publicação?' : 'Rejeitar publicação?', message: confirmation, confirmLabel: approving ? 'Aceitar e publicar' : 'Rejeitar', variant: approving ? 'confirm' : 'danger' })) return;
+  if (!window.confirm(confirmation)) return;
 
   const reviewedAt = new Date().toISOString();
   const update = approving
@@ -880,7 +789,7 @@ function importKey(value) {
 }
 
 const IMPORT_FIELD_ALIASES = {
-  title: ['title', 'titulo', 'nome', 'name', 'oportunidade', 'cargo'], category: ['category', 'categoria', 'tipo'], organization: ['organization', 'organizacao', 'entidade', 'empresa', 'organizationname'], official_website: ['officialwebsite', 'siteoficial', 'website', 'site'], source_url: ['sourceurl', 'linkdafonte', 'fonte', 'link', 'url', 'publicationurl'], application_url: ['applicationurl', 'candidatura', 'linkdacandidatura', 'applyurl'], contact_phone: ['contactphone', 'telefone', 'telemovel', 'celular', 'phone', 'whatsapp'], contact_email: ['contactemail', 'email', 'emailcontacto', 'correio'], application_instructions: ['applicationinstructions', 'instrucoes', 'instrucoesdecandidatura', 'contactinstructions', 'como candidatar', 'onde se dirigir', 'localdecandidatura'], province: ['province', 'provincia'], municipality: ['municipality', 'municipio'], application_deadline: ['applicationdeadline', 'prazo', 'deadline', 'datalimite'], description: ['description', 'descricao', 'detalhes', 'summary', 'resumo'], image_url: ['imageurl', 'imagem', 'fotografia', 'photo', 'image'], logo_url: ['logourl', 'logotipo', 'logo'], source_name: ['sourcename', 'nomedafonte'],
+  title: ['title', 'titulo', 'nome', 'name', 'oportunidade', 'cargo'], category: ['category', 'categoria', 'tipo'], organization: ['organization', 'organizacao', 'entidade', 'empresa', 'organizationname'], official_website: ['officialwebsite', 'siteoficial', 'website', 'site'], source_url: ['sourceurl', 'linkdafonte', 'fonte', 'link', 'url', 'publicationurl'], application_url: ['applicationurl', 'candidatura', 'linkdacandidatura', 'applyurl'], province: ['province', 'provincia'], municipality: ['municipality', 'municipio'], application_deadline: ['applicationdeadline', 'prazo', 'deadline', 'datalimite'], description: ['description', 'descricao', 'detalhes', 'summary', 'resumo'], image_url: ['imageurl', 'imagem', 'fotografia', 'photo', 'image'], logo_url: ['logourl', 'logotipo', 'logo'], source_name: ['sourcename', 'nomedafonte'],
 };
 const IMPORT_CATEGORY_ALIASES = {
   emprego: 'employment', empregos: 'employment', trabalho: 'employment', vaga: 'employment', vagas: 'employment', job: 'employment', jobs: 'employment',
@@ -908,10 +817,8 @@ function normalizeImportRecord(record) {
   Object.entries(IMPORT_FIELD_ALIASES).forEach(([field, aliases]) => { const found = Object.entries(source).find(([key]) => aliases.includes(importKey(key))); normalized[field] = String(found?.[1] ?? '').trim(); });
   normalized.category = normalizeImportCategory(normalized.category);
   normalized.source_name ||= normalized.organization; normalized.application_url ||= normalized.source_url;
-  const hasOfficialLink = /^https:\/\//i.test(normalized.source_url) || /^https:\/\//i.test(normalized.application_url);
-  const hasFallbackInformation = Boolean(normalized.description || normalized.application_instructions || normalized.contact_phone || normalized.contact_email || normalized.province || normalized.municipality);
-  normalized.valid = Boolean(normalized.title && normalized.organization && normalized.category && (hasOfficialLink || hasFallbackInformation));
-  normalized.issue = normalized.valid ? '' : (!normalized.category ? 'Categoria não reconhecida. Usa bolsa, emprego, concurso, estágio, formação ou programa.' : 'Falta título, organização e um link HTTPS ou informação de contacto/candidatura.');
+  normalized.valid = Boolean(normalized.title && normalized.organization && normalized.category && /^https:\/\//i.test(normalized.source_url));
+  normalized.issue = normalized.valid ? '' : (!normalized.category ? 'Categoria não reconhecida. Usa bolsa, emprego, concurso, estágio, formação ou programa.' : 'Falta título, organização ou link HTTPS da fonte.');
   return normalized;
 }
 
@@ -978,7 +885,6 @@ async function ensureSmartImportOrganization(row) {
 }
 
 async function ensureSmartImportSource(row) {
-  if (!/^https:\/\//i.test(row.source_url)) return null;
   const existing = await supabaseClient.from('sources').select('id').eq('source_url', row.source_url).maybeSingle(); if (existing.error) throw existing.error; if (existing.data) return existing.data.id;
   const created = await supabaseClient.from('sources').insert({ name: row.source_name || row.organization, source_url: row.source_url, source_type: 'manual', access_status: 'authorized', active: true, visible_publicly: true }).select('id').single(); if (created.error) throw created.error; return created.data.id;
 }
@@ -1004,7 +910,7 @@ async function importSmartRows({ publish }) {
         const organizationId = await ensureSmartImportOrganization(row);
         const sourceId = await ensureSmartImportSource(row);
         const image = httpsUrl(row.image_url);
-        const imageSource = image ? (row.source_url || image) : null;
+        const imageSource = image ? row.source_url : null;
         const payload = {
           organization_id: organizationId,
           source_id: sourceId,
@@ -1016,11 +922,8 @@ async function importSmartRows({ publish }) {
           municipality: row.municipality || null,
           application_deadline: row.application_deadline || null,
           source_name: row.source_name || row.organization,
-          source_url: row.source_url || null,
+          source_url: row.source_url,
           application_url: httpsUrl(row.application_url),
-          contact_phone: row.contact_phone || null,
-          contact_email: row.contact_email || null,
-          application_instructions: row.application_instructions || null,
           candidate_image_url: image,
           candidate_image_source_url: imageSource,
           image_url: image,
@@ -1063,7 +966,7 @@ async function importSmartRows({ publish }) {
 }
 
 function bindSmartImport() {
-  const input = $('#smartImportFile'); const dropzone = $('#smartImportDropzone'); input.addEventListener('change', () => void handleSmartImportFile(input.files[0])); ['dragenter', 'dragover'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.add('is-dragging'); })); ['dragleave', 'drop'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.remove('is-dragging'); })); dropzone.addEventListener('drop', event => void handleSmartImportFile(event.dataTransfer.files[0])); $('#clearSmartImport').addEventListener('click', () => { smartImportRows = []; input.value = ''; renderSmartImportPreview(); $('#smartImportFileName').textContent = ''; $('#smartImportSummary').textContent = ''; $('#smartImportFeedback').hidden = true; }); $('#smartImportReviewButton').addEventListener('click', () => void importSmartRows({ publish: false })); $('#smartImportPublishButton').addEventListener('click', async () => { const confirmed = await showPulsoConfirm({ title: 'Publicar oportunidades?', message: 'Confirma os dados e publica agora os cartões válidos da importação.', confirmLabel: 'Publicar agora' }); if (confirmed) void importSmartRows({ publish: true }); });
+  const input = $('#smartImportFile'); const dropzone = $('#smartImportDropzone'); input.addEventListener('change', () => void handleSmartImportFile(input.files[0])); ['dragenter', 'dragover'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.add('is-dragging'); })); ['dragleave', 'drop'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.remove('is-dragging'); })); dropzone.addEventListener('drop', event => void handleSmartImportFile(event.dataTransfer.files[0])); $('#clearSmartImport').addEventListener('click', () => { smartImportRows = []; input.value = ''; renderSmartImportPreview(); $('#smartImportFileName').textContent = ''; $('#smartImportSummary').textContent = ''; $('#smartImportFeedback').hidden = true; }); $('#smartImportReviewButton').addEventListener('click', () => void importSmartRows({ publish: false })); $('#smartImportPublishButton').addEventListener('click', () => { if (window.confirm('Confirmas os dados e queres publicar os cartões válidos agora?')) void importSmartRows({ publish: true }); });
 }
 
 async function loadAdminAssets() {
@@ -1076,9 +979,6 @@ async function loadAdminAssets() {
     .order('published_at', { ascending: false, nullsFirst: false }).limit(150);
   if (error) {
     target.innerHTML = '<div class="empty-state" role="alert"><b>Não foi possível carregar a fila.</b>Confirma a migration inicial e as permissões de administrador.</div>';
-    $('#adminMissingCount').hidden = true;
-    $('#adminAssetAlert').dataset.hasItems = 'false';
-    $('#adminAssetAlert').hidden = true;
     return;
   }
   const rows = (data || []).filter(item => {
@@ -1087,8 +987,7 @@ async function loadAdminAssets() {
   });
   $('#adminMissingCount').textContent = safeCount(rows.length);
   $('#adminMissingCount').hidden = !rows.length;
-  $('#adminAssetAlert').dataset.hasItems = String(rows.length > 0);
-  $('#adminAssetAlert').hidden = !rows.length || activeAdminGroup !== 'opportunities';
+  $('#adminAssetAlert').hidden = !rows.length;
   $('#adminAssetAlertText').textContent = rows.length
     ? `${safeCount(rows.length)} oportunidade(s) sem fotografia do cartão e/ou logótipo oficial. Podes preencher só os links que faltam.`
     : 'Todos os cartões publicados têm imagem e logótipo definidos.';
@@ -1122,7 +1021,7 @@ function renderAutomationSources() {
     const hosts = Array.isArray(source.collection_allowed_hosts) ? source.collection_allowed_hosts.join(', ') : '';
     return `<details class="automation-source-card" data-source-card="${escapeHtml(source.id)}">
       <summary><span><b>${escapeHtml(source.name)}</b><small>${escapeHtml(source.source_group || SOURCE_CLASS_LABELS[source.source_class] || 'Fonte PULSO')}</small></span><span class="automation-state ${active ? 'is-active' : ''}">${active ? 'Activa' : 'Desactivada'}</span></summary>
-      <div class="automation-source-info"><a href="${escapeHtml(safeUrl(source.source_url))}" target="_blank" rel="noopener noreferrer">Abrir fonte fornecida ↗</a><span>${escapeHtml(SOURCE_CLASS_LABELS[source.source_class] || 'Fonte PULSO')}</span></div>
+      <div class="automation-source-info"><a href="${escapeHtml(safeUrl(source.source_url))}" target="_blank" rel="noopener noreferrer">Abrir fonte fornecida ↗︎︎</a><span>${escapeHtml(SOURCE_CLASS_LABELS[source.source_class] || 'Fonte PULSO')}</span></div>
       ${source.last_scanned_at ? `<p class="automation-last-scan">Última recolha: ${escapeHtml(formatDateTime(source.last_scanned_at))}${source.last_scan_status ? ` · ${escapeHtml(source.last_scan_status)}` : ''}${source.last_scan_error ? ` · ${escapeHtml(source.last_scan_error)}` : ''}</p>` : ''}
       <form class="automation-source-form" data-automation-source="${escapeHtml(source.id)}">
         <label>Endpoint exacto RSS / Atom / JSON Feed<input name="collection_endpoint" type="url" inputmode="url" placeholder="https://…" value="${escapeHtml(endpoint)}" required></label>
@@ -1150,7 +1049,7 @@ function renderAutomaticReviews(rows) {
     const pending = item.auto_review_status === 'pending';
     const state = item.auto_review_status === 'reviewed' ? 'Revista' : item.auto_review_status === 'dismissed' ? 'Retirada' : 'Publicada · a rever';
     const description = String(item.public_summary || item.description || '').slice(0, 600);
-    return `<article class="automation-review-card"><div class="automation-review-copy"><span class="automation-state ${pending ? '' : 'is-active'}">${state}${item.status !== 'published' ? ' · fora do catálogo' : ''}</span><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(org.name || 'Organização por confirmar')} · ${escapeHtml(item.source_name || 'Fonte PULSO')} · ${escapeHtml(categoryLabel(item.category))}${item.application_deadline ? ` · prazo ${escapeHtml(formatDate(item.application_deadline))}` : ' · sem prazo indicado'}</p><div class="automation-review-details">${description ? `<span>${escapeHtml(description)}</span>` : ''}${source ? `<a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir fonte original ↗</a>` : ''}${application ? `<a href="${escapeHtml(application)}" target="_blank" rel="noopener noreferrer">Abrir candidatura ↗</a>` : ''}${image ? `<a href="${escapeHtml(image)}" target="_blank" rel="noopener noreferrer">Ver imagem usada no cartão ↗</a>` : '<span>Sem imagem; podes completar o cartão mais tarde.</span>'}</div>${pending ? `<label>Site oficial da organização (opcional)<input class="automation-org-url" type="url" name="organization_website" value="${escapeHtml(org.official_website || '')}" placeholder="https://…"></label>${image ? '<span class="automation-image-note">O URL da imagem está no cartão; o ficheiro não foi descarregado.</span>' : ''}</div><div class="automation-review-actions"><button class="btn btn-primary-soft" type="button" data-auto-review="approve" data-opportunity-id="${escapeHtml(item.id)}">Marcar como revista</button><button class="automation-remove" type="button" data-auto-review="dismiss" data-opportunity-id="${escapeHtml(item.id)}">Retirar publicação</button></div>` : `<small class="automation-reviewed-date">${item.auto_reviewed_at ? `Revista ${escapeHtml(formatDateTime(item.auto_reviewed_at))}` : 'Histórico automático'}</small></div>`}</article>`;
+    return `<article class="automation-review-card"><div class="automation-review-copy"><span class="automation-state ${pending ? '' : 'is-active'}">${state}${item.status !== 'published' ? ' · fora do catálogo' : ''}</span><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(org.name || 'Organização por confirmar')} · ${escapeHtml(item.source_name || 'Fonte PULSO')} · ${escapeHtml(categoryLabel(item.category))}${item.application_deadline ? ` · prazo ${escapeHtml(formatDate(item.application_deadline))}` : ' · sem prazo indicado'}</p><div class="automation-review-details">${description ? `<span>${escapeHtml(description)}</span>` : ''}${source ? `<a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir fonte original ↗︎︎</a>` : ''}${application ? `<a href="${escapeHtml(application)}" target="_blank" rel="noopener noreferrer">Abrir candidatura ↗︎︎</a>` : ''}${image ? `<a href="${escapeHtml(image)}" target="_blank" rel="noopener noreferrer">Ver imagem usada no cartão ↗︎︎</a>` : '<span>Sem imagem; podes completar o cartão mais tarde.</span>'}</div>${pending ? `<label>Site oficial da organização (opcional)<input class="automation-org-url" type="url" name="organization_website" value="${escapeHtml(org.official_website || '')}" placeholder="https://…"></label>${image ? '<span class="automation-image-note">O URL da imagem está no cartão; o ficheiro não foi descarregado.</span>' : ''}</div><div class="automation-review-actions"><button class="btn btn-primary-soft" type="button" data-auto-review="approve" data-opportunity-id="${escapeHtml(item.id)}">Marcar como revista</button><button class="automation-remove" type="button" data-auto-review="dismiss" data-opportunity-id="${escapeHtml(item.id)}">Retirar publicação</button></div>` : `<small class="automation-reviewed-date">${item.auto_reviewed_at ? `Revista ${escapeHtml(formatDateTime(item.auto_reviewed_at))}` : 'Histórico automático'}</small></div>`}</article>`;
   }).join('');
 }
 
@@ -1162,7 +1061,7 @@ async function loadAutomationAdmin() {
   reviewTarget.innerHTML = '<div class="empty-state"><b>A carregar publicações automáticas…</b></div>';
   const [sourceResult, reviewResult] = await Promise.all([
     supabaseClient.from('sources').select('id,name,source_url,source_type,source_group,source_class,terms_url,access_status,active,collection_enabled,collection_endpoint,collection_format,collection_allowed_hosts,last_scanned_at,last_scan_status,last_scan_error').order('source_group').order('name'),
-    supabaseClient.from('opportunities').select('id,title,description,public_summary,category,application_deadline,published_at,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,candidate_image_url,candidate_image_source_url,organization_id,status,auto_review_status,auto_reviewed_at,organization:organizations(id,name,official_website,verification_status)').eq('collection_method', 'automatic').order('published_at', { ascending: false, nullsFirst: false }).limit(100),
+    supabaseClient.from('opportunities').select('id,title,description,public_summary,category,application_deadline,published_at,source_name,source_url,application_url,image_url,candidate_image_url,candidate_image_source_url,organization_id,status,auto_review_status,auto_reviewed_at,organization:organizations(id,name,official_website,verification_status)').eq('collection_method', 'automatic').order('published_at', { ascending: false, nullsFirst: false }).limit(100),
   ]);
   if (sourceResult.error) {
     sourceTarget.innerHTML = '<div class="empty-state" role="alert"><b>Configuração automática ainda não aplicada.</b>Aplica a migration <code>20261120180000_pulso_ai_automation.sql</code> no Supabase. O registo manual continua disponível.</div>';
@@ -1232,7 +1131,7 @@ async function setAutomationSource(id, action) {
   if (!isAdmin) return;
   const source = automationSources.find(item => item.id === id);
   if (!source) return;
-  if (action === 'remove' && !await showPulsoConfirm({ title: 'Remover fonte?', message: `Queres remover “${source.name}” do catálogo? As publicações já guardadas mantêm o título e a origem textual.`, confirmLabel: 'Remover fonte', variant: 'danger' })) return;
+  if (action === 'remove' && !window.confirm(`Remover “${source.name}” do catálogo de fontes? As publicações já guardadas mantêm o título e a origem textual.`)) return;
   if (action === 'activate' && (!source.collection_endpoint || !source.collection_format)) {
     notify('Guarda primeiro um endpoint e o formato do feed.');
     return;
@@ -1306,7 +1205,7 @@ async function reviewAutomaticPublication(id, action, button) {
     return;
   }
   const imageRights = Boolean(approving && card?.querySelector('[data-auto-image-rights]')?.checked);
-  if (approving && !await showPulsoConfirm({ title: 'Confirmar revisão?', message: 'Confirma que verificaste a fonte e os dados desta publicação. A oportunidade já está online.', confirmLabel: 'Confirmar revisão' })) return;
+  if (approving && !window.confirm('Confirmas que reveste a fonte e os dados desta publicação? A oportunidade já está online.')) return;
   const { error } = await supabaseClient.rpc('pulso_review_automatic_opportunity', {
     p_opportunity_id: id,
     p_action: approving ? 'approve' : 'dismiss',
@@ -1378,7 +1277,7 @@ async function saveAdminAssets(event) {
 
 async function deleteAdminOpportunity(id) {
   if (!isAdmin || !id) return;
-  if (!await showPulsoConfirm({ title: 'Eliminar publicação?', message: 'Esta acção é definitiva. A organização e a fonte serão mantidas.', confirmLabel: 'Eliminar publicação', variant: 'danger' })) return;
+  if (!window.confirm('Eliminar esta publicação definitivamente? A organização e a fonte serão mantidas.')) return;
   try {
     const { error } = await supabaseClient.from('opportunities').delete().eq('id', id);
     if (error) throw error;
@@ -1397,18 +1296,12 @@ async function createManualOpportunity(event) {
   const form = event.currentTarget;
   const values = new FormData(form);
   const feedback = $('#adminFormFeedback');
-  const websiteText = String(values.get('official_website') || '').trim();
-  const sourceText = String(values.get('source_url') || '').trim();
-  const website = websiteText ? httpsUrl(websiteText, true) : null;
-  const source = sourceText ? httpsUrl(sourceText, true) : null;
+  const website = httpsUrl(String(values.get('official_website') || ''), true);
+  const source = httpsUrl(String(values.get('source_url') || ''), true);
   const application = httpsUrl(String(values.get('application_url') || ''));
-  const contactPhone = String(values.get('contact_phone') || '').trim();
-  const contactEmail = String(values.get('contact_email') || '').trim();
-  const applicationInstructions = String(values.get('application_instructions') || '').trim();
   const image = httpsUrl(String(values.get('image_url') || ''));
   const logo = httpsUrl(String(values.get('logo_url') || ''));
-  if ((websiteText && !website) || (sourceText && !source) || (values.get('application_url') && !application)
-      || (!source && !application && !applicationInstructions && !contactPhone && !contactEmail)
+  if (!website || !source || (values.get('application_url') && !application)
       || (values.get('image_url') && !image) || (values.get('logo_url') && !logo)) {
     setFeedback(feedback, 'Os links devem ser HTTPS válidos e apontar para fontes oficiais.', 'error'); return;
   }
@@ -1420,10 +1313,8 @@ async function createManualOpportunity(event) {
   let existingOrganization = false;
   try {
     const organizationNameValue = String(values.get('organization')).trim();
-    let organizationResult = website
-      ? await supabaseClient.from('organizations').select('id').eq('official_website', website).maybeSingle()
-      : await supabaseClient.from('organizations').select('id').eq('name', organizationNameValue).maybeSingle();
-    let { data: organization, error } = organizationResult;
+    let { data: organization, error } = await supabaseClient.from('organizations')
+      .select('id').eq('official_website', website).maybeSingle();
     if (error) throw error;
     if (!organization) {
       const inserted = await supabaseClient.from('organizations').insert({
@@ -1441,7 +1332,7 @@ async function createManualOpportunity(event) {
       province: String(values.get('province') || '').trim() || null,
       municipality: String(values.get('municipality') || '').trim() || null,
       application_deadline: String(values.get('application_deadline') || '') || null,
-      source_name: organizationNameValue, source_url: source, application_url: application || source, contact_phone: contactPhone || null, contact_email: contactEmail || null, application_instructions: applicationInstructions || null,
+      source_name: organizationNameValue, source_url: source, application_url: application || source,
       image_url: image, status: 'published', verification_status: 'verified', published_at: new Date().toISOString(),
     };
     const { data: opportunity, error: opportunityError } = await supabaseClient.from('opportunities').insert(payload).select('id').single();
@@ -1496,7 +1387,7 @@ async function sendAdminBroadcast(event) {
     setFeedback(feedback, 'Indica um título até 90 caracteres e uma mensagem até 500 caracteres.', 'error');
     return;
   }
-  if (!await showPulsoConfirm({ title: 'Enviar aviso a todos?', message: `Enviar “${title}” a todos os utilizadores do PULSO?\n\n${message}`, confirmLabel: 'Enviar aviso' })) return;
+  if (!window.confirm(`Enviar a mensagem “${title}” a todos os utilizadores do PULSO?\n\n${message}`)) return;
   const submit = $('button[type="submit"]', form);
   submit.disabled = true;
   setFeedback(feedback, 'A guardar a mensagem e a enviar aos dispositivos inscritos…', 'success');
@@ -1533,7 +1424,7 @@ async function loadOpportunities({ append = false } = {}) {
   const from = append ? opportunitiesOffset : 0;
   const to = from + PAGE_SIZE - 1;
   const { data, error } = await supabaseClient.from('opportunities')
-    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
+    .select('id,title,description,category,sector,province,municipality,vacancies,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
     .eq('status', 'published').eq('verification_status', 'verified')
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false }).range(from, to);
@@ -1556,7 +1447,7 @@ async function loadSavedOpportunities() {
   const target = $('#savedOpportunityList');
   target.innerHTML = '<div class="empty-state"><b>A carregar oportunidades guardadas…</b></div>';
   const { data, error } = await supabaseClient.from('saved_opportunities')
-    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url))')
+    .select('opportunity_id,created_at,opportunity:opportunities!inner(id,title,description,category,sector,province,municipality,application_deadline,published_at,source_name,source_url,application_url,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url))')
     .eq('user_id', currentUser.id).order('created_at', { ascending: false });
   if (error) {
     console.error('PULSO dashboard saved items failed', error);
@@ -1708,12 +1599,7 @@ function renderNotifications() {
   $('#notificationNavCount').hidden = unread === 0;
   $('#notificationCount').textContent = unread > 9 ? '9+' : String(unread);
   $('#notificationCount').hidden = unread === 0;
-  const whatsappPending = isAdmin ? Number(window.__pulsoWhatsappPending || 0) : 0;
-  const bellLabels = [
-    unread ? `${unread} notificações por ler` : '',
-    whatsappPending ? `${whatsappPending} correspondência(s) WhatsApp por tratar` : '',
-  ].filter(Boolean);
-  $('#notificationBell').setAttribute('aria-label', bellLabels.join('; ') || 'Abrir notificações');
+  $('#notificationBell').setAttribute('aria-label', unread ? `${unread} notificações por ler` : 'Abrir notificações');
   if (!notifications.length) {
     target.innerHTML = '<div class="empty-state"><b>Ainda não tens notificações.</b>As notificações associadas à tua conta aparecem aqui quando estão disponíveis.</div>';
     return;
@@ -1799,7 +1685,7 @@ async function markAllNotificationsRead() {
 
 async function deleteAllNotifications() {
   if (!currentUser || !notifications.length) return;
-  if (!await showPulsoConfirm({ title: 'Eliminar notificações?', message: 'Queres eliminar todas as notificações desta conta? Esta acção não pode ser anulada.', confirmLabel: 'Eliminar todas', variant: 'danger' })) return;
+  if (!window.confirm('Eliminar todas as notificações desta conta?')) return;
   const { error } = await supabaseClient.from('notifications').delete().eq('user_id', currentUser.id);
   if (error) {
     console.error('PULSO could not delete notifications', error);
@@ -1812,16 +1698,11 @@ async function deleteAllNotifications() {
   notify('Notificações eliminadas.');
 }
 
-async function copyOpportunityValue(button) {
-  const value = button.dataset.copyValue || '';
-  try { await navigator.clipboard.writeText(value); button.textContent = 'Copiado'; setTimeout(() => { button.textContent = 'Copiar'; }, 1600); }
-  catch { notify('Não foi possível copiar automaticamente.'); }
-}
 async function openOpportunity(id) {
   let item = opportunities.find(row => row.id === id) || savedRows.find(row => row.id === id);
   if (!item) {
     const { data, error } = await supabaseClient.from('opportunities')
-      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,application_instructions,contact_phone,contact_email,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
+      .select('id,title,description,category,sector,province,municipality,requirements,education_level,experience,application_deadline,published_at,source_name,source_url,application_url,image_url,rating_score,rating_count,views_count,organization:organizations(id,name,logo_url,logo_source_url)')
       .eq('id', id).eq('status', 'published').eq('verification_status', 'verified').maybeSingle();
     if (error || !data) {
       notify('Esta oportunidade já não está disponível.');
@@ -1840,9 +1721,6 @@ function renderOpportunityDetail(item) {
   const details = [item.description, item.requirements ? `Requisitos: ${item.requirements}` : '',
     item.education_level ? `Escolaridade: ${item.education_level}` : '', item.experience ? `Experiência: ${item.experience}` : ''].filter(Boolean);
   const place = [item.municipality, item.province].filter(Boolean).join(', ') || 'Localização não indicada';
-  const fallback = [item.application_instructions ? `<div><b>Como candidatar-se</b><p>${escapeHtml(item.application_instructions)}</p></div>` : '',
-    item.contact_phone ? `<div class="detail-contact-row"><span><b>Telefone</b><br>${escapeHtml(item.contact_phone)}</span><button type="button" class="detail-copy-btn" data-copy-value="${escapeHtml(item.contact_phone)}">Copiar</button></div>` : '',
-    item.contact_email ? `<div class="detail-contact-row"><span><b>E-mail</b><br>${escapeHtml(item.contact_email)}</span><button type="button" class="detail-copy-btn" data-copy-value="${escapeHtml(item.contact_email)}">Copiar</button></div>` : ''].filter(Boolean);
   $('#opportunityDetail').innerHTML = `<div class="opportunity-detail-inner">
     ${image ? `<img class="detail-image" src="${escapeHtml(image)}" alt="Imagem de ${escapeHtml(item.title)}" loading="lazy">` : ''}
     <div class="detail-brand"><img src="assets/pulso-mark-3d-small.png" alt=""> OPORTUNIDADE VERIFICADA</div>
@@ -1850,9 +1728,8 @@ function renderOpportunityDetail(item) {
     <p>${escapeHtml(organizationName(item))} · ${escapeHtml(place)}</p>
     <div class="detail-meta"><span class="detail-pill">${escapeHtml(categoryLabel(item.category))}</span>${item.application_deadline ? `<span class="detail-pill">Candidaturas até ${escapeHtml(formatDate(item.application_deadline))}</span>` : ''}</div><div class="detail-rating"><b>Classificação da oportunidade</b><div>${ratingMarkup(item, true)}</div><small>As avaliações dos utilizadores formam uma média.</small></div>
     ${details.length ? `<div class="detail-description">${details.map(escapeHtml).join('\n\n')}</div>` : ''}
-    ${fallback.length ? `<section class="detail-information"><b class="detail-information-title">Informações para candidatura</b>${fallback.join('')}</section>` : ''}
-    <div class="detail-source"><b>Fonte:</b> ${escapeHtml(item.source_name || organizationName(item))}${source ? ` · <a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir publicação original ↗</a>` : ' · informação fornecida pela organização'}</div>
-    <div class="detail-links">${apply ? `<a href="${escapeHtml(apply)}" target="_blank" rel="noopener noreferrer">${source ? 'Aceder à candidatura' : 'Abrir candidatura'} <span>↗</span></a>` : ''}${source ? `<a class="secondary-link" href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Ver fonte original</a>` : ''}<button class="dash-op-save ${savedIds.has(item.id) ? 'saved' : ''}" type="button" data-save-opportunity="${escapeHtml(item.id)}">${savedIds.has(item.id) ? '♥ Remover dos guardados' : '♡ Guardar oportunidade'}</button></div>
+    <div class="detail-source"><b>Fonte:</b> ${escapeHtml(item.source_name || organizationName(item))}${source ? ` · <a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Abrir publicação original ↗︎︎</a>` : ''}</div>
+    <div class="detail-links">${apply ? `<a href="${escapeHtml(apply)}" target="_blank" rel="noopener noreferrer">Aceder à candidatura <span>↗︎︎</span></a>` : ''}${source ? `<a class="secondary-link" href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Ver fonte original</a>` : ''}<button class="dash-op-save ${savedIds.has(item.id) ? 'saved' : ''}" type="button" data-save-opportunity="${escapeHtml(item.id)}">${savedIds.has(item.id) ? '♥ Remover dos guardados' : '♡ Guardar oportunidade'}</button></div>
   </div>`;
   const dialog = $('#opportunityDialog');
   if (!dialog.open) dialog.showModal();
@@ -2062,11 +1939,8 @@ function activateStatsFilter(category) {
   renderOpportunityLists();
 }
 
-initializeDashboardTheme();
-
 function bindEvents() {
   $$('[data-view]').forEach(button => button.addEventListener('click', () => activateView(button.dataset.view)));
-  $$('[data-admin-group-button]').forEach(button => button.addEventListener('click', () => setAdminGroup(button.dataset.adminGroupButton)));
   $$('[data-filter-category]').forEach(card => {
     const activate = () => activateStatsFilter(card.dataset.filterCategory || '');
     card.addEventListener('click', activate);
@@ -2088,9 +1962,7 @@ function bindEvents() {
       $('#profileMenuButton').setAttribute('aria-expanded', 'false');
     }
   });
-  $('#notificationBell').addEventListener('click', () => {
-    activateView(isAdmin && Number(window.__pulsoWhatsappPending || 0) > 0 ? 'whatsapp-admin' : 'notifications');
-  });
+  $('#notificationBell').addEventListener('click', () => activateView('notifications'));
   $('#signOutButton').addEventListener('click', () => void signOut());
   $('#alertForm').addEventListener('submit', createAlert);
   $('#communityPostForm').addEventListener('submit', createCommunityPost);
@@ -2109,9 +1981,6 @@ function bindEvents() {
     if (save) toggleCommunitySave(save.dataset.communitySave);
   });
   $('#profileForm').addEventListener('submit', saveProfile);
-  $('#themeToggle')?.addEventListener('click', () => {
-    applyDashboardTheme(document.documentElement.dataset.theme === 'night' ? 'light' : 'night');
-  });
   $$('[data-avatar-choice]').forEach(input => input.addEventListener('change', () => {
     selectedAvatar = avatarKey(input.value);
     renderAvatarTargets();
@@ -2126,8 +1995,6 @@ function bindEvents() {
   });
   $('#manualOpportunityForm').addEventListener('submit', createManualOpportunity);
   $('#partnershipRequestList').addEventListener('click', event => {
-    const remove = event.target.closest('[data-delete-partnership-request]');
-    if (remove) { void deleteReviewedPartnershipRequest(remove.dataset.deletePartnershipRequest, remove); return; }
     const action = event.target.closest('[data-partnership-review]');
     if (action) void reviewPartnershipRequest(action.dataset.partnershipId, action.dataset.partnershipReview, action);
   });
@@ -2141,8 +2008,6 @@ function bindEvents() {
   $('#refreshAdminAssets').addEventListener('click', () => void loadAdminAssets());
   $('#refreshBusinessSubmissions').addEventListener('click', () => void loadBusinessSubmissions());
   $('#businessSubmissionList').addEventListener('click', event => {
-    const remove = event.target.closest('[data-delete-rejected-business]');
-    if (remove) { void deleteRejectedBusinessSubmission(remove.dataset.deleteRejectedBusiness, remove); return; }
     const action = event.target.closest('[data-business-review]');
     if (action) void reviewBusinessSubmission(action.dataset.opportunityId, action.dataset.businessReview, action);
   });
@@ -2191,7 +2056,6 @@ function bindEvents() {
     const notificationOpportunity = event.target.closest('[data-notification-opportunity]');
     const notificationTarget = event.target.closest('[data-notification-target]');
     const notificationToggle = event.target.closest('[data-toggle-notification]');
-    const copy = event.target.closest('[data-copy-value]');
     const retry = event.target.closest('[data-retry-opportunities]');
     const card = event.target.closest('[data-opportunity]');
     if (save) void toggleSavedOpportunity(save.dataset.saveOpportunity);
@@ -2211,7 +2075,6 @@ function bindEvents() {
         notificationToggle.textContent = opening ? 'Fechar aviso' : 'Abrir aviso';
       }
     }
-    if (copy) void copyOpportunityValue(copy);
     if (retry) void loadOpportunities();
     if (card && !save && !remove && !detail && !card.closest('.community-post-card')) void openOpportunity(card.dataset.opportunity);
   });
@@ -2266,9 +2129,8 @@ async function initializeDashboard() {
     const firstView = $(`[data-panel="${hashView}"]`) ? hashView : 'overview';
     void Promise.allSettled([
       loadProfile(), loadStats(), loadOpportunities(), loadSavedOpportunities(),
-      loadAlerts(), loadNotifications(), loadCommunityPosts(), loadWorkspaceSwitcher(),
+      loadAlerts(), loadNotifications(), loadCommunityPosts(), loadAdminAccess(), loadWorkspaceSwitcher(),
     ]);
-    await loadAdminAccess();
     updateIdentity();
     updateBrowserAlertButtons();
     $('#dashboardLoading').hidden = true;

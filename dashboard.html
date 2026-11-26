@@ -7,14 +7,13 @@
   <meta name="description" content="O teu painel PULSO para acompanhar oportunidades, guardados e alertas em Angola.">
   <title>O teu painel — PULSO</title>
   <link rel="icon" href="assets/pulso-mark-3d-small.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=20261121-18">
-  <link rel="stylesheet" href="dashboard.css?v=20261126-08">
+  <link rel="stylesheet" href="styles.css?v=20261126-01">
+  <link rel="stylesheet" href="dashboard.css?v=20261126-01">
   <link rel="stylesheet" href="community.css?v=20261124-09">
-  <link rel="stylesheet" href="pulso-dialogs.css?v=20261125-01">
   <link rel="stylesheet" href="automation.css?v=20261120-20">
-  <link rel="stylesheet" href="whatsapp-alerts.css?v=20261126-05">
-  <script type="module" src="dashboard.js?v=20261126-06"></script>
-  <script type="module" src="whatsapp-alerts.js?v=20261126-01"></script>
+  <link rel="stylesheet" href="whatsapp-alerts.css?v=20261121-04">
+  <script type="module" src="dashboard.js?v=20261126-01"></script>
+  <script type="module" src="whatsapp-alerts.js?v=20261121-04"></script>
   <link rel="manifest" href="./manifest.webmanifest?v=20261121-07">
   <link rel="apple-touch-icon" href="./assets/pwa-icon-192-v2.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,14 +21,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="stylesheet" href="./pwa.css?v=20261121-07">
   <link rel="stylesheet" href="social-links.css?v=20261123-01">
-  <script>
-    (() => {
-      try {
-        const savedTheme = localStorage.getItem('pulso-dashboard-theme');
-        if (savedTheme === 'night') document.documentElement.dataset.theme = 'night';
-      } catch {}
-    })();
-  </script>
 </head>
 <body class="dashboard-body">
   <header class="dash-topbar">
@@ -42,7 +33,6 @@
       <button class="dash-bell" id="notificationBell" type="button" aria-label="Abrir notificações">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
         <span class="notification-count" id="notificationCount" hidden>0</span>
-        <span class="whatsapp-bell-alert" id="whatsappBellAlert" hidden></span>
       </button>
       <button class="dash-wa-shortcut" type="button" data-view="whatsapp-alerts"><span aria-hidden="true">◉</span> Alertas WhatsApp</button>
       <div class="profile-anchor">
@@ -75,7 +65,6 @@
         <button class="dash-nav-link" type="button" data-view="notifications"><span>♧</span> Notificações <span class="nav-count nav-alert-count" id="notificationNavCount" hidden>0</span></button>
         <button class="dash-nav-link" type="button" data-view="profile"><span>◉</span> Meu perfil</button>
         <button class="dash-nav-link admin-nav-link" type="button" data-view="admin" id="adminNavLink" hidden><span>⚙</span> Administração <span class="nav-count nav-alert-count" id="adminMissingCount" hidden>0</span><span class="nav-count nav-alert-count" id="adminPartnershipCount" hidden>0</span></button>
-        <button class="dash-nav-link admin-nav-link" type="button" data-view="whatsapp-admin" id="whatsappAdminNavLink" hidden><span>◉</span> Fila WhatsApp <span class="nav-count nav-alert-count" id="whatsappAdminNavCount" hidden>0</span></button>
       </nav>
       <div class="sidebar-alert-card">
         <span class="sidebar-alert-icon">✦</span>
@@ -85,8 +74,8 @@
       </div>
       <div class="sidebar-contact-mini">
         <span class="section-kicker">PULSO · SUPORTE</span>
-        <a href="https://wa.me/244955614045" target="_blank" rel="noopener noreferrer">WhatsApp <span>↗</span></a>
-        <a href="mailto:pulsobussines@gmail.com">Enviar e-mail <span>↗</span></a>
+        <a href="https://wa.me/244955614045" target="_blank" rel="noopener noreferrer">WhatsApp <span>↗︎︎</span></a>
+        <a href="mailto:pulsobussines@gmail.com">Enviar e-mail <span>↗︎︎</span></a>
         <p class="pulso-social-caption">SEGUE O PULSO</p>
         <div class="pulso-social-links pulso-social-links--compact pulso-social-links--dashboard" aria-label="Redes sociais do PULSO"><a class="pulso-social-link social-youtube" href="https://www.youtube.com/@PULSOAO" target="_blank" rel="noopener noreferrer" aria-label="PULSO no YouTube, abre num novo separador"><img src="assets/social/youtube.svg" alt=""><span>YouTube</span></a><a class="pulso-social-link social-instagram" href="https://www.instagram.com/pulso.ao_?jplx=MWhxdjhzZG0xbnR0cw==" target="_blank" rel="noopener noreferrer" aria-label="PULSO no Instagram, abre num novo separador"><img src="assets/social/instagram.svg" alt=""><span>Instagram</span></a></div>
       </div>
@@ -120,7 +109,7 @@
 
         <div class="overview-bottom-grid">
           <section class="dash-panel overview-alert-panel"><div class="panel-heading"><div><span class="section-kicker">PERSONALIZA A PROCURA</span><h2>Um alerta mais teu.</h2></div><span class="panel-icon">⌁</span></div><p>Escolhe categoria, província ou palavras-chave e o PULSO prepara um alerta para ti.</p><button class="btn btn-primary-soft" type="button" data-view="alerts">Configurar um alerta <span>→</span></button></section>
-          <section class="contact-3d-card"><div class="contact-3d-top"><span>✦</span><small>SUPORTE PULSO</small></div><h3>Estamos por perto.</h3><p>Fala connosco pelo WhatsApp ou e-mail.</p><a href="https://wa.me/244955614045" target="_blank" rel="noopener noreferrer" class="whatsapp-button"><span class="whatsapp-glyph">◉</span> Abrir WhatsApp <span>↗</span></a></section>
+          <section class="contact-3d-card"><div class="contact-3d-top"><span>✦</span><small>SUPORTE PULSO</small></div><h3>Estamos por perto.</h3><p>Fala connosco pelo WhatsApp ou e-mail.</p><a href="https://wa.me/244955614045" target="_blank" rel="noopener noreferrer" class="whatsapp-button"><span class="whatsapp-glyph">◉</span> Abrir WhatsApp <span>↗︎︎</span></a></section>
         </div>
       </section>
 
@@ -192,8 +181,13 @@
             <div class="wa-form-actions"><button class="btn btn-primary" type="submit">Guardar preferências <span>→</span></button><button class="wa-delete-button" id="whatsappAlertDelete" type="button" hidden>Apagar o meu número e pedido</button></div>
             <small class="wa-privacy-note" id="whatsappAlertState">Ainda não configuraste alertas WhatsApp.</small>
           </form>
-          <aside class="wa-process-card wa-process-image-card"><img src="assets/whatsapp-alert-card.png" alt="Como funcionam os alertas WhatsApp do PULSO"></aside>
+          <aside class="wa-process-card"><span class="wa-process-icon">◉</span><span class="section-kicker">SEM ENVIO AUTOMÁTICO</span><h2>Tu defines. O PULSO encontra. A equipa envia.</h2><ol><li>Guardamos os teus critérios e o número com consentimento.</li><li>Quando surgir uma oportunidade publicada e verificada que corresponda, aparece na fila da equipa.</li><li>O administrador abre o WhatsApp com a mensagem pré-preenchida e envia manualmente.</li></ol><p>O PULSO não envia mensagens sem confirmação humana e não usa a API do WhatsApp.</p></aside>
         </div>
+        <section class="dash-panel wa-admin-section" id="whatsappAdminSection" hidden>
+          <div class="panel-heading"><div><span class="section-kicker">ÁREA RESTRITA · ADMINISTRAÇÃO</span><h2>Pedidos e correspondências WhatsApp.</h2><p id="whatsappAdminSummary">A carregar…</p></div><button class="filter-reset" id="whatsappAdminRefresh" type="button">Actualizar fila ↻</button></div>
+          <div class="wa-admin-privacy-note">Esta área e os números de contacto são acessíveis apenas a administradores autorizados. O botão abre uma conversa; é necessário enviar a mensagem manualmente no WhatsApp e depois marcar o estado.</div>
+          <div class="wa-admin-queue" id="whatsappAdminQueue"><div class="empty-state"><b>A aguardar autorização administrativa…</b></div></div>
+        </section>
       </section>
 
       <section class="dash-view" data-panel="notifications" hidden>
@@ -204,7 +198,7 @@
       <section class="dash-view" data-panel="profile" hidden>
         <div class="page-intro"><span class="section-kicker">A TUA IDENTIDADE PULSO</span><h1>O teu perfil.</h1><p>Mantém os teus dados actualizados para personalizar a procura.</p></div>
         <div class="profile-layout">
-          <section class="profile-showcase"><span class="profile-showcase-avatar" id="profileAvatarLarge" data-avatar-target="showcase"><img src="assets/profile/avatar-male.jpg" alt="Avatar masculino"></span><button class="theme-toggle-3d profile-showcase-theme-toggle" id="themeToggle" type="button" role="switch" aria-checked="false" aria-label="Activar modo noite"><span class="theme-toggle-orb"></span><span class="theme-toggle-track"><i></i></span></button><span class="section-kicker">PERFIL DE UTILIZADOR</span><h2 id="profileShowcaseName">A carregar…</h2><p id="profileShowcaseEmail"></p><span class="member-chip"><i></i> Conta activa</span></section>
+          <section class="profile-showcase"><span class="profile-showcase-avatar" id="profileAvatarLarge" data-avatar-target="showcase"><img src="assets/profile/avatar-male.jpg" alt="Avatar masculino"></span><span class="section-kicker">PERFIL DE UTILIZADOR</span><h2 id="profileShowcaseName">A carregar…</h2><p id="profileShowcaseEmail"></p><span class="member-chip"><i></i> Conta activa</span></section>
           <form class="dash-panel profile-form" id="profileForm"><div class="panel-heading"><div><span class="section-kicker">INFORMAÇÃO PESSOAL</span><h2>Editar perfil.</h2></div></div><label>Nome completo<input name="full_name" maxlength="120" required></label><div class="profile-fields-two"><label>Província<input name="province" list="provinceOptions" placeholder="Ex.: Luanda"></label><label>Município<input name="municipality" placeholder="Ex.: Maianga"></label></div><div class="profile-fields-two"><label>Área profissional<input name="professional_area" maxlength="120" placeholder="Ex.: Administração"></label><label>Nível de escolaridade<input name="education_level" maxlength="120" placeholder="Ex.: Licenciatura"></label></div><fieldset class="avatar-choice"><legend>Imagem de perfil</legend><div class="avatar-choice-visible"><label><input type="radio" name="avatar" value="male" data-avatar-choice> <img src="assets/profile/avatar-male.jpg" alt="Avatar masculino"> <span>Masculino</span></label><label><input type="radio" name="avatar" value="female" data-avatar-choice> <img src="assets/profile/avatar-female.jpg" alt="Avatar feminino"> <span>Feminino</span></label></div><button class="avatar-more-button" id="toggleMoreAvatars" type="button" aria-expanded="false" aria-controls="extraAvatarChoices">Ver mais avatares <span>⌄</span></button><div class="avatar-choice-extra" id="extraAvatarChoices" hidden><label><input type="radio" name="avatar" value="extra1" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-1.jpg" alt="Avatar 1"> <span>Avatar 1</span></label><label><input type="radio" name="avatar" value="extra2" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-2.jpg" alt="Avatar 2"> <span>Avatar 2</span></label><label><input type="radio" name="avatar" value="extra3" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-3.jpg" alt="Avatar 3"> <span>Avatar 3</span></label><label><input type="radio" name="avatar" value="extra4" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-4.jpg" alt="Avatar 4"> <span>Avatar 4</span></label><label><input type="radio" name="avatar" value="extra5" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-5.jpg" alt="Avatar 5"> <span>Avatar 5</span></label><label><input type="radio" name="avatar" value="extra6" data-avatar-choice> <img src="assets/profile/extra/avatar-extra-6.jpg" alt="Avatar 6"> <span>Avatar 6</span></label></div></fieldset><label class="readonly-field">E-mail da conta<input id="profileEmailField" type="email" readonly></label><div class="dashboard-feedback" id="profileFeedback" role="status" aria-live="polite" hidden></div><button class="btn btn-primary" type="submit">Guardar alterações <span>→</span></button></form>
         </div>
       </section>
@@ -212,54 +206,48 @@
       <section class="dash-view" data-panel="support" hidden>
         <div class="page-intro"><span class="section-kicker">SUPORTE PULSO</span><h1>Estamos por perto.</h1><p>Escolhe o canal mais conveniente para falar connosco.</p></div>
         <div class="support-contact-grid">
-          <a class="support-contact-card" href="tel:+244936975657"><span class="support-icon phone-icon">☎</span><span><small>TELEFONE</small><b>+244 936 975 657</b><em>Ligar para o PULSO</em></span><span class="support-arrow">↗</span></a>
-          <a class="support-contact-card" href="tel:+244955614045"><span class="support-icon phone-icon">☎</span><span><small>TELEFONE</small><b>+244 955 614 045</b><em>Ligar para o PULSO</em></span><span class="support-arrow">↗</span></a>
-          <a class="support-contact-card" href="mailto:pulsobussines@gmail.com"><span class="support-icon gmail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#4285f4" d="M3 6.8V18h4V9.8L3 6.8Z"/><path fill="#34a853" d="M17 9.8V18h4V6.8l-4 3Z"/><path fill="#ea4335" d="m3 6.8 9 6.5 9-6.5-3.1-2.3L12 9 6.1 4.5 3 6.8Z"/><path fill="#fbbc04" d="M3 6.8v4.7l4 2.9V9.8l-4-3Z"/></svg></span><span><small>E-MAIL</small><b>pulsobussines@gmail.com</b><em>Enviar mensagem</em></span><span class="support-arrow">↗</span></a>
-          <a class="support-contact-card support-whatsapp-card" href="https://wa.me/244955614045" target="_blank" rel="noopener noreferrer"><span class="support-icon whatsapp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2a8.4 8.4 0 0 0-7.2 12.7L4 20l4.2-1.1A8.4 8.4 0 1 0 12 3.2Zm0 1.8a6.6 6.6 0 1 1-3.4 12.3l-.5-.3-1.8.5.5-1.8-.3-.5A6.6 6.6 0 0 1 12 5Z"/><path d="M9.1 8.2c-.2-.4-.4-.4-.6-.4h-.4c-.2 0-.5.1-.7.4-.2.2-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.3 3.8 2.1.8 2.5.6 3 .5.5-.1 1.6-.7 1.8-1.3.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.5-.3l-1.7-.8c-.2-.1-.4-.1-.6.2l-.8 1c-.2.2-.3.2-.6.1a6.8 6.8 0 0 1-2-1.2 7.4 7.4 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.8-1.9Z"/></svg></span><span><small>WHATSAPP</small><b>Fala connosco</b><em>Abre uma conversa segura</em></span><span class="support-arrow">↗</span></a>
+          <a class="support-contact-card" href="tel:+244936975657"><span class="support-icon phone-icon">☎</span><span><small>TELEFONE</small><b>+244 936 975 657</b><em>Ligar para o PULSO</em></span><span class="support-arrow">↗︎︎</span></a>
+          <a class="support-contact-card" href="tel:+244955614045"><span class="support-icon phone-icon">☎</span><span><small>TELEFONE</small><b>+244 955 614 045</b><em>Ligar para o PULSO</em></span><span class="support-arrow">↗︎︎</span></a>
+          <a class="support-contact-card" href="mailto:pulsobussines@gmail.com"><span class="support-icon gmail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#4285f4" d="M3 6.8V18h4V9.8L3 6.8Z"/><path fill="#34a853" d="M17 9.8V18h4V6.8l-4 3Z"/><path fill="#ea4335" d="m3 6.8 9 6.5 9-6.5-3.1-2.3L12 9 6.1 4.5 3 6.8Z"/><path fill="#fbbc04" d="M3 6.8v4.7l4 2.9V9.8l-4-3Z"/></svg></span><span><small>E-MAIL</small><b>pulsobussines@gmail.com</b><em>Enviar mensagem</em></span><span class="support-arrow">↗︎︎</span></a>
+          <a class="support-contact-card support-whatsapp-card" href="https://wa.me/244955614045" target="_blank" rel="noopener noreferrer"><span class="support-icon whatsapp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2a8.4 8.4 0 0 0-7.2 12.7L4 20l4.2-1.1A8.4 8.4 0 1 0 12 3.2Zm0 1.8a6.6 6.6 0 1 1-3.4 12.3l-.5-.3-1.8.5.5-1.8-.3-.5A6.6 6.6 0 0 1 12 5Z"/><path d="M9.1 8.2c-.2-.4-.4-.4-.6-.4h-.4c-.2 0-.5.1-.7.4-.2.2-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.3 3.8 2.1.8 2.5.6 3 .5.5-.1 1.6-.7 1.8-1.3.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.5-.3l-1.7-.8c-.2-.1-.4-.1-.6.2l-.8 1c-.2.2-.3.2-.6.1a6.8 6.8 0 0 1-2-1.2 7.4 7.4 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.8-1.9Z"/></svg></span><span><small>WHATSAPP</small><b>Fala connosco</b><em>Abre uma conversa segura</em></span><span class="support-arrow">↗︎︎</span></a>
         </div>
         <p class="support-footnote">O WhatsApp abre uma conversa com o número +244 955 614 045. A candidatura a oportunidades decorre sempre na página oficial da entidade anunciante.</p>
       </section>
 
       <section class="dash-view" data-panel="admin" hidden>
-        <div class="page-intro admin-page-intro"><div><span class="section-kicker">PAINEL RESTRITO</span><h1>Administração PULSO.</h1><p>Completa imagens em falta e regista oportunidades que o colector não encontrou.</p></div><button class="admin-wa-shortcut" type="button" data-view="whatsapp-admin">Fila de alertas WhatsApp <b aria-hidden="true">→</b></button></div>
-        <nav class="admin-section-nav" aria-label="Secções da administração">
-          <button type="button" class="admin-section-tab is-active" aria-pressed="true" data-admin-group-button="requests">Pedidos</button>
-          <button type="button" class="admin-section-tab" aria-pressed="false" data-admin-group-button="opportunities">Oportunidades</button>
-          <button type="button" class="admin-section-tab" aria-pressed="false" data-admin-group-button="collection">Recolha automática</button>
-          <button type="button" class="admin-section-tab" aria-pressed="false" data-admin-group-button="announcements">Avisos gerais</button>
-        </nav>
-        <section class="dash-panel partnership-requests-panel" id="partnershipRequestsPanel" data-admin-group="requests">
+        <div class="page-intro"><span class="section-kicker">PAINEL RESTRITO</span><h1>Administração PULSO.</h1><p>Completa imagens em falta e regista oportunidades que o colector não encontrou.</p></div>
+        <section class="dash-panel partnership-requests-panel" id="partnershipRequestsPanel">
           <div class="panel-heading"><div><span class="section-kicker">PEDIDOS RECEBIDOS</span><h2>Pedidos de parceria.</h2></div><div class="admin-panel-actions"><span class="admin-request-count" id="partnershipRequestCount">—</span><button class="filter-reset" type="button" id="refreshPartnershipRequests">Actualizar</button></div></div>
           <div id="partnershipRequestList"><div class="empty-state"><b>A carregar pedidos de parceria…</b></div></div>
         </section>
-        <section class="dash-panel business-submissions-panel" id="businessSubmissionsPanel" data-admin-group="requests">
+        <section class="dash-panel business-submissions-panel" id="businessSubmissionsPanel">
           <div class="panel-heading business-submissions-heading"><div><span class="section-kicker">REVISÃO EMPRESARIAL</span><h2>Publicações empresariais.</h2><p>Vê a empresa e a conta que submeteu cada oportunidade. Ao aceitar, a publicação fica verificada e entra no dashboard normal.</p></div><div class="business-submissions-controls"><span class="automation-count" id="businessSubmissionCount">A carregar…</span><button class="filter-reset" type="button" id="refreshBusinessSubmissions">Actualizar</button></div></div>
           <div id="businessSubmissionList"><div class="empty-state"><b>A carregar submissões empresariais…</b></div></div>
         </section>
-        <section class="dash-panel admin-alert-panel" id="adminAssetAlert" data-admin-group="opportunities" hidden><b>Há cartões que precisam de imagens.</b><span id="adminAssetAlertText">A carregar…</span></section>
-        <section class="dash-panel admin-assets-panel" data-admin-group="opportunities"><div class="panel-heading"><div><span class="section-kicker">ACÇÕES PENDENTES</span><h2>Completar cartões.</h2></div><button class="filter-reset" type="button" id="refreshAdminAssets">Actualizar</button></div><div id="adminAssetList"><div class="empty-state"><b>A carregar oportunidades…</b></div></div></section>
-        <form class="dash-panel admin-form" id="manualOpportunityForm" data-admin-group="opportunities">
+        <section class="dash-panel admin-alert-panel" id="adminAssetAlert" hidden><b>Há cartões que precisam de imagens.</b><span id="adminAssetAlertText">A carregar…</span></section>
+        <section class="dash-panel admin-assets-panel"><div class="panel-heading"><div><span class="section-kicker">ACÇÕES PENDENTES</span><h2>Completar cartões.</h2></div><button class="filter-reset" type="button" id="refreshAdminAssets">Actualizar</button></div><div id="adminAssetList"><div class="empty-state"><b>A carregar oportunidades…</b></div></div></section>
+        <form class="dash-panel admin-form" id="manualOpportunityForm">
           <div class="panel-heading"><div><span class="section-kicker">REGISTO MANUAL</span><h2>Adicionar oportunidade.</h2></div></div>
           <div class="admin-form-grid">
             <label>Título<input name="title" maxlength="180" required></label><label>Categoria<select name="category" required><option value="employment">Empregos</option><option value="scholarship">Bolsas</option><option value="public_competition">Concursos</option><option value="internship">Estágios</option><option value="training">Formação</option><option value="recruitment_program">Programas</option></select></label>
-            <label>Organização<input name="organization" maxlength="160" required></label><label>Site oficial da organização (opcional)<input name="official_website" type="url" placeholder="https://…"></label>
-            <label>URL da publicação oficial (opcional)<input name="source_url" type="url" placeholder="https://…"></label><label>URL da candidatura (opcional)<input name="application_url" type="url" placeholder="https://…"></label>
+            <label>Organização<input name="organization" maxlength="160" required></label><label>Site oficial da organização<input name="official_website" type="url" placeholder="https://…" required></label>
+            <label>URL da publicação oficial<input name="source_url" type="url" placeholder="https://…" required></label><label>URL da candidatura<input name="application_url" type="url" placeholder="https://…"></label>
             <label>Província<input name="province" maxlength="100" placeholder="Ex.: Luanda"></label><label>Município<input name="municipality" maxlength="100"></label><label>Prazo de candidatura<input name="application_deadline" type="date"></label>
-            <label class="admin-wide">Descrição / detalhes<textarea name="description" rows="4" maxlength="5000" required></textarea></label><label class="admin-wide">Instruções para candidatura / onde se dirigir<textarea name="application_instructions" rows="3" maxlength="5000" placeholder="Opcional quando não existir link directo."></textarea></label><label>Telefone de contacto<input name="contact_phone" type="tel" maxlength="80" placeholder="+244 …"></label><label>E-mail de contacto<input name="contact_email" type="email" maxlength="180" placeholder="contacto@exemplo.ao"></label>
+            <label class="admin-wide">Descrição / detalhes<textarea name="description" rows="4" maxlength="5000" required></textarea></label>
             <label class="admin-wide">Link da imagem do cartão (opcional)<input name="image_url" type="url" placeholder="https://…"></label><label class="admin-wide">Link do logótipo oficial (opcional)<input name="logo_url" type="url" placeholder="https://…"></label>
           </div>
           <div class="dashboard-feedback" id="adminFormFeedback" role="status" aria-live="polite" hidden></div><button class="btn btn-primary" type="submit">Guardar oportunidade verificada <span>→</span></button>
         </form>
-        <section class="dash-panel smart-import-panel" id="smartImportPanel" data-admin-group="opportunities">
+        <section class="dash-panel smart-import-panel" id="smartImportPanel">
           <div class="panel-heading"><div><span class="section-kicker">CARREGAMENTO INTELIGENTE</span><h2>Importar vários cartões.</h2><p>Carrega um TXT, CSV, JSON ou ZIP. O PULSO extrai os campos, mostra uma pré-visualização e só publica depois da tua confirmação.</p></div><span class="smart-import-badge">BETA</span></div>
           <div class="smart-import-dropzone" id="smartImportDropzone"><input id="smartImportFile" type="file" accept=".txt,.md,.csv,.json,.zip,text/plain,text/csv,application/json,application/zip"><div class="smart-import-drop-icon">↑</div><b>Escolher ficheiro ou arrastar para aqui</b><small>Formatos: TXT, CSV, JSON e ZIP até 10 MB. No ZIP, usa um ficheiro de dados no interior. Até 1000 oportunidades publicadas por lote para gerar um único resumo.</small></div>
-          <div class="smart-import-format-help"><b>Campos reconhecidos:</b> título, categoria, organização, site oficial, link da fonte, candidatura, província, município, prazo, descrição, instruções, telefone, e-mail, imagem e logótipo. Se não houver URL oficial, preenche a descrição ou os contactos para aparecer “Ver informações”. No TXT, separa cartões por linhas vazias e usa <code>campo: valor</code>.</div>
+          <div class="smart-import-format-help"><b>Campos reconhecidos:</b> título, categoria, organização, site oficial, link da fonte, candidatura, província, município, prazo, descrição, imagem e logótipo. No TXT, separa cartões por linhas vazias e usa <code>campo: valor</code>.</div>
           <div class="smart-import-toolbar" id="smartImportToolbar" hidden><span id="smartImportFileName"></span><span id="smartImportSummary"></span><button class="filter-reset" type="button" id="clearSmartImport">Limpar</button></div>
           <div class="smart-import-preview" id="smartImportPreview" hidden></div>
           <div class="dashboard-feedback" id="smartImportFeedback" role="status" aria-live="polite" hidden></div>
           <div class="smart-import-actions" id="smartImportActions" hidden><button class="btn btn-primary-soft" type="button" id="smartImportReviewButton">Importar para revisão</button><button class="btn btn-primary" type="button" id="smartImportPublishButton">Importar e publicar tudo <span>→</span></button></div>
         </section>
-        <section class="dash-panel admin-system-notification-panel" id="adminSystemNotifications" data-admin-group="announcements">
+        <section class="dash-panel admin-system-notification-panel" id="adminSystemNotifications">
           <div class="panel-heading"><div><span class="section-kicker">AVISO GERAL · TODOS OS UTILIZADORES</span><h2>Enviar uma actualização.</h2><p>A mensagem fica também na caixa de notificações. O aviso de sistema é enviado por Push apenas aos dispositivos que activaram as notificações.</p></div></div>
           <form class="admin-system-notification-form" id="adminBroadcastForm">
             <label>Título<input name="title" maxlength="90" placeholder="Ex.: Actualização importante do PULSO" required></label>
@@ -269,23 +257,13 @@
             <button class="btn btn-primary" type="submit">Enviar a todos os utilizadores <span>→</span></button>
           </form>
         </section>
-        <section class="dash-panel pulso-automation-panel" id="adminAutomationPanel" data-admin-group="collection">
-          <div class="panel-heading automation-heading"><div><span class="section-kicker">RECOLHA AUTOMÁTICA</span><h2>Recolha automática de oportunidades.</h2><p>Executa a recolha e revê as publicações encontradas. A lista de fontes está temporariamente oculta.</p></div><div class="automation-header-actions"><button class="btn btn-primary" type="button" id="runPulsoCollection">Recolher agora</button><button class="filter-reset" type="button" id="refreshAutomationAdmin">Actualizar</button></div></div>
+        <section class="dash-panel pulso-automation-panel" id="adminAutomationPanel">
+          <div class="panel-heading automation-heading"><div><span class="section-kicker">RECOLHA AUTOMÁTICA</span><h2>Fontes e publicações automáticas.</h2><p>As fontes começam desactivadas. A recolha publica oportunidades encontradas; revê-as depois e retira qualquer erro.</p></div><div class="automation-header-actions"><button class="btn btn-primary" type="button" id="runPulsoCollection">Recolher agora</button><button class="filter-reset" type="button" id="refreshAutomationAdmin">Actualizar</button></div></div>
           <div class="dashboard-feedback automation-run-status" id="automationRunStatus" role="status" aria-live="polite" hidden></div>
-          <div id="automationSourcesTemporary" hidden>
           <div class="automation-section-heading"><div><span class="section-kicker">FONTES FORNECIDAS</span><h3>Activar fontes uma a uma.</h3></div><span class="automation-count" id="automationSourceCount">—</span></div>
           <div id="automationSourceList"><div class="empty-state"><b>A carregar fontes…</b></div></div>
-          </div>
           <div class="automation-section-heading automation-review-heading"><div><span class="section-kicker">PUBLICAÇÕES AUTOMÁTICAS</span><h3>Rever publicações da IA.</h3></div><span class="automation-count" id="automationReviewCount">—</span></div>
           <div id="automationReviewList"><div class="empty-state"><b>A carregar publicações automáticas…</b></div></div>
-        </section>
-      </section>
-      <section class="dash-view" data-panel="whatsapp-admin" hidden>
-        <div class="page-intro"><span class="section-kicker">ÁREA RESTRITA · ADMINISTRAÇÃO</span><h1>Alertas WhatsApp.</h1><p>Pedidos activos e oportunidades que correspondem aos critérios. As mensagens continuam a ser enviadas manualmente.</p></div>
-        <section class="dash-panel wa-admin-section" id="whatsappAdminSection" hidden>
-          <div class="panel-heading"><div><span class="section-kicker">FILA PRIVADA</span><h2>Pedidos e correspondências.</h2><p id="whatsappAdminSummary">A carregar…</p></div><button class="filter-reset" id="whatsappAdminRefresh" type="button">Actualizar fila ↻</button></div>
-          <div class="wa-admin-privacy-note">Esta área e os números de contacto são acessíveis apenas a administradores autorizados. O botão abre uma conversa; é necessário enviar a mensagem manualmente no WhatsApp e depois marcar o estado.</div>
-          <div class="wa-admin-queue" id="whatsappAdminQueue"><div class="empty-state"><b>A aguardar autorização administrativa…</b></div></div>
         </section>
       </section>
       <footer class="dash-footer"><a href="./index.html">PULSO · Oportunidades em movimento.</a><span>Fontes claras. Próximos passos com contexto.</span><button type="button" data-view="support">Ajuda e contactos</button></footer>
