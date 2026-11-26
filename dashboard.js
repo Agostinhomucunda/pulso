@@ -129,10 +129,11 @@ const THEME_STORAGE_KEY = 'pulso-dashboard-theme';
 function applyDashboardTheme(theme, { persist = true } = {}) {
   const isNight = theme === 'night';
   document.documentElement.dataset.theme = isNight ? 'night' : 'light';
-  $$('[data-theme-toggle]').forEach(toggle => {
+  const toggle = $('#themeToggle');
+  if (toggle) {
     toggle.setAttribute('aria-checked', String(isNight));
     toggle.setAttribute('aria-label', isNight ? 'Desactivar modo noite' : 'Activar modo noite');
-  });
+  }
   const status = $('#themeToggleStatus');
   if (status) status.textContent = isNight ? 'Activado' : 'Desactivado';
   const description = $('#themePreferenceDescription');
@@ -2108,10 +2109,9 @@ function bindEvents() {
     if (save) toggleCommunitySave(save.dataset.communitySave);
   });
   $('#profileForm').addEventListener('submit', saveProfile);
-  $$('[data-theme-toggle]').forEach(toggle => toggle.addEventListener('click', event => {
-    event.stopPropagation();
+  $('#themeToggle')?.addEventListener('click', () => {
     applyDashboardTheme(document.documentElement.dataset.theme === 'night' ? 'light' : 'night');
-  }));
+  });
   $$('[data-avatar-choice]').forEach(input => input.addEventListener('change', () => {
     selectedAvatar = avatarKey(input.value);
     renderAvatarTargets();
