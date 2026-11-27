@@ -534,3 +534,56 @@ html[data-theme="night"] .profile-showcase-theme-toggle .theme-toggle-orb{left:1
 @media(prefers-reduced-motion:reduce){.profile-showcase-theme-toggle::after{animation:none;--pulso-profile-theme-ring-angle:310deg}}
 /* Compatibilidade com versões antigas em cache: este cartão não deve mostrar um segundo controlo. */
 .stat-card .dashboard-card-theme-toggle,#themeToggleOverview{display:none!important}
+/* Responsividade intermédia: alguns Android apresentam 720px CSS mesmo em modo telefone. */
+@media (min-width:621px) and (max-width:760px){
+  .dash-topbar{height:68px;min-height:68px;gap:8px;padding:0 14px}
+  .dash-brand{min-width:0;gap:7px;flex:0 0 auto}
+  .dash-brand img{width:34px;height:34px}
+  .dash-brand strong{font-size:18px}
+  .dash-brand small{display:none}
+  .dash-top-context{display:none}
+  .dash-top-actions{min-width:0;flex:1 1 auto;justify-content:flex-end;gap:6px}
+  .browser-alert-btn{width:35px;height:35px;min-width:35px;padding:0;overflow:hidden;color:transparent;font-size:0}
+  .browser-alert-btn:after{content:"♧";color:#2458b1;font-size:17px}
+  .browser-alert-icon{position:absolute;left:9px;top:9px;width:17px;height:17px;color:#2458b1}
+  .browser-alert-btn span{display:none}
+  .dash-bell{width:35px;height:35px;flex:none}
+  .dash-bell svg{width:17px;height:17px}
+  .dash-wa-shortcut{min-width:0;max-width:180px;height:35px;min-height:35px;padding:0 10px;overflow:hidden;font-size:9px;white-space:nowrap;text-overflow:ellipsis}
+  .dash-wa-shortcut>span{font-size:14px}
+  .profile-trigger{min-width:0;padding:3px}
+  .profile-avatar{width:35px;height:35px;border-radius:12px;font-size:11px}
+  .profile-trigger-copy,.profile-chevron{display:none}
+
+  .dash-main{padding:24px 20px 20px}
+  .dashboard-hero{min-height:296px;align-items:flex-start;padding:24px 28px;border-radius:21px}
+  .dashboard-hero .dash-hero-copy{max-width:57%}
+  .dash-hero-copy h1{max-width:100%;font-size:29px;line-height:1.1}
+  .dash-hero-copy p{max-width:100%;font-size:10px;line-height:1.6}
+  .hero-action{max-width:250px;margin-top:16px;padding:11px 13px;font-size:9px}
+  .dashboard-device-video{right:3px;top:13px;width:205px;height:150px;opacity:.78}
+  .hero-depth-front{right:18px;bottom:17px;width:205px;height:78px;padding:10px;border-radius:12px}
+  .hero-depth-front>span{font-size:6px}
+  .hero-depth-front>b{margin-top:5px;font-size:10px}
+  .hero-depth-front small{margin-top:3px;font-size:6px}
+  .hero-depth-back{right:31px;bottom:23px;width:202px;height:75px}
+  .hero-hero-mark{right:auto;left:19px;bottom:-4px;font-size:62px;letter-spacing:-8px}
+  .dashboard-hero-orbit{right:-8%;top:14%;width:250px;height:250px}
+  .orbit-b{right:4%;top:23%;width:160px;height:160px}
+
+  .dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .stat-card{min-height:132px;padding:14px}
+  .stat-card>b{font-size:24px}
+  .overview-bottom-grid{grid-template-columns:1fr;gap:12px}
+
+  .dash-op-card{grid-template-columns:70px minmax(0,1fr);grid-template-rows:auto auto;align-items:start;gap:10px;padding:13px;min-height:0}
+  .dash-op-visual{grid-column:1;grid-row:1/3;width:70px;height:62px}
+  .dash-op-image{width:70px;height:62px}
+  .dash-op-content{grid-column:2;grid-row:1}
+  .dash-op-content h3{display:flex;flex-wrap:wrap;overflow:visible;line-height:1.3;white-space:normal;overflow-wrap:anywhere;font-size:12px}
+  .dash-op-org{font-size:9px}
+  .dash-op-meta{gap:5px 8px;font-size:8px}
+  .dash-op-actions{grid-column:2;grid-row:2;justify-content:flex-start;flex-wrap:wrap;gap:6px;margin-top:3px}
+  .dash-source-3d-btn{min-height:32px;padding:0 9px;font-size:8px}
+  .dash-op-save,.dash-op-detail{width:31px;height:31px}
+}
