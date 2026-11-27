@@ -675,3 +675,13 @@ html[data-theme="night"] .profile-showcase-theme-toggle .theme-toggle-orb{left:1
   .hero-depth-front small{margin-top:2px;font-size:5px}
   .hero-depth-back{right:28px;bottom:21px;width:171px;height:66px}
 }
+
+/* Alguns Android anunciam uma largura CSS superior a 760px apesar de estarem em modo telefone. */
+@media (min-width:621px) and (max-width:900px){
+  .dashboard-device-video{right:2px;top:16px;width:166px;height:121px;max-width:none;opacity:.72}
+  .hero-depth-front{right:16px;top:auto;bottom:16px;width:174px;height:68px;max-width:none;padding:9px;border-radius:12px}
+  .hero-depth-front>span{font-size:5px}
+  .hero-depth-front>b{margin-top:4px;font-size:9px;line-height:1.2}
+  .hero-depth-front small{margin-top:2px;font-size:5px}
+  .hero-depth-back{right:28px;top:auto;bottom:21px;width:171px;height:66px;max-width:none}
+}
