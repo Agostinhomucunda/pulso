@@ -587,3 +587,67 @@ html[data-theme="night"] .profile-showcase-theme-toggle .theme-toggle-orb{left:1
   .dash-source-3d-btn{min-height:32px;padding:0 9px;font-size:8px}
   .dash-op-save,.dash-op-detail{width:31px;height:31px}
 }
+
+/* Mobile layout contract: one-column content, intrinsic logos, readable opportunity cards. */
+@media (max-width:760px){
+  .dashboard-body,.dash-layout,.dash-main,.dash-view,.dash-panel,.dashboard-opportunity-list,.featured-panel,.overview-bottom-grid{min-width:0;max-width:100%}
+  .dash-topbar{box-sizing:border-box;width:100%;overflow:visible}
+  .dash-brand,.dash-brand img,.dash-brand>span,.dash-top-actions,.profile-anchor,.profile-trigger{min-width:0}
+  .dash-brand img{display:block;flex:0 0 auto;width:clamp(30px,8vw,38px);height:clamp(30px,8vw,38px);aspect-ratio:1;object-fit:contain;object-position:center}
+  .dash-brand>span{overflow:hidden}
+  .dash-brand strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dash-top-actions{overflow:visible}
+  .dash-main{overflow:hidden}
+  .dashboard-hero{width:100%;box-sizing:border-box;isolation:isolate}
+  .dashboard-hero .dash-hero-copy{width:min(100%,390px);max-width:100%;min-width:0}
+  .dash-hero-copy h1,.dash-hero-copy p{max-width:100%;overflow-wrap:anywhere}
+  .dashboard-device-video,.hero-depth-card{max-width:48%}
+  .section-title-row,.panel-heading{min-width:0}
+  .section-title-row>div,.panel-heading>div{min-width:0}
+  .section-title-row h2,.panel-heading h2{overflow-wrap:anywhere}
+  .dashboard-stats{width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat-card{min-width:0}
+  .overview-bottom-grid{grid-template-columns:minmax(0,1fr)}
+  .overview-alert-panel,.contact-3d-card{min-width:0;box-sizing:border-box}
+  .contact-3d-card h3,.contact-3d-card p{overflow-wrap:anywhere}
+  .whatsapp-button{min-width:0;width:100%}
+  .featured-panel{width:100%;box-sizing:border-box}
+  .dashboard-opportunity-list{width:100%;display:grid;gap:12px}
+  .dash-op-card{width:100%;box-sizing:border-box;display:grid;grid-template-columns:clamp(58px,17vw,78px) minmax(0,1fr);grid-template-rows:auto auto;align-items:start;gap:9px 11px;padding:12px;min-height:0;overflow:visible}
+  .dash-op-visual{grid-column:1;grid-row:1/3;width:100%;height:auto;aspect-ratio:1.18;min-width:0;align-self:start;overflow:visible}
+  .dash-op-image{display:block;width:100%;height:100%;min-width:0;aspect-ratio:auto;object-fit:cover;object-position:center;border-radius:12px}
+  .dash-op-content{grid-column:2;grid-row:1;min-width:0;width:100%;overflow:visible}
+  .dash-op-content h3{display:block;width:100%;max-width:100%;height:auto;min-width:0;margin:0 0 4px;overflow:visible;white-space:normal;overflow-wrap:anywhere;word-break:normal;text-overflow:clip;font-size:clamp(11px,2vw,13px);line-height:1.3}
+  .dash-op-content h3 .verified-check-img{display:inline-block;width:17px;height:17px;max-width:none;vertical-align:-4px;object-fit:contain}
+  .dash-op-org{display:block;width:100%;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dash-op-meta{min-width:0;max-width:100%;align-items:center;overflow:visible}
+  .dash-op-category{max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .dash-op-category .category-3d-img{flex:0 0 auto}
+  .dash-op-actions{grid-column:2;grid-row:2;width:100%;min-width:0;display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:7px;margin:1px 0 0;overflow:visible}
+  .dash-source-3d-btn{min-width:0;max-width:100%;min-height:32px;flex:1 1 120px;padding:0 9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8px}
+  .dash-op-save,.dash-op-detail,.dash-op-delete{flex:0 0 auto;width:31px;min-width:31px;height:31px}
+  .dash-op-delete{width:auto;min-width:0;padding:0 9px}
+}
+@media (max-width:430px){
+  .dash-main{padding-left:10px;padding-right:10px}
+  .featured-panel{padding-left:9px;padding-right:9px}
+  .dash-op-card{grid-template-columns:52px minmax(0,1fr);gap:8px;padding:10px}
+  .dash-op-content h3{font-size:11px}
+  .dash-op-actions{gap:5px}
+  .dash-source-3d-btn{flex-basis:100px;padding-left:7px;padding-right:7px}
+  .dash-topbar{padding-left:8px;padding-right:8px;gap:4px}
+  .dash-brand img{width:30px;height:30px}
+  .dash-top-actions{gap:4px}
+  .dash-top-actions .browser-alert-btn{width:32px;min-width:32px;padding:0;font-size:0;text-indent:-9999px}
+  .dash-top-actions .browser-alert-icon{left:8px;top:8px;width:16px;height:16px;text-indent:0}
+  .dash-top-actions .dash-bell{width:32px;height:32px}
+  .dash-top-actions .dash-wa-shortcut{width:34px;min-width:34px;max-width:34px;padding:0;font-size:0;overflow:hidden;justify-content:center}
+  .dash-top-actions .dash-wa-shortcut>span{font-size:15px;margin:0}
+  .profile-avatar{width:32px;height:32px}
+}
+
+@media (max-width:430px){
+  .dash-top-actions .browser-alert-btn{width:32px!important;min-width:32px!important;max-width:32px!important;font-size:0!important;color:transparent!important;line-height:0!important;text-indent:-9999px!important;white-space:nowrap!important}
+  .dash-top-actions .dash-wa-shortcut{width:34px!important;min-width:34px!important;max-width:34px!important;font-size:0!important;color:transparent!important;line-height:0!important;text-indent:-9999px!important;white-space:nowrap!important}
+  .dash-top-actions .dash-wa-shortcut>span{font-size:15px!important;color:#16845d!important;text-indent:0!important;line-height:1!important}
+}
