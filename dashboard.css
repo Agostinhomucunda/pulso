@@ -651,3 +651,10 @@ html[data-theme="night"] .profile-showcase-theme-toggle .theme-toggle-orb{left:1
   .dash-top-actions .dash-wa-shortcut{width:34px!important;min-width:34px!important;max-width:34px!important;font-size:0!important;color:transparent!important;line-height:0!important;text-indent:-9999px!important;white-space:nowrap!important}
   .dash-top-actions .dash-wa-shortcut>span{font-size:15px!important;color:#16845d!important;text-indent:0!important;line-height:1!important}
 }
+
+@media (max-width:430px){
+  #browserAlertLabel{display:none!important}
+  .dash-top-actions .browser-alert-btn{overflow:hidden!important}
+  .dash-top-actions .dash-wa-shortcut{overflow:hidden!important;color:transparent!important}
+  .dash-top-actions .dash-wa-shortcut .dash-wa-label{display:none!important}
+}
